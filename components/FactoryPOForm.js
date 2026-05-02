@@ -7,7 +7,9 @@ import {
   HiOutlineRefresh,
   HiOutlinePlus,
   HiOutlineX,
+  HiOutlineTrash,
   HiOutlineInformationCircle,
+  HiOutlineExclamation,
 } from "react-icons/hi";
 import { formatRupiah, formatNumber } from "@/lib/utils";
 import {
@@ -15,6 +17,7 @@ import {
   updateInventoryStock,
   incrementSummaryField,
   addProduct,
+  deleteProduct,
 } from "@/lib/firestore";
 import toast from "react-hot-toast";
 
@@ -38,6 +41,8 @@ export default function FactoryPOForm({ products }) {
   const [result, setResult] = useState(null);
   const [saving, setSaving] = useState(false);
   const [savingProduct, setSavingProduct] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   // Cari produk yang dipilih
   const selectedProduct = products?.find((p) => p.id === selectedProductId);
@@ -249,6 +254,15 @@ export default function FactoryPOForm({ products }) {
             <HiOutlinePlus size={16} />
             <span className="hidden sm:inline">Produk Baru</span>
           </button>
+          {selectedProductId && (
+            <button
+              onClick={() => setShowDeleteConfirm(true)}
+              className="p-2.5 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 hover:bg-rose-500/20 transition-colors"
+              title="Hapus produk ini"
+            >
+              <HiOutlineTrash size={16} />
+            </button>
+          )}
         </div>
       </div>
 
@@ -598,6 +612,57 @@ export default function FactoryPOForm({ products }) {
               >
                 {savingProduct ? "Menyimpan..." : "Simpan Produk"}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── MODAL KONFIRMASI HAPUS PRODUK ── */}
+      {showDeleteConfirm && selectedProduct && (
+        <div
+          className="modal-overlay"
+          onClick={() => setShowDeleteConfirm(false)}
+        >
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="flex flex-col items-center text-center">
+              <div className="w-14 h-14 rounded-full bg-rose-500/10 flex items-center justify-center mb-4">
+                <HiOutlineExclamation className="text-rose-400" size={28} />
+              </div>
+              <h3 className="text-base font-bold text-white mb-2">
+                Hapus Produk?
+              </h3>
+              <p className="text-sm text-slate-400 mb-5">
+                Produk <span className="text-white font-semibold">"{selectedProduct.name}"</span> akan dihapus permanen. Tindakan ini tidak dapat dibatalkan.
+              </p>
+              <div className="flex items-center gap-3 w-full">
+                <button
+                  onClick={() => setShowDeleteConfirm(false)}
+                  className="btn-ghost flex-1"
+                >
+                  Batal
+                </button>
+                <button
+                  onClick={async () => {
+                    setDeleting(true);
+                    try {
+                      await deleteProduct(selectedProductId);
+                      toast.success(`Produk "${selectedProduct.name}" berhasil dihapus`);
+                      setSelectedProductId("");
+                      setResult(null);
+                      setShowDeleteConfirm(false);
+                    } catch (err) {
+                      toast.error("Gagal menghapus: " + err.message);
+                    } finally {
+                      setDeleting(false);
+                    }
+                  }}
+                  disabled={deleting}
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-rose-500 hover:bg-rose-600 text-white text-sm font-semibold transition-colors disabled:opacity-50"
+                >
+                  <HiOutlineTrash size={16} />
+                  {deleting ? "Menghapus..." : "Ya, Hapus"}
+                </button>
+              </div>
             </div>
           </div>
         </div>
