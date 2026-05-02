@@ -5,6 +5,7 @@ import { Toaster } from "react-hot-toast";
 import Sidebar from "@/components/Sidebar";
 import SummaryCards from "@/components/SummaryCards";
 import FactoryPOForm from "@/components/FactoryPOForm";
+import POHistory from "@/components/POHistory";
 import SalesLedger from "@/components/SalesLedger";
 import {
   subscribeSummary,
@@ -18,8 +19,10 @@ import {
 const sectionTitles = {
   dashboard: "Ringkasan Dashboard",
   po: "Purchase Order Pabrik",
+  "po-history": "Riwayat PO Pabrik",
   sales: "Buku Besar Penjualan",
   inventory: "Manajemen Inventaris",
+  returns: "Retur Barang",
   settings: "Pengaturan",
 };
 
@@ -144,6 +147,14 @@ export default function DashboardPage() {
                 </>
               )}
 
+              {/* Riwayat PO */}
+              {activeSection === "po-history" && (
+                <>
+                  <SummaryCards summary={summary} inventory={inventory} />
+                  <POHistory />
+                </>
+              )}
+
               {/* Buku Penjualan */}
               {activeSection === "sales" && (
                 <>
@@ -159,6 +170,18 @@ export default function DashboardPage() {
                   <div className="glass-card p-10 text-center">
                     <p className="text-slate-400 text-sm">
                       📦 Modul Inventaris detail akan segera hadir.
+                    </p>
+                  </div>
+                </>
+              )}
+
+              {/* Retur Barang */}
+              {activeSection === "returns" && (
+                <>
+                  <SummaryCards summary={summary} inventory={inventory} />
+                  <div className="glass-card p-10 text-center">
+                    <p className="text-slate-400 text-sm">
+                      🔄 Modul Retur Barang sedang disiapkan.
                     </p>
                   </div>
                 </>

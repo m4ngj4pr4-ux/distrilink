@@ -9,13 +9,17 @@ import {
   HiOutlineCog,
   HiOutlineMenuAlt2,
   HiOutlineX,
+  HiOutlineClipboardList,
+  HiOutlineReply,
 } from "react-icons/hi";
 
 const navItems = [
   { icon: HiOutlineHome, label: "Dashboard", id: "dashboard" },
   { icon: HiOutlineDocumentText, label: "PO Pabrik", id: "po" },
+  { icon: HiOutlineClipboardList, label: "Riwayat PO", id: "po-history" },
   { icon: HiOutlineUserGroup, label: "Buku Penjualan", id: "sales" },
   { icon: HiOutlineCube, label: "Inventaris", id: "inventory" },
+  { icon: HiOutlineReply, label: "Retur Barang", id: "returns" },
   { icon: HiOutlineCog, label: "Pengaturan", id: "settings" },
 ];
 
