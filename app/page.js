@@ -1,65 +1,206 @@
-import Image from "next/image";
+"use client";
 
-export default function Home() {
+import { useState, useEffect } from "react";
+import { Toaster } from "react-hot-toast";
+import Sidebar from "@/components/Sidebar";
+import SummaryCards from "@/components/SummaryCards";
+import FactoryPOForm from "@/components/FactoryPOForm";
+import SalesLedger from "@/components/SalesLedger";
+import {
+  subscribeSummary,
+  subscribeInventory,
+  subscribeSalesTeams,
+  subscribeProducts,
+  seedSalesTeams,
+  seedProducts,
+} from "@/lib/firestore";
+
+const sectionTitles = {
+  dashboard: "Ringkasan Dashboard",
+  po: "Purchase Order Pabrik",
+  sales: "Buku Besar Penjualan",
+  inventory: "Manajemen Inventaris",
+  settings: "Pengaturan",
+};
+
+export default function DashboardPage() {
+  const [activeSection, setActiveSection] = useState("dashboard");
+  const [summary, setSummary] = useState({
+    totalAssets: 0,
+    factoryDebt: 0,
+    salesReceivables: 0,
+  });
+  const [inventory, setInventory] = useState({ totalCartons: 0 });
+  const [salesTeams, setSalesTeams] = useState([]);
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    // Seed data awal jika kosong
+    seedSalesTeams().catch(console.error);
+    seedProducts().catch(console.error);
+
+    // Subscribe real-time
+    const unsubSummary = subscribeSummary((data) => {
+      setSummary(data);
+      setLoading(false);
+    });
+
+    const unsubInventory = subscribeInventory((data) => {
+      setInventory(data);
+    });
+
+    const unsubSales = subscribeSalesTeams((data) => {
+      setSalesTeams(data);
+    });
+
+    const unsubProducts = subscribeProducts((data) => {
+      setProducts(data);
+    });
+
+    return () => {
+      unsubSummary();
+      unsubInventory();
+      unsubSales();
+      unsubProducts();
+    };
+  }, []);
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.js file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+    <div className="flex h-screen overflow-hidden">
+      <Toaster
+        position="top-right"
+        toastOptions={{
+          style: {
+            background: "#1a2332",
+            color: "#e2e8f0",
+            border: "1px solid rgba(148, 163, 184, 0.1)",
+            borderRadius: "12px",
+            fontSize: "0.875rem",
+          },
+          success: {
+            iconTheme: { primary: "#10b981", secondary: "#fff" },
+          },
+          error: {
+            iconTheme: { primary: "#f43f5e", secondary: "#fff" },
+          },
+        }}
+      />
+
+      {/* Sidebar */}
+      <Sidebar activeSection={activeSection} onNavigate={setActiveSection} />
+
+      {/* Konten Utama */}
+      <main className="flex-1 overflow-y-auto">
+        {/* Top bar */}
+        <header className="sticky top-0 z-30 backdrop-blur-xl bg-dark-900/80 border-b border-slate-400/8 px-6 md:px-8 py-4">
+          <div className="flex items-center justify-between">
+            <div className="ml-10 md:ml-0">
+              <h1 className="text-xl font-bold text-white">
+                {sectionTitles[activeSection] || "Dashboard"}
+              </h1>
+              <p className="text-xs text-slate-400 mt-0.5">
+                {new Date().toLocaleDateString("id-ID", {
+                  weekday: "long",
+                  day: "numeric",
+                  month: "long",
+                  year: "numeric",
+                })}
+              </p>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20">
+                <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                <span className="text-xs font-medium text-emerald-400">
+                  Sinkron Aktif
+                </span>
+              </div>
+            </div>
+          </div>
+        </header>
+
+        {/* Area konten */}
+        <div className="p-6 md:p-8 space-y-6">
+          {loading ? (
+            <LoadingSkeleton />
+          ) : (
+            <>
+              {/* Dashboard: tampilkan semua */}
+              {activeSection === "dashboard" && (
+                <>
+                  <SummaryCards summary={summary} inventory={inventory} />
+                  <div className="grid grid-cols-1 gap-6">
+                    <FactoryPOForm products={products} />
+                    <SalesLedger teams={salesTeams} />
+                  </div>
+                </>
+              )}
+
+              {/* PO Pabrik */}
+              {activeSection === "po" && (
+                <>
+                  <SummaryCards summary={summary} inventory={inventory} />
+                  <FactoryPOForm products={products} />
+                </>
+              )}
+
+              {/* Buku Penjualan */}
+              {activeSection === "sales" && (
+                <>
+                  <SummaryCards summary={summary} inventory={inventory} />
+                  <SalesLedger teams={salesTeams} />
+                </>
+              )}
+
+              {/* Inventaris */}
+              {activeSection === "inventory" && (
+                <>
+                  <SummaryCards summary={summary} inventory={inventory} />
+                  <div className="glass-card p-10 text-center">
+                    <p className="text-slate-400 text-sm">
+                      📦 Modul Inventaris detail akan segera hadir.
+                    </p>
+                  </div>
+                </>
+              )}
+
+              {/* Pengaturan */}
+              {activeSection === "settings" && (
+                <div className="glass-card p-10 text-center">
+                  <p className="text-slate-400 text-sm">
+                    ⚙️ Modul Pengaturan akan segera hadir.
+                  </p>
+                </div>
+              )}
+            </>
+          )}
         </div>
       </main>
+    </div>
+  );
+}
+
+function LoadingSkeleton() {
+  return (
+    <div className="space-y-6 animate-pulse">
+      {/* Skeleton kartu */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5">
+        {[1, 2, 3, 4].map((i) => (
+          <div key={i} className="glass-card p-5 h-[100px]">
+            <div className="h-3 w-24 bg-dark-600 rounded mb-3" />
+            <div className="h-6 w-36 bg-dark-600 rounded" />
+          </div>
+        ))}
+      </div>
+      {/* Skeleton tabel */}
+      <div className="glass-card p-6 h-[300px]">
+        <div className="h-4 w-48 bg-dark-600 rounded mb-6" />
+        <div className="space-y-4">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="h-3 bg-dark-600 rounded w-full" />
+          ))}
+        </div>
+      </div>
     </div>
   );
 }
