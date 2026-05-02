@@ -6,6 +6,7 @@ import Sidebar from "@/components/Sidebar";
 import SummaryCards from "@/components/SummaryCards";
 import FactoryPOForm from "@/components/FactoryPOForm";
 import POHistory from "@/components/POHistory";
+import ReturnsForm from "@/components/ReturnsForm";
 import SalesLedger from "@/components/SalesLedger";
 import {
   subscribeSummary,
@@ -179,11 +180,7 @@ export default function DashboardPage() {
               {activeSection === "returns" && (
                 <>
                   <SummaryCards summary={summary} inventory={inventory} />
-                  <div className="glass-card p-10 text-center">
-                    <p className="text-slate-400 text-sm">
-                      🔄 Modul Retur Barang sedang disiapkan.
-                    </p>
-                  </div>
+                  <ReturnsForm products={products} />
                 </>
               )}
 
