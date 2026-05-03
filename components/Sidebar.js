@@ -129,20 +129,6 @@ export default function Sidebar({ activeSection, onNavigate }) {
           ))}
         </nav>
 
-        {/* Footer */}
-        {!collapsed && (
-          <div className="p-4 border-t border-slate-400/8">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center text-white text-xs font-bold">
-                P
-              </div>
-              <div>
-                <p className="text-sm font-medium text-slate-200">Pemilik</p>
-                <p className="text-xs text-slate-500">Admin</p>
-              </div>
-            </div>
-          </div>
-        )}
       </aside>
     </>
   );

@@ -209,8 +209,23 @@ export default function DashboardPage() {
             <h1 className="text-2xl font-bold text-white capitalize">{activeSection.replace("-", " ")}</h1>
             <p className="text-slate-400">{new Date().toLocaleDateString("id-ID", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}</p>
           </div>
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[10px] font-bold uppercase tracking-wider">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span> Sinkron Aktif
+          
+          <div className="flex items-center gap-6">
+            {/* Status Sinkron */}
+            <div className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[10px] font-bold uppercase tracking-wider">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span> Sinkron Aktif
+            </div>
+
+            {/* Profil Pemilik - Pindahan dari Sidebar */}
+            <div className="flex items-center gap-3 pl-6 border-l border-slate-400/10">
+              <div className="text-right hidden sm:block">
+                <p className="text-sm font-bold text-slate-200">Pemilik</p>
+                <p className="text-[10px] text-slate-500 font-medium uppercase tracking-tight">Admin Utama</p>
+              </div>
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center text-white text-sm font-bold shadow-lg shadow-emerald-500/20">
+                P
+              </div>
+            </div>
           </div>
         </header>
         {renderContent()}
