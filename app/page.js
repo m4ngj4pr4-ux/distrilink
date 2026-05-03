@@ -17,6 +17,7 @@ import {
   subscribePurchases,
   subscribeSalesTeams,
   subscribeReturns,
+  subscribeFactoryReturns,
   subscribeAllDistributions,
   syncProductPacks,
   recalculateSummary
@@ -36,6 +37,7 @@ export default function DashboardPage() {
   const [purchases, setPurchases] = useState([]);
   const [teams, setTeams] = useState([]);
   const [returns, setReturns] = useState([]);
+  const [factoryReturns, setFactoryReturns] = useState([]);
   const [allDistributions, setAllDistributions] = useState([]);
 
   useEffect(() => {
@@ -48,6 +50,7 @@ export default function DashboardPage() {
     const unsubPurchases = subscribePurchases(setPurchases);
     const unsubTeams = subscribeSalesTeams(setTeams);
     const unsubReturns = subscribeReturns(setReturns);
+    const unsubFactoryReturns = subscribeFactoryReturns(setFactoryReturns);
     const unsubAllDist = subscribeAllDistributions(setAllDistributions);
 
     return () => {
@@ -57,6 +60,7 @@ export default function DashboardPage() {
       unsubPurchases();
       unsubTeams();
       unsubReturns();
+      unsubFactoryReturns();
       unsubAllDist();
     };
   }, []);
@@ -184,7 +188,7 @@ export default function DashboardPage() {
         return (
           <>
             <SummaryCards summary={summary} products={products} />
-            <ReturnsForm products={products} teams={teams} returns={returns} />
+            <ReturnsForm products={products} teams={teams} returns={returns} factoryReturns={factoryReturns} />
           </>
         );
       case "settings":
