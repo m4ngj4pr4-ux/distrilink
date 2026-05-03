@@ -11,6 +11,7 @@ import {
   HiOutlineX,
   HiOutlineClipboardList,
   HiOutlineReply,
+  HiOutlineTrendingUp
 } from "react-icons/hi";
 
 const navItems = [
