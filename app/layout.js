@@ -27,7 +27,7 @@ export default function RootLayout({ children }) {
       className={`${inter.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col bg-dark-900 text-foreground">
-        <Toaster position="top-right" />
+        <Toaster position="top-right" containerStyle={{ zIndex: 999999 }} />
         {children}
       </body>
     </html>
