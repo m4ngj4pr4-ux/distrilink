@@ -62,6 +62,8 @@ export default function DashboardPage() {
 
     const unsubProducts = subscribeProducts((data) => {
       setProducts(data);
+      // Sinkronkan data lama jika perlu
+      syncProductPacks(data).catch(console.error);
     });
 
     return () => {
@@ -134,7 +136,7 @@ export default function DashboardPage() {
               {/* Dashboard: tampilkan semua */}
               {activeSection === "dashboard" && (
                 <>
-                  <SummaryCards summary={summary} inventory={inventory} />
+                  <SummaryCards summary={summary} products={products} />
                   <div className="grid grid-cols-1 gap-6">
                     <FactoryPOForm products={products} />
                     <SalesLedger teams={salesTeams} products={products} />
@@ -145,7 +147,7 @@ export default function DashboardPage() {
               {/* PO Pabrik */}
               {activeSection === "po" && (
                 <>
-                  <SummaryCards summary={summary} inventory={inventory} />
+                  <SummaryCards summary={summary} products={products} />
                   <FactoryPOForm products={products} />
                 </>
               )}
@@ -153,7 +155,7 @@ export default function DashboardPage() {
               {/* Riwayat PO */}
               {activeSection === "po-history" && (
                 <>
-                  <SummaryCards summary={summary} inventory={inventory} />
+                  <SummaryCards summary={summary} products={products} />
                   <POHistory />
                 </>
               )}
@@ -161,7 +163,7 @@ export default function DashboardPage() {
               {/* Buku Penjualan */}
               {activeSection === "sales" && (
                 <>
-                  <SummaryCards summary={summary} inventory={inventory} />
+                  <SummaryCards summary={summary} products={products} />
                   <SalesLedger teams={salesTeams} products={products} />
                 </>
               )}
@@ -186,7 +188,7 @@ export default function DashboardPage() {
               {/* Retur Barang */}
               {activeSection === "returns" && (
                 <>
-                  <SummaryCards summary={summary} inventory={inventory} />
+                  <SummaryCards summary={summary} products={products} />
                   <ReturnsForm products={products} />
                 </>
               )}
