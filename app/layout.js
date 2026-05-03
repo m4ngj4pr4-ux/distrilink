@@ -1,5 +1,6 @@
 import { Inter, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import { Toaster } from "react-hot-toast";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -26,6 +27,7 @@ export default function RootLayout({ children }) {
       className={`${inter.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col bg-dark-900 text-foreground">
+        <Toaster position="top-right" />
         {children}
       </body>
     </html>
