@@ -104,31 +104,24 @@ export default function SalesLedger({ teams, products }) {
   }
 
   // Fungsi helper untuk hitung harga otomatis
-  async function updateCalculatedPrice(prodId, qty, unit) {
+  function updateCalculatedPrice(prodId, qty, unit) {
     if (!prodId || !qty) return;
     const product = products.find(p => p.id === prodId);
-    if (!product) return;
+    if (!product || !product.currentSellingPrice) return;
 
-    try {
-      const lastPO = await getLastPurchase(product.name);
-      if (lastPO && lastPO.targetHargaJual) {
-        const packsPerSlop = product.packsPerSlop || 10;
-        const slopsPerBall = product.slopsPerBall || 20;
-        const ballsPerKarton = product.ballsPerKarton || 5;
-        
-        let totalPacks = 0;
-        if (unit === "Ct") {
-          totalPacks = qty * (packsPerSlop * slopsPerBall * ballsPerKarton);
-        } else {
-          totalPacks = qty * packsPerSlop;
-        }
-
-        const totalValue = totalPacks * lastPO.targetHargaJual;
-        setDropAmount(Math.round(totalValue).toString());
-      }
-    } catch (err) {
-      console.error("Error auto price:", err);
+    const packsPerSlop = product.packsPerSlop || 10;
+    const slopsPerBall = product.slopsPerBall || 20;
+    const ballsPerKarton = product.ballsPerKarton || 5;
+    
+    let totalPacks = 0;
+    if (unit === "Ct") {
+      totalPacks = qty * (packsPerSlop * slopsPerBall * ballsPerKarton);
+    } else {
+      totalPacks = qty * packsPerSlop;
     }
+
+    const totalValue = totalPacks * product.currentSellingPrice;
+    setDropAmount(Math.round(totalValue).toString());
   }
 
   async function handleAddTeam() {

@@ -139,6 +139,11 @@ export default function FactoryPOForm({ products }) {
         conversion: result.conversion,
       });
 
+      // 1.5 Update Harga Jual di Master Produk
+      await updateProduct(selectedProductId, {
+        currentSellingPrice: result.targetHargaJual,
+      });
+
       // 2. Tambah stok gudang
       await updateInventoryStock(result.jumlahKarton);
 

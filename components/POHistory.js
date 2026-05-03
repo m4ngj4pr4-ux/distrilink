@@ -89,6 +89,7 @@ export default function POHistory() {
               <th className="px-6 py-4 font-semibold">Harga Beli / Pk</th>
               <th className="px-6 py-4 font-semibold text-center">Ongkir</th>
               <th className="px-6 py-4 font-semibold text-emerald-400">HPP / Pack</th>
+              <th className="px-6 py-4 font-semibold text-blue-400">Target Jual / Pk</th>
               <th className="px-6 py-4 font-semibold text-amber-400">DP (Uang Muka)</th>
               <th className="px-6 py-4 font-semibold">Sisa Hutang</th>
               <th className="px-6 py-4 font-semibold text-center">Aksi</th>
@@ -146,6 +147,9 @@ export default function POHistory() {
                       <HiOutlineTrendingUp size={14} />
                       {formatRupiah(p.hpp)}
                     </div>
+                  </td>
+                  <td className="px-6 py-4 text-blue-400 font-semibold">
+                    {formatRupiah(p.targetHargaJual)}
                   </td>
                   <td className="px-6 py-4 text-amber-400/90 font-medium">
                     {formatRupiah(p.uangMuka || 0)}
