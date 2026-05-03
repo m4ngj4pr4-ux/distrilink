@@ -63,10 +63,11 @@ export default function POHistory() {
             <tr className="bg-dark-800/50 text-[11px] uppercase tracking-wider text-slate-500">
               <th className="px-6 py-4 font-semibold">Tanggal</th>
               <th className="px-6 py-4 font-semibold">Produk</th>
-              <th className="px-6 py-4 font-semibold text-center">Qty (Ktn)</th>
-              <th className="px-6 py-4 font-semibold">Harga Beli</th>
-              <th className="px-6 py-4 font-semibold text-center">Ongkir/Pack</th>
+              <th className="px-6 py-4 font-semibold text-center">Qty (Ct/Slop/Pack)</th>
+              <th className="px-6 py-4 font-semibold">Harga Beli / Pk</th>
+              <th className="px-6 py-4 font-semibold text-center">Ongkir (Ct / Total)</th>
               <th className="px-6 py-4 font-semibold text-emerald-400">HPP / Pack</th>
+              <th className="px-6 py-4 font-semibold text-amber-400">DP (Uang Muka)</th>
               <th className="px-6 py-4 font-semibold">Sisa Hutang</th>
             </tr>
           </thead>
@@ -74,12 +75,12 @@ export default function POHistory() {
             {loading ? (
               [1, 2, 3].map(i => (
                 <tr key={i} className="animate-pulse">
-                  <td colSpan="7" className="px-6 py-4 h-12 bg-dark-700/20"></td>
+                  <td colSpan="8" className="px-6 py-4 h-12 bg-dark-700/20"></td>
                 </tr>
               ))
             ) : filteredPurchases.length === 0 ? (
               <tr>
-                <td colSpan="7" className="px-6 py-12 text-center text-slate-500 italic">
+                <td colSpan="8" className="px-6 py-12 text-center text-slate-500 italic">
                   Belum ada data transaksi.
                 </td>
               </tr>
@@ -101,20 +102,33 @@ export default function POHistory() {
                   <td className="px-6 py-4 font-medium text-white">
                     {p.productName}
                   </td>
-                  <td className="px-6 py-4 text-center text-slate-300">
-                    {formatNumber(p.jumlahKarton)}
+                  <td className="px-6 py-4 text-center">
+                    <div className="text-slate-300 font-medium">
+                      {p.jumlahKarton} <span className="text-[10px] text-slate-500">Ct</span> / {p.totalSlop} <span className="text-[10px] text-slate-500">Slop</span>
+                    </div>
+                    <div className="text-[11px] text-emerald-500/70 font-semibold">
+                      {formatNumber(p.totalPack)} Pack
+                    </div>
                   </td>
                   <td className="px-6 py-4 text-slate-300">
                     {formatRupiah(p.hargaBeliPerPack)}
                   </td>
-                  <td className="px-6 py-4 text-center text-slate-400">
-                    {formatRupiah(p.ongkirPerPack)}
+                  <td className="px-6 py-4 text-center">
+                    <div className="text-slate-300 text-xs">
+                      {formatRupiah(p.biayaPengiriman / p.jumlahKarton)} <span className="text-[10px] text-slate-500">/Ct</span>
+                    </div>
+                    <div className="text-[11px] text-slate-500">
+                      Total: {formatRupiah(p.biayaPengiriman)}
+                    </div>
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-1.5 text-emerald-400 font-bold">
                       <HiOutlineTrendingUp size={14} />
                       {formatRupiah(p.hpp)}
                     </div>
+                  </td>
+                  <td className="px-6 py-4 text-amber-400/90 font-medium">
+                    {formatRupiah(p.uangMuka || 0)}
                   </td>
                   <td className="px-6 py-4">
                     {p.sisaHutang > 0 ? (
