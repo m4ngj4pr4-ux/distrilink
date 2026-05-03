@@ -11,7 +11,7 @@ import {
   HiOutlineInformationCircle,
   HiOutlineExclamation,
 } from "react-icons/hi";
-import { formatRupiah, formatNumber } from "@/lib/utils";
+import { formatRupiah, formatNumber, formatInputNumber, parseInputNumber } from "@/lib/utils";
 import {
   addPurchase,
   updateInventoryStock,
@@ -67,7 +67,11 @@ export default function FactoryPOForm({ products }) {
   }
 
   function handleChange(e) {
-    setForm({ ...form, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    // Terapkan parsing khusus untuk input angka
+    const numericFields = ["jumlahKarton", "hargaBeliPerPack", "biayaPengiriman", "uangMuka", "targetHargaJual"];
+    const valToSave = numericFields.includes(name) ? parseInputNumber(value) : value;
+    setForm({ ...form, [name]: valToSave });
   }
 
   function calculate() {
@@ -329,13 +333,12 @@ export default function FactoryPOForm({ products }) {
             Jumlah Karton
           </label>
           <input
-            type="number"
+            type="text"
             name="jumlahKarton"
-            value={form.jumlahKarton}
+            value={formatInputNumber(form.jumlahKarton)}
             onChange={handleChange}
-            placeholder="mis. 10"
+            placeholder="0"
             className="input-field"
-            min="1"
           />
           {conv && form.jumlahKarton > 0 && (
             <p className="text-[11px] text-slate-500 mt-1">
@@ -351,13 +354,12 @@ export default function FactoryPOForm({ products }) {
             Harga Beli per Pack (Rp)
           </label>
           <input
-            type="number"
+            type="text"
             name="hargaBeliPerPack"
-            value={form.hargaBeliPerPack}
+            value={formatInputNumber(form.hargaBeliPerPack)}
             onChange={handleChange}
-            placeholder="mis. 15000"
+            placeholder="0"
             className="input-field"
-            min="0"
           />
         </div>
         <div>
@@ -365,13 +367,12 @@ export default function FactoryPOForm({ products }) {
             Target Harga Jual per Pack (Rp)
           </label>
           <input
-            type="number"
+            type="text"
             name="targetHargaJual"
-            value={form.targetHargaJual}
+            value={formatInputNumber(form.targetHargaJual)}
             onChange={handleChange}
-            placeholder="mis. 18000"
+            placeholder="0"
             className="input-field"
-            min="0"
           />
         </div>
         <div>
@@ -379,13 +380,12 @@ export default function FactoryPOForm({ products }) {
             Biaya Pengiriman (Rp)
           </label>
           <input
-            type="number"
+            type="text"
             name="biayaPengiriman"
-            value={form.biayaPengiriman}
+            value={formatInputNumber(form.biayaPengiriman)}
             onChange={handleChange}
-            placeholder="mis. 500000"
+            placeholder="0"
             className="input-field"
-            min="0"
           />
         </div>
         <div>
@@ -393,13 +393,12 @@ export default function FactoryPOForm({ products }) {
             Uang Muka / DP (Rp)
           </label>
           <input
-            type="number"
+            type="text"
             name="uangMuka"
-            value={form.uangMuka}
+            value={formatInputNumber(form.uangMuka)}
             onChange={handleChange}
-            placeholder="mis. 5000000"
+            placeholder="0"
             className="input-field"
-            min="0"
           />
         </div>
 

@@ -10,7 +10,7 @@ import {
   HiOutlinePencilAlt,
   HiOutlineEye,
 } from "react-icons/hi";
-import { formatRupiah, formatNumber } from "@/lib/utils";
+import { formatRupiah, formatNumber, formatInputNumber, parseInputNumber } from "@/lib/utils";
 import {
   addDeposit,
   addGoodsDropTransaction,
@@ -380,9 +380,9 @@ export default function SalesLedger({ teams, products }) {
                     <label className="block text-xs font-medium text-slate-400 mb-1.5">Jumlah</label>
                     <input 
                       type="text" 
-                      value={formatNumber(dropQty)} 
+                      value={formatInputNumber(dropQty)} 
                       onChange={(e) => { 
-                        const raw = parseRupiah(e.target.value);
+                        const raw = parseInputNumber(e.target.value);
                         setDropQty(raw); 
                         updateCalculatedPrice(selectedProductId, raw, dropUnit, dropPricePerPack); 
                       }} 
@@ -403,9 +403,9 @@ export default function SalesLedger({ teams, products }) {
                   <label className="block text-xs font-medium text-slate-400 mb-1.5">Harga / Pack (Rp)</label>
                   <input 
                     type="text" 
-                    value={formatNumber(dropPricePerPack)} 
+                    value={formatInputNumber(dropPricePerPack)} 
                     onChange={(e) => { 
-                      const raw = parseRupiah(e.target.value);
+                      const raw = parseInputNumber(e.target.value);
                       setDropPricePerPack(raw); 
                       updateCalculatedPrice(selectedProductId, dropQty, dropUnit, raw); 
                     }} 
@@ -440,8 +440,8 @@ export default function SalesLedger({ teams, products }) {
             <h3 className="text-base font-bold text-white mb-5">Tambah Setoran - {depositModal.name}</h3>
             <input 
               type="text" 
-              value={formatNumber(depositAmount)} 
-              onChange={(e) => setDepositAmount(parseRupiah(e.target.value))} 
+              value={formatInputNumber(depositAmount)} 
+              onChange={(e) => setDepositAmount(parseInputNumber(e.target.value))} 
               placeholder="Jumlah Setoran (Rp)" 
               className="input-field mb-5" 
             />
