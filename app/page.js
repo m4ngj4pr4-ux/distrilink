@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import Sidebar from "@/components/Sidebar";
 import SummaryCards from "@/components/SummaryCards";
 import FactoryPOForm from "@/components/FactoryPOForm";
-// import POHistory from "@/components/POHistory";
+import POHistory from "@/components/POHistory";
 import SalesLedger from "@/components/SalesLedger";
 // import StockInventory from "@/components/StockInventory";
 // import ReturnsForm from "@/components/ReturnsForm";
@@ -100,8 +100,9 @@ export default function DashboardPage() {
         );
       case "po-history":
         return (
-          <div className="glass-card p-12 text-center text-slate-400 italic">
-            Modul ini sedang disiapkan.
+          <div className="space-y-8 animate-fadeIn">
+            <SummaryCards summary={summary} products={products} />
+            <POHistory purchases={purchases} />
           </div>
         );
       case "stock":
