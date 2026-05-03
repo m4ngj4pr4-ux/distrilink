@@ -7,7 +7,7 @@ import FactoryPOForm from "@/components/FactoryPOForm";
 import POHistory from "@/components/POHistory";
 import SalesLedger from "@/components/SalesLedger";
 import StockInventory from "@/components/StockInventory";
-import ReturnGoods from "@/components/ReturnGoods";
+import ReturnsForm from "@/components/ReturnsForm";
 import Settings from "@/components/Settings";
 import { HiCube, HiInformationCircle, HiRefresh } from "react-icons/hi";
 import { 
@@ -182,7 +182,7 @@ export default function DashboardPage() {
         return (
           <>
             <SummaryCards summary={summary} products={products} />
-            <ReturnGoods products={products} returns={returns} />
+            <ReturnsForm products={products} returns={returns} />
           </>
         );
       case "settings":
