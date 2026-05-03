@@ -18,6 +18,8 @@ import {
   incrementSummaryField,
   addProduct,
   deleteProduct,
+  updateProduct,
+  updateProductPackStock,
 } from "@/lib/firestore";
 import toast from "react-hot-toast";
 
@@ -147,8 +149,8 @@ export default function FactoryPOForm({ products }) {
       // 2. Tambah stok gudang (global & per produk pack)
       await updateInventoryStock(result.jumlahKarton);
       
-      const packsPerSlop = result.product?.packsPerSlop || 10;
-      const slopsPerKarton = (result.product?.slopsPerBall || 20) * (result.product?.ballsPerKarton || 5);
+      const packsPerSlop = selectedProduct?.packsPerSlop || 10;
+      const slopsPerKarton = (selectedProduct?.slopsPerBall || 20) * (selectedProduct?.ballsPerKarton || 5);
       const totalPacksPurchased = result.jumlahKarton * slopsPerKarton * packsPerSlop;
       
       await updateProductPackStock(selectedProductId, totalPacksPurchased);
