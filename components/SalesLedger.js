@@ -20,6 +20,7 @@ import {
   deleteSalesTeam,
   incrementSummaryField,
   subscribeDistributions,
+  deleteDistribution,
 } from "@/lib/firestore";
 import toast from "react-hot-toast";
 
@@ -81,6 +82,16 @@ export default function SalesLedger({ teams, products }) {
       toast.error("Gagal: " + err.message);
     } finally {
       setProcessing(false);
+    }
+  }
+
+  async function handleDeleteDist(dist) {
+    if (!confirm(`Hapus distribusi ${dist.productName} sejumlah ${dist.qtyOriginal} ${dist.unit}? Stok dan piutang akan dikoreksi otomatis.`)) return;
+    try {
+      await deleteDistribution(dist.id, dist);
+      toast.success("Distribusi dihapus dan direkonsiliasi");
+    } catch (err) {
+      toast.error("Gagal menghapus: " + err.message);
     }
   }
 
@@ -327,6 +338,7 @@ export default function SalesLedger({ teams, products }) {
                       <th className="py-3 font-semibold text-center">Qty</th>
                       <th className="py-3 font-semibold text-right">Harga/Pk</th>
                       <th className="py-3 font-semibold text-right text-emerald-400">Total Nilai</th>
+                      <th className="py-3 font-semibold text-center">Aksi</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-400/5">
@@ -343,6 +355,15 @@ export default function SalesLedger({ teams, products }) {
                           {formatRupiah(d.pricePerPack || (d.amount / d.totalPacksDistributed) * (d.packsPerSlop || 10) / (d.packsPerSlop || 10))}
                         </td>
                         <td className="py-3 text-right font-bold text-emerald-400">{formatRupiah(d.amount)}</td>
+                        <td className="py-3 text-center">
+                          <button 
+                            onClick={() => handleDeleteDist(d)} 
+                            className="p-1.5 rounded hover:bg-rose-500/10 text-slate-500 hover:text-rose-400 transition-colors"
+                            title="Hapus Distribusi"
+                          >
+                            <HiOutlineTrash size={14} />
+                          </button>
+                        </td>
                       </tr>
                     ))}
                   </tbody>
