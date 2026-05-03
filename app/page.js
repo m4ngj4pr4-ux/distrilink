@@ -41,7 +41,7 @@ export default function DashboardPage() {
   const [teams, setTeams] = useState([]);
   const [returns, setReturns] = useState([]);
   const [factoryReturns, setFactoryReturns] = useState([]);
-  const [stores, setStores] = useState([]);
+  const [retailStores, setRetailStores] = useState([]);
   const [allDistributions, setAllDistributions] = useState([]);
 
   useEffect(() => {
@@ -55,7 +55,7 @@ export default function DashboardPage() {
     const unsubTeams = subscribeSalesTeams(setTeams);
     const unsubReturns = subscribeReturns(setReturns);
     const unsubFactoryReturns = subscribeFactoryReturns(setFactoryReturns);
-    const unsubStores = subscribeRetailStores(setStores);
+    const unsubRetail = subscribeRetailStores(setRetailStores);
     const unsubAllDist = subscribeAllDistributions(setAllDistributions);
 
     return () => {
@@ -66,7 +66,7 @@ export default function DashboardPage() {
       unsubTeams();
       unsubReturns();
       unsubFactoryReturns();
-      unsubStores();
+      unsubRetail();
       unsubAllDist();
     };
   }, []);
@@ -195,7 +195,7 @@ export default function DashboardPage() {
         return (
           <div className="space-y-8 animate-fadeIn">
             <SummaryCards summary={summary} products={products} />
-            <RetailMarketing stores={stores} />
+            <RetailMarketing stores={retailStores} />
           </div>
         );
       case "returns":
