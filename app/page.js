@@ -4,10 +4,10 @@ import { useState, useEffect } from "react";
 import Sidebar from "@/components/Sidebar";
 import SummaryCards from "@/components/SummaryCards";
 import FactoryPOForm from "@/components/FactoryPOForm";
-import POHistory from "@/components/POHistory";
+// import POHistory from "@/components/POHistory";
 import SalesLedger from "@/components/SalesLedger";
-import StockInventory from "@/components/StockInventory";
-import ReturnsForm from "@/components/ReturnsForm";
+// import StockInventory from "@/components/StockInventory";
+// import ReturnsForm from "@/components/ReturnsForm";
 import Settings from "@/components/Settings";
 import { HiCube, HiInformationCircle, HiRefresh } from "react-icons/hi";
 import { 
@@ -155,13 +155,16 @@ export default function DashboardPage() {
         );
       case "po-history":
         return (
-          <>
-            <SummaryCards summary={summary} products={products} />
-            <POHistory purchases={purchases} />
-          </>
+          <div className="glass-card p-12 text-center text-slate-400 italic">
+            Modul ini sedang disiapkan.
+          </div>
         );
       case "stock":
-        return <StockInventory products={products} />;
+        return (
+          <div className="glass-card p-12 text-center text-slate-400 italic">
+            Modul ini sedang disiapkan.
+          </div>
+        );
       case "sales":
         return (
           <>
@@ -171,19 +174,15 @@ export default function DashboardPage() {
         );
       case "inventory":
         return (
-          <>
-            <SummaryCards summary={summary} products={products} />
-            <div className="glass-card p-12 text-center text-slate-400 italic">
-              Modul Inventaris Detail sedang dalam pengembangan.
-            </div>
-          </>
+          <div className="glass-card p-12 text-center text-slate-400 italic">
+            Modul ini sedang disiapkan.
+          </div>
         );
       case "returns":
         return (
-          <>
-            <SummaryCards summary={summary} products={products} />
-            <ReturnsForm products={products} returns={returns} />
-          </>
+          <div className="glass-card p-12 text-center text-slate-400 italic">
+            Modul ini sedang disiapkan.
+          </div>
         );
       case "settings":
         return <Settings onRecalculate={handleRecalculate} isRecalculating={isRecalculating} />;
