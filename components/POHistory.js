@@ -2,20 +2,41 @@
 
 import { useState } from "react";
 import { HiOutlineSearch, HiOutlineTrash, HiOutlineDocumentText, HiTrendingUp } from "react-icons/hi";
-import { formatRupiah } from "@/lib/utils";
-import { deletePurchase } from "@/lib/firestore";
+import { formatRupiah, parseInputNumber, formatInputNumber } from "@/lib/utils";
+import { deletePurchase, payFactoryDebt } from "@/lib/firestore";
 import toast from "react-hot-toast";
 
 export default function POHistory({ purchases }) {
   const [searchTerm, setSearchTerm] = useState("");
+  const [payModal, setPayModal] = useState(null);
+  const [payAmount, setPayAmount] = useState("");
+  const [processing, setProcessing] = useState(false);
 
   async function handleDelete(purchase) {
-    if (!confirm(`Hapus data PO ${purchase.productName}? Stok dan saldo terkait akan dikoreksi otomatis.`)) return;
+    if (confirm(`Hapus PO ${purchase.productName}? Stok dan Hutang akan disesuaikan.`)) {
+      try {
+        await deletePurchase(purchase.id, purchase);
+        toast.success("PO berhasil dihapus");
+      } catch (err) {
+        toast.error("Gagal: " + err.message);
+      }
+    }
+  }
+
+  async function handlePayment() {
+    if (!payModal) return;
+    const amount = parseFloat(parseInputNumber(payAmount));
+    if (!amount || amount <= 0 || amount > payModal.sisaHutang) return toast.error("Nominal tidak valid");
+    setProcessing(true);
     try {
-      await deletePurchase(purchase.id, purchase);
-      toast.success("Data PO berhasil dihapus dan direkonsiliasi");
+      await payFactoryDebt(payModal.id, amount);
+      toast.success(`Pembayaran ${formatRupiah(amount)} berhasil!`);
+      setPayModal(null);
+      setPayAmount("");
     } catch (err) {
-      toast.error("Gagal menghapus: " + err.message);
+      toast.error("Gagal: " + err.message);
+    } finally {
+      setProcessing(false);
     }
   }
 
@@ -104,7 +125,12 @@ export default function POHistory({ purchases }) {
                       {formatRupiah(p.sisaHutang)}
                     </td>
                     <td>
-                      <div className="flex justify-center">
+                      <div className="flex justify-center gap-2">
+                        {p.sisaHutang > 0 && (
+                          <button onClick={() => setPayModal(p)} className="btn-emerald text-[10px] py-1 px-2">
+                            Bayar
+                          </button>
+                        )}
                         <button onClick={() => handleDelete(p)} className="p-2 rounded-lg hover:bg-rose-500/10 text-slate-500 hover:text-rose-400 transition-colors">
                           <HiOutlineTrash size={16} />
                         </button>
@@ -117,6 +143,26 @@ export default function POHistory({ purchases }) {
           </tbody>
         </table>
       </div>
+
+      {payModal && (
+        <div className="modal-overlay" onClick={() => setPayModal(null)}>
+          <div className="modal-content max-w-md" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-base font-bold text-white mb-2">Bayar Hutang Pabrik</h3>
+            <p className="text-xs text-slate-400 mb-5">Sisa Hutang: {formatRupiah(payModal.sisaHutang)}</p>
+            <input 
+              type="text" 
+              value={formatInputNumber(payAmount)} 
+              onChange={(e) => setPayAmount(parseInputNumber(e.target.value))} 
+              placeholder="Nominal Cicilan (Rp)" 
+              className="input-field mb-5" 
+            />
+            <div className="flex items-center gap-3">
+              <button onClick={() => setPayModal(null)} className="btn-ghost flex-1">Batal</button>
+              <button onClick={handlePayment} disabled={processing} className="btn-primary flex-1">Simpan</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
