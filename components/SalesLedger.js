@@ -292,7 +292,7 @@ export default function SalesLedger({ teams, products }) {
       {/* ── MODAL DETAIL DISTRIBUSI ── */}
       {detailModal && (
         <div className="modal-overlay" onClick={() => setDetailModal(null)}>
-          <div className="modal-content max-w-2xl" onClick={(e) => e.stopPropagation()}>
+          <div className="modal-content max-w-4xl" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-violet-500/10 flex items-center justify-center">
@@ -314,7 +314,7 @@ export default function SalesLedger({ teams, products }) {
                   Belum ada riwayat distribusi untuk tim ini.
                 </p>
               ) : (
-                <table className="w-full text-left border-collapse min-w-[600px]">
+                <table className="w-full text-left border-collapse min-w-[700px]">
                   <thead>
                     <tr className="text-[10px] uppercase tracking-wider text-slate-500 border-b border-slate-400/10">
                       <th className="py-3 font-semibold">Tgl</th>
@@ -325,28 +325,42 @@ export default function SalesLedger({ teams, products }) {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-400/5">
-                    {distributions.map((d) => (
-                      <tr key={d.id} className="text-xs hover:bg-white/5 transition-colors">
-                        <td className="py-3 text-slate-400">
-                          {d.createdAt?.toDate().toLocaleDateString("id-ID", {
-                            day: "2-digit",
-                            month: "short"
-                          })}
-                        </td>
-                        <td className="py-3 font-medium text-white">
-                          {d.productName}
-                        </td>
-                        <td className="py-3 text-center text-slate-300">
-                          {d.qtyOriginal} <span className="text-[10px] text-slate-500">{d.unit}</span>
-                        </td>
-                        <td className="py-3 text-right text-slate-400">
-                          {formatRupiah(d.pricePerPack || 0)}
-                        </td>
-                        <td className="py-3 text-right font-bold text-emerald-400">
-                          {formatRupiah(d.amount)}
-                        </td>
-                      </tr>
-                    ))}
+                    {distributions.map((d) => {
+                      // Hitung fallback harga jika data lama (pricePerPack kosong)
+                      let displayPrice = d.pricePerPack || 0;
+                      if (!displayPrice && d.amount && d.qtyOriginal) {
+                        const product = products.find(p => p.name === d.productName);
+                        const packsPerSlop = product?.packsPerSlop || 10;
+                        const totalPacks = d.unit === "Ct" 
+                          ? d.qtyOriginal * (packsPerSlop * (product?.slopsPerBall || 20) * (product?.ballsPerKarton || 5))
+                          : d.qtyOriginal * packsPerSlop;
+                        displayPrice = d.amount / totalPacks;
+                      }
+
+                      return (
+                        <tr key={d.id} className="text-xs hover:bg-white/5 transition-colors">
+                          <td className="py-3 text-slate-400 whitespace-nowrap">
+                            {d.createdAt?.toDate().toLocaleDateString("id-ID", {
+                              day: "2-digit",
+                              month: "short",
+                              year: "2-digit"
+                            })}
+                          </td>
+                          <td className="py-3 font-medium text-white">
+                            {d.productName}
+                          </td>
+                          <td className="py-3 text-center text-slate-300">
+                            {formatNumber(d.qtyOriginal)} <span className="text-[10px] text-slate-500">{d.unit}</span>
+                          </td>
+                          <td className="py-3 text-right text-slate-400 font-mono">
+                            {formatRupiah(displayPrice)}
+                          </td>
+                          <td className="py-3 text-right font-bold text-emerald-400 font-mono">
+                            {formatRupiah(d.amount)}
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               )}
