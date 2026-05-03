@@ -1,243 +1,212 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Toaster } from "react-hot-toast";
 import Sidebar from "@/components/Sidebar";
 import SummaryCards from "@/components/SummaryCards";
 import FactoryPOForm from "@/components/FactoryPOForm";
 import POHistory from "@/components/POHistory";
-import ReturnsForm from "@/components/ReturnsForm";
 import SalesLedger from "@/components/SalesLedger";
 import StockInventory from "@/components/StockInventory";
-import {
-  subscribeSummary,
+import ReturnGoods from "@/components/ReturnGoods";
+import Settings from "@/components/Settings";
+import { HiOutlineCube, HiOutlineInformationCircle, HiOutlineRefresh } from "react-icons/hi";
+import { 
+  subscribeProducts, 
+  subscribeSummary, 
   subscribeInventory,
+  subscribePurchases,
   subscribeSalesTeams,
-  subscribeProducts,
-  seedSalesTeams,
-  seedProducts,
+  subscribeReturns,
+  syncProductPacks,
+  recalculateSummary
 } from "@/lib/firestore";
+import toast from "react-hot-toast";
 
-const sectionTitles = {
-  dashboard: "Ringkasan Dashboard",
-  po: "Purchase Order Pabrik",
-  "po-history": "Riwayat PO Pabrik",
-  stock: "Stok Barang",
-  sales: "Buku Besar Penjualan",
-  inventory: "Manajemen Inventaris",
-  returns: "Retur Barang",
-  settings: "Pengaturan",
-};
-
-export default function DashboardPage() {
+export default function Home() {
   const [activeSection, setActiveSection] = useState("dashboard");
+  const [isRecalculating, setIsRecalculating] = useState(false);
+  const [products, setProducts] = useState([]);
   const [summary, setSummary] = useState({
     totalAssets: 0,
     factoryDebt: 0,
     salesReceivables: 0,
   });
   const [inventory, setInventory] = useState({ totalCartons: 0 });
-  const [salesTeams, setSalesTeams] = useState([]);
-  const [products, setProducts] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [purchases, setPurchases] = useState([]);
+  const [teams, setTeams] = useState([]);
+  const [returns, setReturns] = useState([]);
 
   useEffect(() => {
-    // Seed data awal jika kosong
-    seedSalesTeams().catch(console.error);
-    seedProducts().catch(console.error);
-
-    // Subscribe real-time
-    const unsubSummary = subscribeSummary((data) => {
-      setSummary(data);
-      setLoading(false);
-    });
-
-    const unsubInventory = subscribeInventory((data) => {
-      setInventory(data);
-    });
-
-    const unsubSales = subscribeSalesTeams((data) => {
-      setSalesTeams(data);
-    });
-
     const unsubProducts = subscribeProducts((data) => {
       setProducts(data);
-      // Sinkronkan data lama jika perlu
       syncProductPacks(data).catch(console.error);
     });
+    const unsubSummary = subscribeSummary(setSummary);
+    const unsubInventory = subscribeInventory(setInventory);
+    const unsubPurchases = subscribePurchases(setPurchases);
+    const unsubTeams = subscribeSalesTeams(setTeams);
+    const unsubReturns = subscribeReturns(setReturns);
 
     return () => {
+      unsubProducts();
       unsubSummary();
       unsubInventory();
-      unsubSales();
-      unsubProducts();
+      unsubPurchases();
+      unsubTeams();
+      unsubReturns();
     };
   }, []);
 
-  return (
-    <div className="flex h-screen overflow-hidden">
-      <Toaster
-        position="top-right"
-        toastOptions={{
-          style: {
-            background: "#1a2332",
-            color: "#e2e8f0",
-            border: "1px solid rgba(148, 163, 184, 0.1)",
-            borderRadius: "12px",
-            fontSize: "0.875rem",
-          },
-          success: {
-            iconTheme: { primary: "#10b981", secondary: "#fff" },
-          },
-          error: {
-            iconTheme: { primary: "#f43f5e", secondary: "#fff" },
-          },
-        }}
-      />
+  async function handleRecalculate() {
+    setIsRecalculating(true);
+    try {
+      await recalculateSummary();
+      toast.success("Dashboard berhasil diperbarui!");
+    } catch (err) {
+      toast.error("Gagal memperbarui: " + err.message);
+    } finally {
+      setIsRecalculating(false);
+    }
+  }
 
-      {/* Sidebar */}
-      <Sidebar activeSection={activeSection} onNavigate={setActiveSection} />
+  // Helper untuk format stok Karton - Slop
+  function formatStockDetailed(cartons, product) {
+    if (!product) return "0 Ct";
+    const slopsPerKarton = (product.slopsPerBall || 20) * (product.ballsPerKarton || 5);
+    
+    const fullCartons = Math.floor(cartons);
+    const remainingCartons = cartons - fullCartons;
+    const remainingSlops = Math.round(remainingCartons * slopsPerKarton);
+    
+    if (fullCartons === 0 && remainingSlops > 0) return `${remainingSlops} Slop`;
+    if (remainingSlops === 0) return `${fullCartons} Ct`;
+    return `${fullCartons} Ct - ${remainingSlops} Slop`;
+  }
 
-      {/* Konten Utama */}
-      <main className="flex-1 overflow-y-auto">
-        {/* Top bar */}
-        <header className="sticky top-0 z-30 backdrop-blur-xl bg-dark-900/80 border-b border-slate-400/8 px-6 md:px-8 py-4">
-          <div className="flex items-center justify-between">
-            <div className="ml-10 md:ml-0">
-              <h1 className="text-xl font-bold text-white">
-                {sectionTitles[activeSection] || "Dashboard"}
-              </h1>
-              <p className="text-xs text-slate-400 mt-0.5">
-                {new Date().toLocaleDateString("id-ID", {
-                  weekday: "long",
-                  day: "numeric",
-                  month: "long",
-                  year: "numeric",
-                })}
-              </p>
-            </div>
-            <div className="flex items-center gap-3">
-              <button 
-                onClick={handleRecalculate}
-                disabled={isRecalculating}
-                className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-dark-700 hover:bg-dark-600 border border-slate-400/10 text-slate-400 text-xs transition-all shadow-lg active:scale-95"
-              >
-                <HiOutlineRefresh className={isRecalculating ? "animate-spin" : ""} size={14} />
-                <span>{isRecalculating ? "Memperbarui..." : "Reset Dashboard"}</span>
-              </button>
-              <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20">
-                <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                <span className="text-xs font-medium text-emerald-400">
-                  Sinkron Aktif
-                </span>
+  function renderContent() {
+    switch (activeSection) {
+      case "dashboard":
+        return (
+          <div className="space-y-8 animate-fadeIn">
+            <SummaryCards summary={summary} products={products} />
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              <div className="glass-card p-6">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center">
+                    <HiOutlineCube className="text-blue-400" size={22} />
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-bold text-white">Stok Gudang per Produk</h2>
+                    <p className="text-xs text-slate-400">Rincian sisa barang di gudang</p>
+                  </div>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="data-table">
+                    <thead>
+                      <tr>
+                        <th>Produk</th>
+                        <th className="text-center">Konversi</th>
+                        <th className="text-right">Sisa Stok</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-400/5">
+                      {products.map((p) => (
+                        <tr key={p.id}>
+                          <td className="font-medium text-white">{p.name}</td>
+                          <td className="text-center text-[10px] text-slate-500">
+                            1 Ct = {(p.slopsPerBall || 20) * (p.ballsPerKarton || 5)} Slop
+                          </td>
+                          <td className="text-right font-bold text-emerald-400">
+                            {formatStockDetailed(p.stockCartons || 0, p)}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+              <div className="glass-card p-6 bg-gradient-to-br from-violet-500/5 to-transparent">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="w-10 h-10 rounded-xl bg-violet-500/10 flex items-center justify-center">
+                    <HiOutlineInformationCircle className="text-violet-400" size={22} />
+                  </div>
+                  <h2 className="text-lg font-bold text-white">Panduan Satuan</h2>
+                </div>
+                <div className="space-y-4 text-xs text-slate-400">
+                  <div className="p-4 rounded-xl bg-dark-800/50 border border-slate-400/5">
+                    <p className="text-sm font-semibold text-white mb-1">Satuan Distribusi</p>
+                    <ul className="space-y-1">
+                      <li>• 1 Karton (Ct) = Mengikuti konversi produk</li>
+                      <li>• 1 Bal = 10 Slop</li>
+                      <li>• 1 Slop = Isi pack produk</li>
+                    </ul>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
-        </header>
+        );
+      case "po":
+        return (
+          <>
+            <SummaryCards summary={summary} products={products} />
+            <FactoryPOForm products={products} />
+          </>
+        );
+      case "po-history":
+        return (
+          <>
+            <SummaryCards summary={summary} products={products} />
+            <POHistory purchases={purchases} />
+          </>
+        );
+      case "stock":
+        return <StockInventory products={products} />;
+      case "sales":
+        return (
+          <>
+            <SummaryCards summary={summary} products={products} />
+            <SalesLedger teams={teams} products={products} />
+          </>
+        );
+      case "inventory":
+        return (
+          <>
+            <SummaryCards summary={summary} products={products} />
+            <div className="glass-card p-12 text-center text-slate-400 italic">
+              Modul Inventaris Detail sedang dalam pengembangan.
+            </div>
+          </>
+        );
+      case "returns":
+        return (
+          <>
+            <SummaryCards summary={summary} products={products} />
+            <ReturnGoods products={products} returns={returns} />
+          </>
+        );
+      case "settings":
+        return <Settings onRecalculate={handleRecalculate} isRecalculating={isRecalculating} />;
+      default:
+        return null;
+    }
+  }
 
-        {/* Area konten */}
-        <div className="p-6 md:p-8 space-y-6">
-          {loading ? (
-            <LoadingSkeleton />
-          ) : (
-            <>
-              {/* Dashboard: tampilkan semua */}
-              {activeSection === "dashboard" && (
-                <>
-                  <SummaryCards summary={summary} products={products} />
-                  <div className="grid grid-cols-1 gap-6">
-                    <FactoryPOForm products={products} />
-                    <SalesLedger teams={salesTeams} products={products} />
-                  </div>
-                </>
-              )}
-
-              {/* PO Pabrik */}
-              {activeSection === "po" && (
-                <>
-                  <SummaryCards summary={summary} products={products} />
-                  <FactoryPOForm products={products} />
-                </>
-              )}
-
-              {/* Riwayat PO */}
-              {activeSection === "po-history" && (
-                <>
-                  <SummaryCards summary={summary} products={products} />
-                  <POHistory />
-                </>
-              )}
-
-              {/* Buku Penjualan */}
-              {activeSection === "sales" && (
-                <>
-                  <SummaryCards summary={summary} products={products} />
-                  <SalesLedger teams={salesTeams} products={products} />
-                </>
-              )}
-
-              {/* Stok Barang */}
-              {activeSection === "stock" && (
-                <StockInventory products={products} />
-              )}
-
-              {/* Inventaris */}
-              {activeSection === "inventory" && (
-                <>
-                  <SummaryCards summary={summary} inventory={inventory} />
-                  <div className="glass-card p-10 text-center">
-                    <p className="text-slate-400 text-sm">
-                      📦 Modul Inventaris detail akan segera hadir.
-                    </p>
-                  </div>
-                </>
-              )}
-
-              {/* Retur Barang */}
-              {activeSection === "returns" && (
-                <>
-                  <SummaryCards summary={summary} products={products} />
-                  <ReturnsForm products={products} />
-                </>
-              )}
-
-              {/* Pengaturan */}
-              {activeSection === "settings" && (
-                <div className="glass-card p-10 text-center">
-                  <p className="text-slate-400 text-sm">
-                    ⚙️ Modul Pengaturan akan segera hadir.
-                  </p>
-                </div>
-              )}
-            </>
-          )}
-        </div>
-      </main>
-    </div>
-  );
-}
-
-function LoadingSkeleton() {
   return (
-    <div className="space-y-6 animate-pulse">
-      {/* Skeleton kartu */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5">
-        {[1, 2, 3, 4].map((i) => (
-          <div key={i} className="glass-card p-5 h-[100px]">
-            <div className="h-3 w-24 bg-dark-600 rounded mb-3" />
-            <div className="h-6 w-36 bg-dark-600 rounded" />
+    <div className="flex min-h-screen bg-dark-900">
+      <Sidebar activeSection={activeSection} onNavigate={setActiveSection} />
+      <main className="flex-1 p-8 overflow-y-auto">
+        <header className="mb-8 flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-white capitalize">{activeSection.replace("-", " ")}</h1>
+            <p className="text-slate-400">{new Date().toLocaleDateString("id-ID", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}</p>
           </div>
-        ))}
-      </div>
-      {/* Skeleton tabel */}
-      <div className="glass-card p-6 h-[300px]">
-        <div className="h-4 w-48 bg-dark-600 rounded mb-6" />
-        <div className="space-y-4">
-          {[1, 2, 3].map((i) => (
-            <div key={i} className="h-3 bg-dark-600 rounded w-full" />
-          ))}
-        </div>
-      </div>
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[10px] font-bold uppercase tracking-wider">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span> Sinkron Aktif
+          </div>
+        </header>
+        {renderContent()}
+      </main>
     </div>
   );
 }
