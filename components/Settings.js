@@ -1,8 +1,32 @@
 "use client";
 
-import { HiRefresh, HiShieldCheck, HiDatabase } from "react-icons/hi";
+import { useState } from "react";
+import { HiOutlineShieldCheck, HiOutlineRefresh, HiOutlineDatabase, HiDatabase, HiRefresh, HiShieldCheck } from "react-icons/hi";
+import { factoryResetDatabase } from "@/lib/firestore";
+import toast from "react-hot-toast";
 
 export default function Settings({ onRecalculate, isRecalculating }) {
+  const [isResetting, setIsResetting] = useState(false);
+
+  async function handleFactoryReset() {
+    const confirm1 = confirm("⚠️ PERINGATAN BAHAYA ⚠️\nApakah Anda yakin ingin MENGHAPUS SEMUA DATA transaksi, produk, dan tim? Ini tidak bisa dibatalkan.");
+    if (!confirm1) return;
+    
+    const confirm2 = confirm("Anda yakin? Database akan benar-benar dikosongkan untuk testing baru.");
+    if (!confirm2) return;
+    
+    setIsResetting(true);
+    try {
+      await factoryResetDatabase();
+      toast.success("DATABASE BERHASIL DIKOSONGKAN TOTAL!");
+      if (onRecalculate) await onRecalculate(); // Segarkan angka di header
+    } catch (err) {
+      toast.error("Gagal mereset: " + err.message);
+    } finally {
+      setIsResetting(false);
+    }
+  }
+
   return (
     <div className="max-w-4xl mx-auto space-y-6 animate-fadeIn">
       <div className="glass-card p-6">
@@ -55,6 +79,36 @@ export default function Settings({ onRecalculate, isRecalculating }) {
             <p className="text-[10px] text-slate-500 uppercase mb-1">Versi Aplikasi</p>
             <p className="text-sm font-medium text-white">v1.2.0-MVP</p>
           </div>
+        </div>
+      </div>
+
+      {/* DANGER ZONE */}
+      <div className="glass-card p-6 border border-rose-500/20">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="w-10 h-10 rounded-xl bg-rose-500/10 flex items-center justify-center text-rose-400">
+            <HiDatabase size={24} />
+          </div>
+          <div>
+            <h2 className="text-lg font-bold text-rose-400">Zona Berbahaya (Danger Zone)</h2>
+            <p className="text-xs text-rose-400/70">Tindakan ini tidak dapat dibatalkan</p>
+          </div>
+        </div>
+        
+        <div className="p-5 rounded-2xl bg-rose-500/5 border border-rose-500/10 flex items-center justify-between gap-6">
+          <div className="flex-1">
+            <h3 className="text-sm font-semibold text-white mb-1">Factory Reset (Kosongkan Database)</h3>
+            <p className="text-xs text-rose-400/80 leading-relaxed">
+              Hapus SELURUH data produk, PO pabrik, stok, tim sales, dan riwayat transaksi. 
+              Gunakan hanya jika Anda ingin memulai aplikasi dari nol (fresh start).
+            </p>
+          </div>
+          <button 
+            onClick={handleFactoryReset}
+            disabled={isResetting || isRecalculating}
+            className="flex-shrink-0 px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-sm font-bold transition-all shadow-lg shadow-rose-500/20 disabled:opacity-50"
+          >
+            {isResetting ? "Menghapus..." : "Hapus Semua Data"}
+          </button>
         </div>
       </div>
     </div>
