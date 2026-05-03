@@ -18,7 +18,7 @@ const navItems = [
   { icon: HiOutlineDocumentText, label: "PO Pabrik", id: "po" },
   { icon: HiOutlineClipboardList, label: "Riwayat PO", id: "po-history" },
   { icon: HiOutlineCube, label: "Stok Barang", id: "stock" },
-  { icon: HiOutlineTrendingUp, label: "Laba Rugi", id: "profit-loss" },
+  { icon: HiOutlineTrendingUp, label: "Laba Rugi", id: "laba-rugi" },
   { icon: HiOutlineUserGroup, label: "Buku Penjualan", id: "sales" },
   { icon: HiOutlineCube, label: "Inventaris", id: "inventory" },
   { icon: HiOutlineReply, label: "Retur Barang", id: "returns" },

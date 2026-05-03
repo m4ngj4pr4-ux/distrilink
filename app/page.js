@@ -165,7 +165,7 @@ export default function DashboardPage() {
             </div>
           </div>
         );
-      case "profit-loss":
+      case "laba-rugi":
         return (
           <div className="space-y-8 animate-fadeIn">
             <SummaryCards summary={summary} products={products} />
