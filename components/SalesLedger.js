@@ -308,33 +308,55 @@ export default function SalesLedger({ teams, products }) {
               </button>
             </div>
 
-            <div className="overflow-y-auto max-h-[60vh] space-y-3 pr-2">
+            <div className="overflow-x-auto">
               {distributions.length === 0 ? (
-                <p className="text-center py-10 text-slate-500 text-sm italic">Belum ada riwayat distribusi untuk tim ini.</p>
+                <p className="text-center py-10 text-slate-500 text-sm italic">
+                  Belum ada riwayat distribusi untuk tim ini.
+                </p>
               ) : (
-                distributions.map((d) => (
-                  <div key={d.id} className="bg-dark-800/50 rounded-xl p-4 border border-slate-400/5 flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center text-blue-400">
-                        <HiOutlineCube size={20} />
-                      </div>
-                      <div>
-                        <p className="text-sm font-bold text-white">{d.productName}</p>
-                        <p className="text-[11px] text-slate-500 flex items-center gap-1">
-                          <HiOutlineCalendar size={12} />
-                          {d.createdAt?.toDate().toLocaleDateString("id-ID", { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-sm font-bold text-emerald-400">{formatRupiah(d.amount)}</p>
-                      <p className="text-[11px] text-slate-400">
-                        {d.qtyOriginal} {d.unit} {d.pricePerPack ? `@ ${formatRupiah(d.pricePerPack)}` : ""}
-                      </p>
-                    </div>
-                  </div>
-                ))
+                <table className="w-full text-left border-collapse min-w-[600px]">
+                  <thead>
+                    <tr className="text-[10px] uppercase tracking-wider text-slate-500 border-b border-slate-400/10">
+                      <th className="py-3 font-semibold">Tgl</th>
+                      <th className="py-3 font-semibold">Produk</th>
+                      <th className="py-3 font-semibold text-center">Qty</th>
+                      <th className="py-3 font-semibold text-right">Harga/Pk</th>
+                      <th className="py-3 font-semibold text-right text-emerald-400">Total Nilai</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-400/5">
+                    {distributions.map((d) => (
+                      <tr key={d.id} className="text-xs hover:bg-white/5 transition-colors">
+                        <td className="py-3 text-slate-400">
+                          {d.createdAt?.toDate().toLocaleDateString("id-ID", {
+                            day: "2-digit",
+                            month: "short"
+                          })}
+                        </td>
+                        <td className="py-3 font-medium text-white">
+                          {d.productName}
+                        </td>
+                        <td className="py-3 text-center text-slate-300">
+                          {d.qtyOriginal} <span className="text-[10px] text-slate-500">{d.unit}</span>
+                        </td>
+                        <td className="py-3 text-right text-slate-400">
+                          {formatRupiah(d.pricePerPack || 0)}
+                        </td>
+                        <td className="py-3 text-right font-bold text-emerald-400">
+                          {formatRupiah(d.amount)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               )}
+            </div>
+            
+            <div className="mt-6 pt-4 border-t border-slate-400/10 flex justify-between items-center">
+              <span className="text-xs text-slate-400">Total Piutang Berjalan Tim:</span>
+              <span className="text-sm font-bold text-amber-400">
+                {formatRupiah((detailModal.goodsDropped || 0) - (detailModal.totalDeposited || 0))}
+              </span>
             </div>
           </div>
         </div>
