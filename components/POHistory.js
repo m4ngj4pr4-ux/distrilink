@@ -203,9 +203,3 @@ export default function POHistory() {
     </div>
   );
 }
-
-        </table>
-      </div>
-    </div>
-  );
-}
