@@ -18,7 +18,7 @@ import {
 } from "@/lib/firestore";
 import toast from "react-hot-toast";
 
-export default function SalesLedger({ teams }) {
+export default function SalesLedger({ teams, products }) {
   const [depositModal, setDepositModal] = useState(null);
   const [dropModal, setDropModal] = useState(null);
   const [addTeamModal, setAddTeamModal] = useState(false);
