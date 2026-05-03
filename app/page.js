@@ -17,6 +17,7 @@ import {
   subscribePurchases,
   subscribeSalesTeams,
   subscribeReturns,
+  subscribeAllDistributions,
   syncProductPacks,
   recalculateSummary
 } from "@/lib/firestore";
@@ -35,6 +36,7 @@ export default function DashboardPage() {
   const [purchases, setPurchases] = useState([]);
   const [teams, setTeams] = useState([]);
   const [returns, setReturns] = useState([]);
+  const [allDistributions, setAllDistributions] = useState([]);
 
   useEffect(() => {
     const unsubProducts = subscribeProducts((data) => {
@@ -46,6 +48,7 @@ export default function DashboardPage() {
     const unsubPurchases = subscribePurchases(setPurchases);
     const unsubTeams = subscribeSalesTeams(setTeams);
     const unsubReturns = subscribeReturns(setReturns);
+    const unsubAllDist = subscribeAllDistributions(setAllDistributions);
 
     return () => {
       unsubProducts();
@@ -54,6 +57,7 @@ export default function DashboardPage() {
       unsubPurchases();
       unsubTeams();
       unsubReturns();
+      unsubAllDist();
     };
   }, []);
 
@@ -158,6 +162,91 @@ export default function DashboardPage() {
                     )}
                   </tbody>
                 </table>
+              </div>
+            </div>
+          </div>
+        );
+      case "profit-loss":
+        // Hitung Laba Kotor (Revenue - HPP)
+        let totalRevenue = 0;
+        let totalHPPValue = 0;
+
+        allDistributions.forEach((dist) => {
+          totalRevenue += (dist.amount || 0);
+          
+          const product = products.find(p => p.id === dist.productId);
+          const hppPerPack = product?.lastHPP || 0;
+          totalHPPValue += (hppPerPack * (dist.totalPacksDistributed || 0));
+        });
+
+        const grossProfit = totalRevenue - totalHPPValue;
+
+        return (
+          <div className="space-y-8 animate-fadeIn">
+            <SummaryCards summary={summary} products={products} />
+            
+            <div className="glass-card p-8">
+              <div className="flex items-center gap-3 mb-8">
+                <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 flex items-center justify-center">
+                  <HiTrendingUp className="text-emerald-400" size={28} />
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold text-white">Laporan Laba Rugi</h2>
+                  <p className="text-sm text-slate-400">Analisa keuntungan kotor dari seluruh distribusi</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="bg-dark-800/50 p-6 rounded-2xl border border-white/5">
+                  <p className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-2">Total Penjualan</p>
+                  <p className="text-2xl font-bold text-white font-mono">{formatRupiah(totalRevenue)}</p>
+                </div>
+                <div className="bg-dark-800/50 p-6 rounded-2xl border border-white/5">
+                  <p className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-2">Total COGS (HPP)</p>
+                  <p className="text-2xl font-bold text-slate-400 font-mono">{formatRupiah(totalHPPValue)}</p>
+                </div>
+                <div className="bg-emerald-500/10 p-6 rounded-2xl border border-emerald-500/20">
+                  <p className="text-xs font-medium text-emerald-500/60 uppercase tracking-wider mb-2">Laba Kotor (Gross Profit)</p>
+                  <p className="text-2xl font-bold text-emerald-400 font-mono">{formatRupiah(grossProfit)}</p>
+                </div>
+              </div>
+
+              <div className="mt-10">
+                <h3 className="text-sm font-bold text-white mb-4">Rincian Per Produk</h3>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="text-[10px] uppercase tracking-wider text-slate-500 border-b border-slate-400/10 bg-dark-800/30">
+                        <th className="py-3 px-4 font-semibold text-left">Produk</th>
+                        <th className="py-3 px-4 font-semibold text-right">Qty Terjual</th>
+                        <th className="py-3 px-4 font-semibold text-right">Revenue</th>
+                        <th className="py-3 px-4 font-semibold text-right text-emerald-400">Est. Profit</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-400/5 text-xs">
+                      {products.map(p => {
+                        const dists = allDistributions.filter(d => d.productId === p.id);
+                        const qty = dists.reduce((sum, d) => sum + (d.totalPacksDistributed || 0), 0);
+                        const rev = dists.reduce((sum, d) => sum + (d.amount || 0), 0);
+                        const cost = qty * (p.lastHPP || 0);
+                        const prof = rev - cost;
+
+                        if (qty === 0) return null;
+
+                        return (
+                          <tr key={p.id} className="hover:bg-white/5 transition-colors">
+                            <td className="py-3 px-4 font-bold text-white">{p.name}</td>
+                            <td className="py-3 px-4 text-right font-mono text-slate-400">{qty.toLocaleString("id-ID")} Pk</td>
+                            <td className="py-3 px-4 text-right font-mono text-slate-300">{formatRupiah(rev)}</td>
+                            <td className={`py-3 px-4 text-right font-bold font-mono ${prof >= 0 ? "text-emerald-400" : "text-rose-400"}`}>
+                              {formatRupiah(prof)}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
           </div>
