@@ -64,6 +64,13 @@ export default function SalesLedger({ teams, products }) {
     if (!depositModal) return;
     const amount = parseFloat(parseInputNumber(depositAmount));
     if (!amount || amount <= 0) return toast.error("Masukkan jumlah setoran");
+
+    // VALIDASI: Cek sisa piutang
+    const currentBalance = (depositModal.goodsDropped || 0) - (depositModal.totalDeposited || 0);
+    if (amount > currentBalance) {
+      return toast.error(`Gagal: Setoran melebihi sisa piutang (Maks: ${formatRupiah(currentBalance)})`);
+    }
+
     setProcessing(true);
     try {
       await addDepositTransaction(depositModal.id, amount);
@@ -272,10 +279,12 @@ export default function SalesLedger({ teams, products }) {
                         <HiOutlineCash size={12} />
                         <span>Distribusi</span>
                       </button>
-                      <button onClick={() => setDepositModal(team)} className="btn-emerald text-[10px] py-1 px-2" title="Tambah setoran">
-                        <HiOutlinePlus size={12} />
-                        <span>Setor</span>
-                      </button>
+                      {balance > 0 && (
+                        <button onClick={() => setDepositModal(team)} className="btn-emerald text-[10px] py-1 px-2" title="Tambah setoran">
+                          <HiOutlinePlus size={12} />
+                          <span>Setor</span>
+                        </button>
+                      )}
                       <button onClick={() => handleDeleteTeam(team)} className="p-2 rounded-lg hover:bg-rose-500/10 text-slate-500 hover:text-rose-400">
                         <HiOutlineTrash size={16} />
                       </button>
@@ -477,7 +486,10 @@ export default function SalesLedger({ teams, products }) {
       {depositModal && (
         <div className="modal-overlay" onClick={() => setDepositModal(null)}>
           <div className="modal-content max-w-md" onClick={(e) => e.stopPropagation()}>
-            <h3 className="text-base font-bold text-white mb-5">Tambah Setoran - {depositModal.name}</h3>
+            <h3 className="text-base font-bold text-white mb-2">Tambah Setoran - {depositModal.name}</h3>
+            <p className="text-xs text-amber-400 font-mono mb-5">
+              Sisa Piutang: {formatRupiah((depositModal.goodsDropped || 0) - (depositModal.totalDeposited || 0))}
+            </p>
             <input 
               type="text" 
               value={formatInputNumber(depositAmount)} 
