@@ -14,6 +14,7 @@ import {
   addGoodsDropTransaction,
   addSalesTeam,
   deleteSalesTeam,
+  getLastPurchase,
   incrementSummaryField,
 } from "@/lib/firestore";
 import toast from "react-hot-toast";
@@ -25,6 +26,7 @@ export default function SalesLedger({ teams, products }) {
   const [depositAmount, setDepositAmount] = useState("");
   const [dropAmount, setDropAmount] = useState("");
   const [dropQty, setDropQty] = useState("");
+  const [dropUnit, setDropUnit] = useState("Ct"); // Ct atau Slop
   const [selectedProductId, setSelectedProductId] = useState("");
   const [newTeamName, setNewTeamName] = useState("");
   const [processing, setProcessing] = useState(false);
@@ -58,13 +60,21 @@ export default function SalesLedger({ teams, products }) {
   async function handleGoodsDrop() {
     if (!dropModal) return;
     const amount = parseFloat(dropAmount);
-    const qty = parseInt(dropQty);
+    const qty = parseFloat(dropQty);
     
     if (!selectedProductId) return toast.error("Pilih produk");
-    if (!qty || qty <= 0) return toast.error("Masukkan jumlah karton");
+    if (!qty || qty <= 0) return toast.error("Masukkan jumlah");
     if (!amount || amount <= 0) return toast.error("Nilai barang tidak valid");
 
     const product = products.find(p => p.id === selectedProductId);
+    
+    // Konversi ke Karton untuk stok
+    let cartonQty = qty;
+    if (dropUnit === "Slop") {
+      const slopsPerBall = product.slopsPerBall || 20;
+      const ballsPerKarton = product.ballsPerKarton || 5;
+      cartonQty = qty / (slopsPerBall * ballsPerKarton);
+    }
 
     setProcessing(true);
     try {
@@ -73,12 +83,14 @@ export default function SalesLedger({ teams, products }) {
         teamName: dropModal.name,
         productId: selectedProductId,
         productName: product.name,
-        jumlahKarton: qty,
+        jumlahKarton: cartonQty,
         amount: amount,
+        unit: dropUnit,
+        qtyOriginal: qty,
       });
 
       toast.success(
-        `Barang turun ${product.name} (${qty} Ktn) untuk ${dropModal.name} berhasil!`
+        `Barang turun ${product.name} (${qty} ${dropUnit}) untuk ${dropModal.name} berhasil!`
       );
       setDropModal(null);
       setDropAmount("");
@@ -88,6 +100,34 @@ export default function SalesLedger({ teams, products }) {
       toast.error("Gagal: " + err.message);
     } finally {
       setProcessing(false);
+    }
+  }
+
+  // Fungsi helper untuk hitung harga otomatis
+  async function updateCalculatedPrice(prodId, qty, unit) {
+    if (!prodId || !qty) return;
+    const product = products.find(p => p.id === prodId);
+    if (!product) return;
+
+    try {
+      const lastPO = await getLastPurchase(product.name);
+      if (lastPO && lastPO.targetHargaJual) {
+        const packsPerSlop = product.packsPerSlop || 10;
+        const slopsPerBall = product.slopsPerBall || 20;
+        const ballsPerKarton = product.ballsPerKarton || 5;
+        
+        let totalPacks = 0;
+        if (unit === "Ct") {
+          totalPacks = qty * (packsPerSlop * slopsPerBall * ballsPerKarton);
+        } else {
+          totalPacks = qty * packsPerSlop;
+        }
+
+        const totalValue = totalPacks * lastPO.targetHargaJual;
+        setDropAmount(Math.round(totalValue).toString());
+      }
+    } catch (err) {
+      console.error("Error auto price:", err);
     }
   }
 
@@ -372,8 +412,7 @@ export default function SalesLedger({ teams, products }) {
                   onChange={(e) => {
                     const prodId = e.target.value;
                     setSelectedProductId(prodId);
-                    // Opsi: Auto fill harga jika ada data targetHargaJual
-                    // Tapi di SalesLedger kita mungkin butuh input manual atau sistem pintar
+                    updateCalculatedPrice(prodId, dropQty, dropUnit);
                   }}
                   className="input-field w-full"
                 >
@@ -386,19 +425,41 @@ export default function SalesLedger({ teams, products }) {
                 </select>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-medium text-slate-400 mb-1.5">
-                    Jumlah (Karton)
-                  </label>
-                  <input
-                    type="number"
-                    value={dropQty}
-                    onChange={(e) => setDropQty(e.target.value)}
-                    placeholder="mis. 1"
-                    className="input-field"
-                    min="1"
-                  />
+              <div className="grid grid-cols-2 gap-3">
+                <div className="flex gap-2">
+                  <div className="flex-1">
+                    <label className="block text-xs font-medium text-slate-400 mb-1.5">
+                      Jumlah
+                    </label>
+                    <input
+                      type="number"
+                      value={dropQty}
+                      onChange={(e) => {
+                        setDropQty(e.target.value);
+                        updateCalculatedPrice(selectedProductId, e.target.value, dropUnit);
+                      }}
+                      placeholder="mis. 1"
+                      className="input-field"
+                      min="1"
+                      step="any"
+                    />
+                  </div>
+                  <div className="w-24">
+                    <label className="block text-xs font-medium text-slate-400 mb-1.5">
+                      Satuan
+                    </label>
+                    <select
+                      value={dropUnit}
+                      onChange={(e) => {
+                        setDropUnit(e.target.value);
+                        updateCalculatedPrice(selectedProductId, dropQty, e.target.value);
+                      }}
+                      className="input-field"
+                    >
+                      <option value="Ct">Ct</option>
+                      <option value="Slop">Slop</option>
+                    </select>
+                  </div>
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-slate-400 mb-1.5">
@@ -416,7 +477,7 @@ export default function SalesLedger({ teams, products }) {
 
               {selectedProductId && dropQty > 0 && (
                 <div className="p-3 rounded-lg bg-blue-500/5 border border-blue-500/10 text-[11px] text-blue-300">
-                  ⚠️ Barang akan dikurangi dari stok gudang sebanyak **{dropQty} Karton**.
+                  ⚠️ Barang akan dikurangi dari stok gudang sebanyak **{dropQty} {dropUnit}**.
                 </div>
               )}
             </div>
@@ -428,6 +489,7 @@ export default function SalesLedger({ teams, products }) {
                   setSelectedProductId("");
                   setDropQty("");
                   setDropAmount("");
+                  setDropUnit("Ct");
                 }}
                 className="btn-ghost flex-1"
               >
