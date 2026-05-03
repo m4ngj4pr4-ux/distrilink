@@ -21,7 +21,6 @@ const navItems = [
   { icon: HiOutlineCube, label: "Stok Barang", id: "stock" },
   { icon: HiOutlineTrendingUp, label: "Laba Rugi", id: "laba-rugi" },
   { icon: HiOutlineUserGroup, label: "Buku Penjualan", id: "sales" },
-  { icon: HiOutlineCube, label: "Inventaris", id: "inventory" },
   { icon: HiOutlineReply, label: "Retur Barang", id: "returns" },
   { icon: HiOutlineCog, label: "Pengaturan", id: "settings" },
 ];

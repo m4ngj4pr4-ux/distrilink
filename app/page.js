@@ -180,12 +180,6 @@ export default function DashboardPage() {
             <SalesLedger teams={teams} products={products} />
           </>
         );
-      case "inventory":
-        return (
-          <div className="glass-card p-12 text-center text-slate-400 italic">
-            Modul ini sedang disiapkan.
-          </div>
-        );
       case "returns":
         return (
           <>
