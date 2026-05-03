@@ -144,8 +144,14 @@ export default function FactoryPOForm({ products }) {
         currentSellingPrice: result.targetHargaJual,
       });
 
-      // 2. Tambah stok gudang
+      // 2. Tambah stok gudang (global & per produk pack)
       await updateInventoryStock(result.jumlahKarton);
+      
+      const packsPerSlop = result.product?.packsPerSlop || 10;
+      const slopsPerKarton = (result.product?.slopsPerBall || 20) * (result.product?.ballsPerKarton || 5);
+      const totalPacksPurchased = result.jumlahKarton * slopsPerKarton * packsPerSlop;
+      
+      await updateProductPackStock(selectedProductId, totalPacksPurchased);
 
       // 3. Tambah hutang pabrik
       await incrementSummaryField("factoryDebt", result.sisaHutang);

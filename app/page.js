@@ -8,6 +8,7 @@ import FactoryPOForm from "@/components/FactoryPOForm";
 import POHistory from "@/components/POHistory";
 import ReturnsForm from "@/components/ReturnsForm";
 import SalesLedger from "@/components/SalesLedger";
+import StockInventory from "@/components/StockInventory";
 import {
   subscribeSummary,
   subscribeInventory,
@@ -21,6 +22,7 @@ const sectionTitles = {
   dashboard: "Ringkasan Dashboard",
   po: "Purchase Order Pabrik",
   "po-history": "Riwayat PO Pabrik",
+  stock: "Stok Barang",
   sales: "Buku Besar Penjualan",
   inventory: "Manajemen Inventaris",
   returns: "Retur Barang",
@@ -162,6 +164,11 @@ export default function DashboardPage() {
                   <SummaryCards summary={summary} inventory={inventory} />
                   <SalesLedger teams={salesTeams} products={products} />
                 </>
+              )}
+
+              {/* Stok Barang */}
+              {activeSection === "stock" && (
+                <StockInventory products={products} />
               )}
 
               {/* Inventaris */}

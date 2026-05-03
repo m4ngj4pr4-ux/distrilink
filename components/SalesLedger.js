@@ -9,8 +9,6 @@ import {
   HiOutlineTrash,
   HiOutlinePencilAlt,
   HiOutlineEye,
-  HiOutlineCube,
-  HiOutlineCalendar,
 } from "react-icons/hi";
 import { formatRupiah, formatNumber } from "@/lib/utils";
 import {
@@ -35,14 +33,13 @@ export default function SalesLedger({ teams, products }) {
   const [dropAmount, setDropAmount] = useState("");
   const [dropQty, setDropQty] = useState("");
   const [dropPricePerPack, setDropPricePerPack] = useState("");
-  const [dropUnit, setDropUnit] = useState("Ct"); // Ct atau Slop
+  const [dropUnit, setDropUnit] = useState("Ct"); // Ct, Bal, atau Slop
   const [selectedProductId, setSelectedProductId] = useState("");
   
   const [newTeamName, setNewTeamName] = useState("");
   const [processing, setProcessing] = useState(false);
   const [distributions, setDistributions] = useState([]);
 
-  // Subscribe ke detail distribusi saat modal detail dibuka
   useEffect(() => {
     if (!detailModal) {
       setDistributions([]);
@@ -83,12 +80,16 @@ export default function SalesLedger({ teams, products }) {
     if (!amount || amount <= 0) return toast.error("Nilai barang tidak valid");
 
     const product = products.find(p => p.id === selectedProductId);
-    
-    let cartonQty = qty;
-    if (dropUnit === "Slop") {
-      const slopsPerBall = product.slopsPerBall || 20;
-      const ballsPerKarton = product.ballsPerKarton || 5;
-      cartonQty = qty / (slopsPerBall * ballsPerKarton);
+    const packsPerSlop = product.packsPerSlop || 10;
+    const slopsPerKarton = (product.slopsPerBall || 20) * (product.ballsPerKarton || 5);
+
+    let totalPacksDistributed = 0;
+    if (dropUnit === "Ct") {
+      totalPacksDistributed = qty * slopsPerKarton * packsPerSlop;
+    } else if (dropUnit === "Bal") {
+      totalPacksDistributed = qty * 10 * packsPerSlop; // 1 Bal = 10 Slop
+    } else {
+      totalPacksDistributed = qty * packsPerSlop;
     }
 
     setProcessing(true);
@@ -98,7 +99,8 @@ export default function SalesLedger({ teams, products }) {
         teamName: dropModal.name,
         productId: selectedProductId,
         productName: product.name,
-        jumlahKarton: cartonQty,
+        totalPacksDistributed: totalPacksDistributed,
+        jumlahKarton: totalPacksDistributed / (slopsPerKarton * packsPerSlop),
         amount: amount,
         unit: dropUnit,
         qtyOriginal: qty,
@@ -111,6 +113,7 @@ export default function SalesLedger({ teams, products }) {
       setDropQty("");
       setSelectedProductId("");
       setDropPricePerPack("");
+      setDropUnit("Ct");
     } catch (err) {
       toast.error("Gagal: " + err.message);
     } finally {
@@ -123,27 +126,27 @@ export default function SalesLedger({ teams, products }) {
     const product = products.find(p => p.id === prodId);
     if (!product) return;
 
-    // Gunakan customPrice jika sedang diedit, jika tidak pakai currentSellingPrice
     const priceToUse = customPrice !== null ? customPrice : (product.currentSellingPrice || 0);
-    
     if (customPrice === null) {
       setDropPricePerPack(product.currentSellingPrice ? product.currentSellingPrice.toString() : "");
     }
 
-    if (!qty || !priceToUse) {
+    const qtyNum = parseFloat(qty);
+    if (isNaN(qtyNum) || !priceToUse) {
       setDropAmount("");
       return;
     }
 
     const packsPerSlop = product.packsPerSlop || 10;
-    const slopsPerBall = product.slopsPerBall || 20;
-    const ballsPerKarton = product.ballsPerKarton || 5;
+    const slopsPerKarton = (product.slopsPerBall || 20) * (product.ballsPerKarton || 5);
     
     let totalPacks = 0;
     if (unit === "Ct") {
-      totalPacks = parseFloat(qty) * (packsPerSlop * slopsPerBall * ballsPerKarton);
+      totalPacks = qtyNum * slopsPerKarton * packsPerSlop;
+    } else if (unit === "Bal") {
+      totalPacks = qtyNum * 10 * packsPerSlop; // 1 Bal = 10 Slop
     } else {
-      totalPacks = parseFloat(qty) * packsPerSlop;
+      totalPacks = qtyNum * packsPerSlop;
     }
 
     const totalValue = totalPacks * parseFloat(priceToUse);
@@ -207,13 +210,12 @@ export default function SalesLedger({ teams, products }) {
             <p className="text-xs text-slate-400">Rekap per tim sales — {teams.length} tim aktif</p>
           </div>
         </div>
-        <button onClick={() => setAddTeamModal(true)} className="btn-emerald">
+        <button onClick={() => setAddTeamModal(true)} className="btn-emerald text-xs">
           <HiOutlinePlus size={16} />
-          <span className="hidden sm:inline">Tambah Tim</span>
+          <span>Tambah Tim</span>
         </button>
       </div>
 
-      {/* Tabel */}
       <div className="overflow-x-auto -mx-6 px-6">
         <table className="data-table">
           <thead>
@@ -238,10 +240,7 @@ export default function SalesLedger({ teams, products }) {
                         {team.name?.charAt(0) || "T"}
                       </div>
                       <span className="font-medium text-white">{team.name}</span>
-                      <button 
-                        onClick={() => { setEditTeamModal(team); setNewTeamName(team.name); }}
-                        className="opacity-0 group-hover:opacity-100 p-1 text-slate-500 hover:text-blue-400 transition-all"
-                      >
+                      <button onClick={() => { setEditTeamModal(team); setNewTeamName(team.name); }} className="opacity-0 group-hover:opacity-100 p-1 text-slate-500 hover:text-blue-400 transition-all">
                         <HiOutlinePencilAlt size={14} />
                       </button>
                     </div>
@@ -256,15 +255,15 @@ export default function SalesLedger({ teams, products }) {
                       <button onClick={() => setDetailModal(team)} className="p-2 rounded-lg bg-dark-700 hover:bg-dark-600 text-slate-400" title="Detail Riwayat">
                         <HiOutlineEye size={16} />
                       </button>
-                      <button onClick={() => setDropModal(team)} className="btn-ghost text-xs py-1.5 px-3" title="Distribusi Barang">
-                        <HiOutlineCash size={14} />
+                      <button onClick={() => setDropModal(team)} className="btn-ghost text-[10px] py-1 px-2" title="Distribusi Barang">
+                        <HiOutlineCash size={12} />
                         <span>Distribusi</span>
                       </button>
-                      <button onClick={() => setDepositModal(team)} className="btn-emerald text-xs py-1.5 px-3" title="Tambah setoran">
-                        <HiOutlinePlus size={14} />
+                      <button onClick={() => setDepositModal(team)} className="btn-emerald text-[10px] py-1 px-2" title="Tambah setoran">
+                        <HiOutlinePlus size={12} />
                         <span>Setor</span>
                       </button>
-                      <button onClick={() => handleDeleteTeam(team)} className="p-2 rounded-lg hover:bg-rose-500/10 text-slate-500 hover:text-rose-400 transition-colors">
+                      <button onClick={() => handleDeleteTeam(team)} className="p-2 rounded-lg hover:bg-rose-500/10 text-slate-500 hover:text-rose-400">
                         <HiOutlineTrash size={16} />
                       </button>
                     </div>
@@ -273,19 +272,6 @@ export default function SalesLedger({ teams, products }) {
               );
             })}
           </tbody>
-          {teams.length > 0 && (
-            <tfoot>
-              <tr className="border-t border-slate-400/10">
-                <td colSpan={2} className="py-3 px-4 text-sm font-semibold text-white">TOTAL</td>
-                <td className="py-3 px-4 text-right font-mono text-sm font-semibold text-white">{formatRupiah(totalGoods)}</td>
-                <td className="py-3 px-4 text-right font-mono text-sm font-semibold text-emerald-400">{formatRupiah(totalDeposited)}</td>
-                <td className={`py-3 px-4 text-right font-mono text-sm font-bold ${totalBalance > 0 ? "text-amber-400" : "text-emerald-400"}`}>
-                  {formatRupiah(totalBalance)}
-                </td>
-                <td></td>
-              </tr>
-            </tfoot>
-          )}
         </table>
       </div>
 
@@ -307,12 +293,9 @@ export default function SalesLedger({ teams, products }) {
                 <HiOutlineX size={18} />
               </button>
             </div>
-
             <div className="overflow-x-auto">
               {distributions.length === 0 ? (
-                <p className="text-center py-10 text-slate-500 text-sm italic">
-                  Belum ada riwayat distribusi untuk tim ini.
-                </p>
+                <p className="text-center py-10 text-slate-500 text-sm italic">Belum ada riwayat distribusi.</p>
               ) : (
                 <table className="w-full text-left border-collapse min-w-[700px]">
                   <thead>
@@ -325,88 +308,30 @@ export default function SalesLedger({ teams, products }) {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-400/5">
-                    {distributions.map((d) => {
-                      // Hitung fallback harga jika data lama (pricePerPack kosong)
-                      let displayPrice = d.pricePerPack || 0;
-                      if (!displayPrice && d.amount && d.qtyOriginal) {
-                        const product = products.find(p => p.name === d.productName);
-                        const packsPerSlop = product?.packsPerSlop || 10;
-                        const totalPacks = d.unit === "Ct" 
-                          ? d.qtyOriginal * (packsPerSlop * (product?.slopsPerBall || 20) * (product?.ballsPerKarton || 5))
-                          : d.qtyOriginal * packsPerSlop;
-                        displayPrice = d.amount / totalPacks;
-                      }
-
-                      return (
-                        <tr key={d.id} className="text-xs hover:bg-white/5 transition-colors">
-                          <td className="py-3 text-slate-400 whitespace-nowrap">
-                            {d.createdAt?.toDate().toLocaleDateString("id-ID", {
-                              day: "2-digit",
-                              month: "short",
-                              year: "2-digit"
-                            })}
-                          </td>
-                          <td className="py-3 font-medium text-white">
-                            {d.productName}
-                          </td>
-                          <td className="py-3 text-center text-slate-300">
-                            {formatNumber(d.qtyOriginal)} <span className="text-[10px] text-slate-500">{d.unit}</span>
-                          </td>
-                          <td className="py-3 text-right text-slate-400 font-mono">
-                            {formatRupiah(displayPrice)}
-                          </td>
-                          <td className="py-3 text-right font-bold text-emerald-400 font-mono">
-                            {formatRupiah(d.amount)}
-                          </td>
-                        </tr>
-                      );
-                    })}
+                    {distributions.map((d) => (
+                      <tr key={d.id} className="text-xs hover:bg-white/5 transition-colors">
+                        <td className="py-3 text-slate-400">
+                          {d.createdAt?.toDate().toLocaleDateString("id-ID", { day: "2-digit", month: "short" })}
+                        </td>
+                        <td className="py-3 font-medium text-white">{d.productName}</td>
+                        <td className="py-3 text-center text-slate-300">
+                          {formatNumber(d.qtyOriginal)} <span className="text-[10px] text-slate-500">{d.unit}</span>
+                        </td>
+                        <td className="py-3 text-right text-slate-400">
+                          {formatRupiah(d.pricePerPack || (d.amount / d.totalPacksDistributed) * (d.packsPerSlop || 10) / (d.packsPerSlop || 10))}
+                        </td>
+                        <td className="py-3 text-right font-bold text-emerald-400">{formatRupiah(d.amount)}</td>
+                      </tr>
+                    ))}
                   </tbody>
                 </table>
               )}
             </div>
-            
-            <div className="mt-6 pt-4 border-t border-slate-400/10 flex justify-between items-center">
-              <span className="text-xs text-slate-400">Total Piutang Berjalan Tim:</span>
-              <span className="text-sm font-bold text-amber-400">
-                {formatRupiah((detailModal.goodsDropped || 0) - (detailModal.totalDeposited || 0))}
-              </span>
-            </div>
           </div>
         </div>
       )}
 
-      {/* ── MODAL SETORAN ── */}
-      {depositModal && (
-        <div className="modal-overlay" onClick={() => setDepositModal(null)}>
-          <div className="modal-content max-w-md" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-5">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center">
-                  <HiOutlineCash className="text-emerald-400" size={20} />
-                </div>
-                <div>
-                  <h3 className="text-base font-bold text-white">Tambah Setoran</h3>
-                  <p className="text-xs text-slate-400">{depositModal.name}</p>
-                </div>
-              </div>
-              <button onClick={() => setDepositModal(null)} className="p-1.5 rounded-lg hover:bg-dark-600 text-slate-400"><HiOutlineX size={18} /></button>
-            </div>
-            <div className="mb-2">
-              <p className="text-xs text-slate-500 mb-1">Saldo piutang saat ini</p>
-              <p className="text-xl font-bold text-amber-400 mb-4">{formatRupiah((depositModal.goodsDropped || 0) - (depositModal.totalDeposited || 0))}</p>
-            </div>
-            <label className="block text-xs font-medium text-slate-400 mb-1.5">Jumlah Setoran (Rp)</label>
-            <input type="number" value={depositAmount} onChange={(e) => setDepositAmount(e.target.value)} placeholder="mis. 1500000" className="input-field mb-5" autoFocus min="0" />
-            <div className="flex items-center gap-3">
-              <button onClick={() => setDepositModal(null)} className="btn-ghost flex-1">Batal</button>
-              <button onClick={handleDeposit} disabled={processing} className="btn-primary flex-1">{processing ? "Menyimpan..." : "Simpan Setoran"}</button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ── MODAL DISTRIBUSI (DULU TURUN) ── */}
+      {/* ── MODAL DISTRIBUSI ── */}
       {dropModal && (
         <div className="modal-overlay" onClick={() => setDropModal(null)}>
           <div className="modal-content max-w-xl" onClick={(e) => e.stopPropagation()}>
@@ -420,36 +345,25 @@ export default function SalesLedger({ teams, products }) {
               </div>
               <button onClick={() => setDropModal(null)} className="p-1.5 rounded-lg hover:bg-dark-600 text-slate-400"><HiOutlineX size={18} /></button>
             </div>
-
             <div className="space-y-4 mb-6">
               <div>
                 <label className="block text-xs font-medium text-slate-400 mb-1.5">Pilih Produk</label>
-                <select
-                  value={selectedProductId}
-                  onChange={(e) => {
-                    const prodId = e.target.value;
-                    setSelectedProductId(prodId);
-                    updateCalculatedPrice(prodId, dropQty, dropUnit);
-                  }}
-                  className="input-field w-full"
-                >
+                <select value={selectedProductId} onChange={(e) => { setSelectedProductId(e.target.value); updateCalculatedPrice(e.target.value, dropQty, dropUnit); }} className="input-field w-full">
                   <option value="">— Pilih produk —</option>
-                  {products?.map((p) => (
-                    <option key={p.id} value={p.id}>{p.name}</option>
-                  ))}
+                  {products?.map((p) => ( <option key={p.id} value={p.id}>{p.name}</option> ))}
                 </select>
               </div>
-
               <div className="grid grid-cols-2 gap-3">
                 <div className="flex gap-2">
                   <div className="flex-1">
                     <label className="block text-xs font-medium text-slate-400 mb-1.5">Jumlah</label>
-                    <input type="number" value={dropQty} onChange={(e) => { setDropQty(e.target.value); updateCalculatedPrice(selectedProductId, e.target.value, dropUnit, dropPricePerPack); }} placeholder="mis. 1" className="input-field" min="0" step="any" />
+                    <input type="number" value={dropQty} onChange={(e) => { setDropQty(e.target.value); updateCalculatedPrice(selectedProductId, e.target.value, dropUnit, dropPricePerPack); }} placeholder="0" className="input-field" min="0" step="any" />
                   </div>
                   <div className="w-24">
                     <label className="block text-xs font-medium text-slate-400 mb-1.5">Satuan</label>
                     <select value={dropUnit} onChange={(e) => { setDropUnit(e.target.value); updateCalculatedPrice(selectedProductId, dropQty, e.target.value, dropPricePerPack); }} className="input-field">
                       <option value="Ct">Ct</option>
+                      <option value="Bal">Bal</option>
                       <option value="Slop">Slop</option>
                     </select>
                   </div>
@@ -459,46 +373,54 @@ export default function SalesLedger({ teams, products }) {
                   <input type="number" value={dropPricePerPack} onChange={(e) => { setDropPricePerPack(e.target.value); updateCalculatedPrice(selectedProductId, dropQty, dropUnit, e.target.value); }} placeholder="0" className="input-field" />
                 </div>
               </div>
-
               <div>
                 <label className="block text-xs font-medium text-slate-400 mb-1.5">Total Nilai Distribusi (Rp)</label>
                 <input type="number" value={dropAmount} onChange={(e) => setDropAmount(e.target.value)} placeholder="0" className="input-field bg-dark-700/50 font-bold text-emerald-400" />
               </div>
             </div>
-
             <div className="flex items-center gap-3">
-              <button onClick={() => { setDropModal(null); setSelectedProductId(""); setDropQty(""); setDropAmount(""); setDropPricePerPack(""); }} className="btn-ghost flex-1">Batal</button>
-              <button onClick={handleGoodsDrop} disabled={processing} className="btn-primary flex-1">{processing ? "Menyimpan..." : "Simpan Distribusi"}</button>
+              <button onClick={() => setDropModal(null)} className="btn-ghost flex-1">Batal</button>
+              <button onClick={handleGoodsDrop} disabled={processing} className="btn-primary flex-1">Simpan Distribusi</button>
             </div>
           </div>
         </div>
       )}
 
-      {/* ── MODAL EDIT NAMA TIM ── */}
-      {editTeamModal && (
-        <div className="modal-overlay" onClick={() => setEditTeamModal(null)}>
+      {/* ── MODAL SETORAN ── */}
+      {depositModal && (
+        <div className="modal-overlay" onClick={() => setDepositModal(null)}>
           <div className="modal-content max-w-md" onClick={(e) => e.stopPropagation()}>
-            <h3 className="text-base font-bold text-white mb-5">Edit Nama Tim</h3>
-            <label className="block text-xs font-medium text-slate-400 mb-1.5">Nama Tim</label>
-            <input type="text" value={newTeamName} onChange={(e) => setNewTeamName(e.target.value)} className="input-field mb-5" autoFocus />
+            <h3 className="text-base font-bold text-white mb-5">Tambah Setoran - {depositModal.name}</h3>
+            <input type="number" value={depositAmount} onChange={(e) => setDepositAmount(e.target.value)} placeholder="Jumlah Setoran (Rp)" className="input-field mb-5" />
             <div className="flex items-center gap-3">
-              <button onClick={() => setEditTeamModal(null)} className="btn-ghost flex-1">Batal</button>
-              <button onClick={handleUpdateTeam} disabled={processing} className="btn-primary flex-1">Perbarui Nama</button>
+              <button onClick={() => setDepositModal(null)} className="btn-ghost flex-1">Batal</button>
+              <button onClick={handleDeposit} disabled={processing} className="btn-primary flex-1">Simpan</button>
             </div>
           </div>
         </div>
       )}
 
-      {/* ── MODAL TAMBAH TIM ── */}
+      {/* ── MODAL EDIT/TAMBAH TIM ── */}
       {addTeamModal && (
         <div className="modal-overlay" onClick={() => setAddTeamModal(false)}>
           <div className="modal-content max-w-md" onClick={(e) => e.stopPropagation()}>
-            <h3 className="text-base font-bold text-white mb-5">Tambah Tim Sales Baru</h3>
-            <label className="block text-xs font-medium text-slate-400 mb-1.5">Nama Tim</label>
-            <input type="text" value={newTeamName} onChange={(e) => setNewTeamName(e.target.value)} placeholder="mis. Tim 8" className="input-field mb-5" autoFocus />
+            <h3 className="text-base font-bold text-white mb-5">Tambah Tim Sales</h3>
+            <input type="text" value={newTeamName} onChange={(e) => setNewTeamName(e.target.value)} placeholder="Nama Tim" className="input-field mb-5" />
             <div className="flex items-center gap-3">
               <button onClick={() => setAddTeamModal(false)} className="btn-ghost flex-1">Batal</button>
-              <button onClick={handleAddTeam} disabled={processing} className="btn-primary flex-1">Tambah Tim</button>
+              <button onClick={handleAddTeam} disabled={processing} className="btn-primary flex-1">Simpan</button>
+            </div>
+          </div>
+        </div>
+      )}
+      {editTeamModal && (
+        <div className="modal-overlay" onClick={() => setEditTeamModal(null)}>
+          <div className="modal-content max-w-md" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-base font-bold text-white mb-5">Edit Tim</h3>
+            <input type="text" value={newTeamName} onChange={(e) => setNewTeamName(e.target.value)} className="input-field mb-5" />
+            <div className="flex items-center gap-3">
+              <button onClick={() => setEditTeamModal(null)} className="btn-ghost flex-1">Batal</button>
+              <button onClick={handleUpdateTeam} disabled={processing} className="btn-primary flex-1">Simpan</button>
             </div>
           </div>
         </div>
