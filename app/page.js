@@ -106,47 +106,44 @@ export default function DashboardPage() {
                 </div>
               </div>
               <div className="overflow-x-auto">
-                <table className="data-table whitespace-nowrap">
+                <table className="w-full text-left border-collapse min-w-[700px]">
                   <thead>
-                    <tr className="text-[10px] uppercase tracking-wider text-slate-500">
-                      <th>Produk</th>
-                      <th className="text-right">HPP Terakhir / Pk</th>
-                      <th className="text-right">Target Jual / Pk</th>
-                      <th className="text-right">Sisa Stok</th>
+                    <tr className="text-[10px] uppercase tracking-wider text-slate-500 border-b border-slate-400/10 bg-dark-800/30">
+                      <th className="py-3 px-4 font-semibold text-left rounded-tl-lg">Produk</th>
+                      <th className="py-3 px-4 font-semibold text-right">HPP Terakhir / Pk</th>
+                      <th className="py-3 px-4 font-semibold text-right">Target Jual / Pk</th>
+                      <th className="py-3 px-4 font-semibold text-right rounded-tr-lg">Sisa Stok</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-400/5">
                     {products.map((p) => {
-                      // Gunakan totalPacks sebagai sumber kebenaran utama
                       const totalPacks = p.totalPacks || 0;
                       const packsPerSlop = p.packsPerSlop || 10;
                       
-                      // Konversi matematika murni ke Bal & Slop
                       const totalSlops = Math.floor(totalPacks / packsPerSlop);
-                      const fullBals = Math.floor(totalSlops / 10); // 1 Bal = 10 Slop
+                      const fullBals = Math.floor(totalSlops / 10);
                       const remainingSlops = totalSlops % 10;
                       
-                      // Format text konsisten
                       const stockText = `${fullBals} Bal - ${remainingSlops} Slop`;
-
-                      // Format Rupiah helper inline
                       const formatRp = (num) => num ? new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(num) : "-";
 
                       return (
-                        <tr key={p.id}>
-                          <td className="font-bold text-white text-sm">{p.name}</td>
-                          <td className="text-right font-mono text-slate-300">
+                        <tr key={p.id} className="hover:bg-white/5 transition-colors group">
+                          <td className="py-3 px-4">
+                            <div className="font-bold text-white text-sm group-hover:text-blue-400 transition-colors">{p.name}</div>
+                          </td>
+                          <td className="py-3 px-4 text-right font-mono text-slate-300">
                             {formatRp(p.lastHPP)}
                           </td>
-                          <td className="text-right font-mono font-bold text-blue-400">
+                          <td className="py-3 px-4 text-right font-mono font-bold text-blue-400 bg-blue-500/5">
                             {formatRp(p.currentSellingPrice)}
                           </td>
-                          <td className="text-right font-bold text-emerald-400 text-sm">
-                            {stockText}
+                          <td className="py-3 px-4 text-right">
+                            <div className="font-bold text-emerald-400 text-sm">{stockText}</div>
                             {totalPacks > 0 && (
-                               <div className="text-[10px] text-slate-500 font-normal mt-0.5">
-                                 Total: {totalPacks.toLocaleString("id-ID")} Bungkus
-                               </div>
+                              <div className="text-[10px] text-slate-500 font-normal mt-0.5">
+                                Total: {totalPacks.toLocaleString("id-ID")} Bungkus
+                              </div>
                             )}
                           </td>
                         </tr>
@@ -154,7 +151,7 @@ export default function DashboardPage() {
                     })}
                     {products.length === 0 && (
                       <tr>
-                        <td colSpan="4" className="text-center py-6 text-slate-500 italic text-sm">
+                        <td colSpan="4" className="text-center py-8 text-slate-500 italic text-sm">
                           Belum ada produk di master data.
                         </td>
                       </tr>
