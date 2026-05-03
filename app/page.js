@@ -6,6 +6,7 @@ import SummaryCards from "@/components/SummaryCards";
 import FactoryPOForm from "@/components/FactoryPOForm";
 import POHistory from "@/components/POHistory";
 import SalesLedger from "@/components/SalesLedger";
+import ReturnsForm from "@/components/ReturnsForm";
 import ProfitLossReport from "@/components/ProfitLossReport";
 import Settings from "@/components/Settings";
 import { HiCube, HiInformationCircle, HiRefresh } from "react-icons/hi";
@@ -187,9 +188,10 @@ export default function DashboardPage() {
         );
       case "returns":
         return (
-          <div className="glass-card p-12 text-center text-slate-400 italic">
-            Modul ini sedang disiapkan.
-          </div>
+          <>
+            <SummaryCards summary={summary} products={products} />
+            <ReturnsForm products={products} teams={teams} returns={returns} />
+          </>
         );
       case "settings":
         return <Settings onRecalculate={handleRecalculate} isRecalculating={isRecalculating} />;
