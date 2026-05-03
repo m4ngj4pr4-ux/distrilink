@@ -22,7 +22,7 @@ import {
 } from "@/lib/firestore";
 import toast from "react-hot-toast";
 
-export default function Home() {
+export default function DashboardPage() {
   const [activeSection, setActiveSection] = useState("dashboard");
   const [isRecalculating, setIsRecalculating] = useState(false);
   const [products, setProducts] = useState([]);
