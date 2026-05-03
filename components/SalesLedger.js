@@ -92,6 +92,12 @@ export default function SalesLedger({ teams, products }) {
       totalPacksDistributed = qty * packsPerSlop;
     }
 
+    // VALIDASI STOK: Cegah stok minus
+    const currentStockPacks = product.totalPacks || 0;
+    if (totalPacksDistributed > currentStockPacks) {
+      return toast.error(`Stok tidak cukup! Sisa stok ${product.name} hanya ${currentStockPacks.toLocaleString("id-ID")} Bungkus.`);
+    }
+
     setProcessing(true);
     try {
       await addGoodsDropTransaction({
