@@ -89,61 +89,6 @@ export default function DashboardPage() {
         return (
           <div className="space-y-8 animate-fadeIn">
             <SummaryCards summary={summary} products={products} />
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              <div className="glass-card p-6">
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center">
-                    <HiCube className="text-blue-400" size={22} />
-                  </div>
-                  <div>
-                    <h2 className="text-lg font-bold text-white">Stok Gudang per Produk</h2>
-                    <p className="text-xs text-slate-400">Rincian sisa barang di gudang</p>
-                  </div>
-                </div>
-                <div className="overflow-x-auto">
-                  <table className="data-table">
-                    <thead>
-                      <tr>
-                        <th>Produk</th>
-                        <th className="text-center">Konversi</th>
-                        <th className="text-right">Sisa Stok</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-400/5">
-                      {products.map((p) => (
-                        <tr key={p.id}>
-                          <td className="font-medium text-white">{p.name}</td>
-                          <td className="text-center text-[10px] text-slate-500">
-                            1 Ct = {(p.slopsPerBall || 20) * (p.ballsPerKarton || 5)} Slop
-                          </td>
-                          <td className="text-right font-bold text-emerald-400">
-                            {formatStockDetailed(p.stockCartons || 0, p)}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-              <div className="glass-card p-6 bg-gradient-to-br from-violet-500/5 to-transparent">
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="w-10 h-10 rounded-xl bg-violet-500/10 flex items-center justify-center">
-                    <HiInformationCircle className="text-violet-400" size={22} />
-                  </div>
-                  <h2 className="text-lg font-bold text-white">Panduan Satuan</h2>
-                </div>
-                <div className="space-y-4 text-xs text-slate-400">
-                  <div className="p-4 rounded-xl bg-dark-800/50 border border-slate-400/5">
-                    <p className="text-sm font-semibold text-white mb-1">Satuan Distribusi</p>
-                    <ul className="space-y-1">
-                      <li>• 1 Karton (Ct) = Mengikuti konversi produk</li>
-                      <li>• 1 Bal = 10 Slop</li>
-                      <li>• 1 Slop = Isi pack produk</li>
-                    </ul>
-                  </div>
-                </div>
-              </div>
-            </div>
           </div>
         );
       case "po":
@@ -161,8 +106,43 @@ export default function DashboardPage() {
         );
       case "stock":
         return (
-          <div className="glass-card p-12 text-center text-slate-400 italic">
-            Modul ini sedang disiapkan.
+          <div className="space-y-8 animate-fadeIn">
+            <SummaryCards summary={summary} products={products} />
+            <div className="glass-card p-6">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center">
+                  <HiCube className="text-blue-400" size={22} />
+                </div>
+                <div>
+                  <h2 className="text-lg font-bold text-white">Stok Gudang per Produk</h2>
+                  <p className="text-xs text-slate-400">Rincian sisa barang di gudang</p>
+                </div>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="data-table">
+                  <thead>
+                    <tr>
+                      <th>Produk</th>
+                      <th className="text-center">Konversi</th>
+                      <th className="text-right">Sisa Stok</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-400/5">
+                    {products.map((p) => (
+                      <tr key={p.id}>
+                        <td className="font-medium text-white">{p.name}</td>
+                        <td className="text-center text-[10px] text-slate-500">
+                          1 Ct = {(p.slopsPerBall || 20) * (p.ballsPerKarton || 5)} Slop
+                        </td>
+                        <td className="text-right font-bold text-emerald-400">
+                          {formatStockDetailed(p.stockCartons || 0, p)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
           </div>
         );
       case "sales":
