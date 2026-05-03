@@ -1,6 +1,6 @@
 "use client";
 
-import { HiOutlineTrophy, HiOutlineExclamationCircle } from "react-icons/hi";
+import { HiOutlineStar, HiOutlineExclamationCircle } from "react-icons/hi";
 import { formatRupiah } from "@/lib/utils";
 
 export default function DashboardWidgets({ products, teams }) {
@@ -22,7 +22,7 @@ export default function DashboardWidgets({ products, teams }) {
       <div className="glass-card p-6 border-t-4 border-violet-500">
         <div className="flex items-center gap-3 mb-6">
           <div className="w-10 h-10 rounded-xl bg-violet-500/10 flex items-center justify-center">
-            <HiOutlineTrophy className="text-violet-400" size={22} />
+            <HiOutlineStar className="text-violet-400" size={22} />
           </div>
           <div>
             <h3 className="text-base font-bold text-white">Top 5 Performa Tim</h3>
