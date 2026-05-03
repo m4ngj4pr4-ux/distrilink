@@ -1,9 +1,14 @@
 "use client";
 
-import { HiOutlineCube, HiOutlineTrendingUp, HiOutlineTrendingDown } from "react-icons/hi";
+import { HiOutlineCube, HiOutlineRefresh } from "react-icons/hi";
 import { formatNumber } from "@/lib/utils";
+import { syncProductPacks } from "@/lib/firestore";
+import toast from "react-hot-toast";
+import { useState } from "react";
 
 export default function StockInventory({ products }) {
+  const [syncing, setSyncing] = useState(false);
+
   // Fungsi helper untuk hitung Bal & Slop
   function calculateBalSlop(totalPacks, packsPerSlop) {
     if (!totalPacks || !packsPerSlop) return { bal: 0, slop: 0 };
@@ -15,16 +20,38 @@ export default function StockInventory({ products }) {
     return { bal, slop };
   }
 
+  async function handleManualSync() {
+    setSyncing(true);
+    try {
+      await syncProductPacks(products);
+      toast.success("Sinkronisasi stok lama berhasil!");
+    } catch (err) {
+      toast.error("Gagal sinkron: " + err.message);
+    } finally {
+      setSyncing(false);
+    }
+  }
+
   return (
     <div className="glass-card p-6 animate-fadeIn">
-      <div className="flex items-center gap-3 mb-8">
-        <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 flex items-center justify-center">
-          <HiOutlineCube className="text-emerald-400" size={28} />
+      <div className="flex items-center justify-between mb-8">
+        <div className="flex items-center gap-3">
+          <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 flex items-center justify-center">
+            <HiOutlineCube className="text-emerald-400" size={28} />
+          </div>
+          <div>
+            <h2 className="text-xl font-bold text-white">Stok Barang Real-time</h2>
+            <p className="text-sm text-slate-400">Saldo stok per merek dalam satuan Bal & Slop</p>
+          </div>
         </div>
-        <div>
-          <h2 className="text-xl font-bold text-white">Stok Barang Real-time</h2>
-          <p className="text-sm text-slate-400">Saldo stok per merek dalam satuan Bal & Slop</p>
-        </div>
+        <button 
+          onClick={handleManualSync} 
+          disabled={syncing}
+          className="btn-ghost text-xs"
+        >
+          <HiOutlineRefresh className={syncing ? "animate-spin" : ""} size={16} />
+          <span>{syncing ? "Sinkron..." : "Sinkronkan Stok Lama"}</span>
+        </button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
