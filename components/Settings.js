@@ -1,6 +1,6 @@
 "use client";
 
-import { HiOutlineRefresh, HiOutlineShieldCheck, HiOutlineDatabase } from "react-icons/hi";
+import { HiRefresh, HiShieldCheck, HiDatabase } from "react-icons/hi";
 
 export default function Settings({ onRecalculate, isRecalculating }) {
   return (
@@ -8,7 +8,7 @@ export default function Settings({ onRecalculate, isRecalculating }) {
       <div className="glass-card p-6">
         <div className="flex items-center gap-3 mb-6">
           <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-400">
-            <HiOutlineDatabase size={24} />
+            <HiDatabase size={24} />
           </div>
           <div>
             <h2 className="text-lg font-bold text-white">Pemeliharaan Data</h2>
@@ -29,7 +29,7 @@ export default function Settings({ onRecalculate, isRecalculating }) {
             disabled={isRecalculating}
             className="flex-shrink-0 flex items-center gap-2 px-5 py-2.5 rounded-xl bg-blue-500 hover:bg-blue-600 text-white text-sm font-bold transition-all shadow-lg shadow-blue-500/20 disabled:opacity-50 disabled:cursor-not-allowed active:scale-95"
           >
-            <HiOutlineRefresh className={isRecalculating ? "animate-spin" : ""} size={18} />
+            <HiRefresh className={isRecalculating ? "animate-spin" : ""} size={18} />
             <span>{isRecalculating ? "Memproses..." : "Hitung Ulang Sekarang"}</span>
           </button>
         </div>
@@ -38,7 +38,7 @@ export default function Settings({ onRecalculate, isRecalculating }) {
       <div className="glass-card p-6">
         <div className="flex items-center gap-3 mb-6">
           <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-400">
-            <HiOutlineShieldCheck size={24} />
+            <HiShieldCheck size={24} />
           </div>
           <div>
             <h2 className="text-lg font-bold text-white">Sistem & Keamanan</h2>

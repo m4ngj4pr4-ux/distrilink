@@ -9,7 +9,7 @@ import SalesLedger from "@/components/SalesLedger";
 import StockInventory from "@/components/StockInventory";
 import ReturnGoods from "@/components/ReturnGoods";
 import Settings from "@/components/Settings";
-import { HiOutlineCube, HiOutlineInformationCircle, HiOutlineRefresh } from "react-icons/hi";
+import { HiCube, HiInformationCircle, HiRefresh } from "react-icons/hi";
 import { 
   subscribeProducts, 
   subscribeSummary, 
@@ -93,7 +93,7 @@ export default function DashboardPage() {
               <div className="glass-card p-6">
                 <div className="flex items-center gap-3 mb-6">
                   <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center">
-                    <HiOutlineCube className="text-blue-400" size={22} />
+                    <HiCube className="text-blue-400" size={22} />
                   </div>
                   <div>
                     <h2 className="text-lg font-bold text-white">Stok Gudang per Produk</h2>
@@ -128,7 +128,7 @@ export default function DashboardPage() {
               <div className="glass-card p-6 bg-gradient-to-br from-violet-500/5 to-transparent">
                 <div className="flex items-center gap-3 mb-6">
                   <div className="w-10 h-10 rounded-xl bg-violet-500/10 flex items-center justify-center">
-                    <HiOutlineInformationCircle className="text-violet-400" size={22} />
+                    <HiInformationCircle className="text-violet-400" size={22} />
                   </div>
                   <h2 className="text-lg font-bold text-white">Panduan Satuan</h2>
                 </div>
