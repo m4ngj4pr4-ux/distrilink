@@ -9,6 +9,7 @@ export default function RetailMarketing({ stores }) {
   const [storeName, setStoreName] = useState("");
   const [ownerName, setOwnerName] = useState("");
   const [address, setAddress] = useState("");
+  const [coordinates, setCoordinates] = useState("");
   const [processing, setProcessing] = useState(false);
 
   async function handleAddStore(e) {
@@ -16,9 +17,9 @@ export default function RetailMarketing({ stores }) {
     if (!storeName || !address) return toast.error("Nama Toko dan Alamat wajib diisi!");
     setProcessing(true);
     try {
-      await addRetailStore({ name: storeName, owner: ownerName, address });
+      await addRetailStore({ name: storeName, owner: ownerName, address, coordinates });
       toast.success("Toko berhasil ditambahkan!");
-      setStoreName(""); setOwnerName(""); setAddress("");
+      setStoreName(""); setOwnerName(""); setAddress(""); setCoordinates("");
     } catch (err) {
       toast.error("Gagal: " + err.message);
     } finally {
@@ -40,11 +41,12 @@ export default function RetailMarketing({ stores }) {
           </div>
         </div>
 
-        <form onSubmit={handleAddStore} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <form onSubmit={handleAddStore} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
           <input type="text" placeholder="Nama Toko/Warung" value={storeName} onChange={e => setStoreName(e.target.value)} className="input-field" />
           <input type="text" placeholder="Nama Pemilik" value={ownerName} onChange={e => setOwnerName(e.target.value)} className="input-field" />
           <input type="text" placeholder="Alamat / Wilayah" value={address} onChange={e => setAddress(e.target.value)} className="input-field" />
-          <button type="submit" disabled={processing} className="btn-primary w-full flex items-center justify-center gap-2 bg-pink-600 hover:bg-pink-700 shadow-pink-500/20">
+          <input type="text" placeholder="Koordinat (Lat, Long)" value={coordinates} onChange={e => setCoordinates(e.target.value)} className="input-field" />
+          <button type="submit" disabled={processing} className="btn-primary w-full flex items-center justify-center gap-2 bg-pink-600 hover:bg-pink-700 shadow-pink-500/20 text-sm">
             <HiOutlinePlus /> Tambah Toko
           </button>
         </form>
@@ -53,25 +55,40 @@ export default function RetailMarketing({ stores }) {
       {/* Tabel Toko */}
       <div className="glass-card p-6">
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse min-w-[700px]">
+          <table className="w-full text-left border-collapse min-w-[800px]">
             <thead>
               <tr className="text-[10px] uppercase tracking-wider text-slate-500 border-b border-slate-400/10 bg-dark-800/30">
                 <th className="py-3 px-4 font-semibold rounded-tl-lg">Nama Toko</th>
                 <th className="py-3 px-4 font-semibold">Pemilik</th>
                 <th className="py-3 px-4 font-semibold">Wilayah</th>
+                <th className="py-3 px-4 font-semibold">Lokasi</th>
                 <th className="py-3 px-4 font-semibold text-right">Total Piutang</th>
                 <th className="py-3 px-4 font-semibold text-center rounded-tr-lg">Aksi</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-400/5">
               {stores?.length === 0 ? (
-                <tr><td colSpan="5" className="text-center py-8 text-slate-500 italic text-sm">Belum ada data toko retail terdaftar.</td></tr>
+                <tr><td colSpan="6" className="text-center py-8 text-slate-500 italic text-sm">Belum ada data toko retail terdaftar.</td></tr>
               ) : (
                 stores?.map(s => (
                   <tr key={s.id} className="hover:bg-white/5 transition-colors">
                     <td className="py-3 px-4 font-bold text-white text-sm">{s.name}</td>
                     <td className="py-3 px-4 text-slate-400">{s.owner || "-"}</td>
                     <td className="py-3 px-4 text-slate-400 text-xs">{s.address}</td>
+                    <td className="py-3 px-4 text-xs">
+                      {s.coordinates ? (
+                        <a 
+                          href={`https://www.google.com/maps?q=${s.coordinates}`} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="text-blue-400 hover:underline flex items-center gap-1"
+                        >
+                          <HiOutlineLocationMarker size={14} /> Lihat Map
+                        </a>
+                      ) : (
+                        <span className="text-slate-600 italic">No GPS</span>
+                      )}
+                    </td>
                     <td className="py-3 px-4 text-right font-mono font-bold text-amber-400">{formatRupiah(s.totalPiutang || 0)}</td>
                     <td className="py-3 px-4 text-center">
                       <button onClick={() => {if(confirm(`Hapus toko ${s.name}?`)) deleteRetailStore(s.id)}} className="p-1.5 rounded hover:bg-rose-500/10 text-slate-500 hover:text-rose-400 transition-colors">
