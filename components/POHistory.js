@@ -37,7 +37,12 @@ export default function POHistory({ purchases }) {
   async function handlePayment() {
     if (!payModal) return;
     const amount = parseFloat(parseInputNumber(payAmount));
-    if (!amount || amount <= 0 || amount > payModal.sisaHutang) return toast.error("Nominal tidak valid");
+    if (!amount || amount <= 0) return toast.error("Masukkan nominal pembayaran");
+
+    // VALIDASI: Cek sisa hutang
+    if (amount > payModal.sisaHutang) {
+      return toast.error(`Gagal: Pembayaran melebihi sisa hutang (Maks: ${formatRupiah(payModal.sisaHutang)})`);
+    }
     setProcessing(true);
     try {
       await payFactoryDebt(payModal.id, amount);
@@ -162,7 +167,9 @@ export default function POHistory({ purchases }) {
         <div className="modal-overlay" onClick={() => setPayModal(null)}>
           <div className="modal-content max-w-md" onClick={(e) => e.stopPropagation()}>
             <h3 className="text-base font-bold text-white mb-2">Bayar Hutang Pabrik</h3>
-            <p className="text-xs text-slate-400 mb-5">Sisa Hutang: {formatRupiah(payModal.sisaHutang)}</p>
+            <p className="text-xs text-amber-400 font-mono mb-5">
+              Sisa Hutang: {formatRupiah(payModal.sisaHutang)}
+            </p>
             <input 
               type="text" 
               value={formatInputNumber(payAmount)} 
