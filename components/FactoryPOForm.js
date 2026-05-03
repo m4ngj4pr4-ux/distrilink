@@ -126,6 +126,7 @@ export default function FactoryPOForm({ products }) {
     try {
       // 1. Simpan data pembelian
       await addPurchase({
+        productId: selectedProductId, // Sangat penting untuk fitur hitung ulang stok
         productName: result.productName,
         jumlahKarton: result.jumlahKarton,
         totalBall: result.totalBall,
