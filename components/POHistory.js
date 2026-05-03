@@ -1,16 +1,27 @@
 "use client";
 
-import { useState } from "react";
-import { HiOutlineSearch, HiOutlineTrash, HiOutlineDocumentText, HiTrendingUp } from "react-icons/hi";
+import { useState, useEffect } from "react";
+import { HiOutlineSearch, HiOutlineTrash, HiOutlineDocumentText, HiTrendingUp, HiOutlineEye, HiOutlineX } from "react-icons/hi";
 import { formatRupiah, parseInputNumber, formatInputNumber } from "@/lib/utils";
-import { deletePurchase, payFactoryDebt } from "@/lib/firestore";
+import { deletePurchase, payFactoryDebt, subscribeFactoryPayments } from "@/lib/firestore";
 import toast from "react-hot-toast";
 
 export default function POHistory({ purchases }) {
   const [searchTerm, setSearchTerm] = useState("");
   const [payModal, setPayModal] = useState(null);
+  const [detailModal, setDetailModal] = useState(null);
   const [payAmount, setPayAmount] = useState("");
+  const [paymentHistory, setPaymentHistory] = useState([]);
   const [processing, setProcessing] = useState(false);
+
+  useEffect(() => {
+    if (!detailModal) {
+      setPaymentHistory([]);
+      return;
+    }
+    const unsub = subscribeFactoryPayments(detailModal.id, setPaymentHistory);
+    return () => unsub();
+  }, [detailModal]);
 
   async function handleDelete(purchase) {
     if (confirm(`Hapus PO ${purchase.productName}? Stok dan Hutang akan disesuaikan.`)) {
@@ -126,6 +137,9 @@ export default function POHistory({ purchases }) {
                     </td>
                     <td>
                       <div className="flex justify-center gap-2">
+                        <button onClick={() => setDetailModal(p)} className="p-2 rounded-lg bg-dark-700 hover:bg-dark-600 text-slate-400" title="Detail Cicilan">
+                          <HiOutlineEye size={16} />
+                        </button>
                         {p.sisaHutang > 0 && (
                           <button onClick={() => setPayModal(p)} className="btn-emerald text-[10px] py-1 px-2">
                             Bayar
@@ -159,6 +173,58 @@ export default function POHistory({ purchases }) {
             <div className="flex items-center gap-3">
               <button onClick={() => setPayModal(null)} className="btn-ghost flex-1">Batal</button>
               <button onClick={handlePayment} disabled={processing} className="btn-primary flex-1">Simpan</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {detailModal && (
+        <div className="modal-overlay" onClick={() => setDetailModal(null)}>
+          <div className="modal-content max-w-lg" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center">
+                  <HiOutlineEye className="text-blue-400" size={20} />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-white">Riwayat Bayar ke Pabrik</h3>
+                  <p className="text-xs text-slate-400">{detailModal.productName}</p>
+                </div>
+              </div>
+              <button onClick={() => setDetailModal(null)} className="p-1.5 rounded-lg hover:bg-dark-600 text-slate-400">
+                <HiOutlineX size={18} />
+              </button>
+            </div>
+
+            <div className="overflow-x-auto">
+              {paymentHistory.length === 0 ? (
+                <p className="text-center py-10 text-slate-500 text-sm italic">Belum ada catatan pembayaran.</p>
+              ) : (
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="text-[10px] uppercase tracking-wider text-slate-500 border-b border-slate-400/10">
+                      <th className="py-3 font-semibold">Tanggal Bayar</th>
+                      <th className="py-3 font-semibold text-right text-emerald-400">Nominal</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-400/5">
+                    {paymentHistory.map((pay) => (
+                      <tr key={pay.id} className="text-xs hover:bg-white/5 transition-colors">
+                        <td className="py-3 text-slate-400">
+                          {pay.createdAt?.toDate().toLocaleDateString("id-ID", { 
+                            day: "2-digit", 
+                            month: "short", 
+                            year: "numeric", 
+                            hour: "2-digit", 
+                            minute: "2-digit" 
+                          })}
+                        </td>
+                        <td className="py-3 text-right font-bold text-emerald-400">{formatRupiah(pay.amount)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
             </div>
           </div>
         </div>
