@@ -141,9 +141,10 @@ export default function FactoryPOForm({ products }) {
         conversion: result.conversion,
       });
 
-      // 1.5 Update Harga Jual di Master Produk
+      // 1.5 Update Harga Jual & HPP Terakhir di Master Produk
       await updateProduct(selectedProductId, {
         currentSellingPrice: result.targetHargaJual,
+        lastHPP: result.hpp,
       });
 
       // 2. Tambah stok gudang (global & per produk pack)

@@ -136,7 +136,7 @@ export default function DashboardPage() {
                         <tr key={p.id}>
                           <td className="font-bold text-white text-sm">{p.name}</td>
                           <td className="text-right font-mono text-slate-300">
-                            {formatRp(p.lastHPP || (p.currentSellingPrice ? p.currentSellingPrice * 0.9 : 0))}
+                            {formatRp(p.lastHPP)}
                           </td>
                           <td className="text-right font-mono font-bold text-blue-400">
                             {formatRp(p.currentSellingPrice)}
