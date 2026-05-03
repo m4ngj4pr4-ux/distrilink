@@ -89,10 +89,10 @@ export default function DashboardPage() {
         );
       case "po":
         return (
-          <>
+          <div className="space-y-8 animate-fadeIn">
             <SummaryCards summary={summary} products={products} />
             <FactoryPOForm products={products} />
-          </>
+          </div>
         );
       case "po-history":
         return (
@@ -181,17 +181,17 @@ export default function DashboardPage() {
         );
       case "sales":
         return (
-          <>
+          <div className="space-y-8 animate-fadeIn">
             <SummaryCards summary={summary} products={products} />
             <SalesLedger teams={teams} products={products} />
-          </>
+          </div>
         );
       case "returns":
         return (
-          <>
+          <div className="space-y-8 animate-fadeIn">
             <SummaryCards summary={summary} products={products} />
             <ReturnsForm products={products} teams={teams} returns={returns} factoryReturns={factoryReturns} />
-          </>
+          </div>
         );
       case "settings":
         return <Settings onRecalculate={handleRecalculate} isRecalculating={isRecalculating} />;
