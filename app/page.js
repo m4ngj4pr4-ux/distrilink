@@ -117,6 +117,14 @@ export default function DashboardPage() {
               </p>
             </div>
             <div className="flex items-center gap-3">
+              <button 
+                onClick={handleRecalculate}
+                disabled={isRecalculating}
+                className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-dark-700 hover:bg-dark-600 border border-slate-400/10 text-slate-400 text-xs transition-all"
+              >
+                <HiOutlineRefresh className={isRecalculating ? "animate-spin" : ""} size={14} />
+                <span>{isRecalculating ? "Memproses..." : "Hitung Ulang"}</span>
+              </button>
               <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20">
                 <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
                 <span className="text-xs font-medium text-emerald-400">

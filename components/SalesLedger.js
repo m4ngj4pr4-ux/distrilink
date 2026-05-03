@@ -186,7 +186,7 @@ export default function SalesLedger({ teams, products }) {
   async function handleDeleteTeam(team) {
     if (!confirm(`Hapus ${team.name}? Data tidak dapat dikembalikan.`)) return;
     try {
-      await deleteSalesTeam(team.id);
+      await deleteSalesTeam(team.id, team);
       toast.success(`${team.name} berhasil dihapus`);
     } catch (err) {
       toast.error("Gagal: " + err.message);
