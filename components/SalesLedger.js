@@ -354,7 +354,22 @@ export default function SalesLedger({ teams, products }) {
             <div className="space-y-4 mb-6">
               <div>
                 <label className="block text-xs font-medium text-slate-400 mb-1.5">Pilih Produk</label>
-                <select value={selectedProductId} onChange={(e) => { setSelectedProductId(e.target.value); updateCalculatedPrice(e.target.value, dropQty, dropUnit); }} className="input-field w-full">
+                <select 
+                  value={selectedProductId} 
+                  onChange={(e) => { 
+                    const newProdId = e.target.value;
+                    setSelectedProductId(newProdId); 
+                    
+                    // Auto-fill price logic from Master Product
+                    const selectedProd = products?.find(p => p.id === newProdId);
+                    const defaultPrice = selectedProd?.currentSellingPrice ? selectedProd.currentSellingPrice.toString() : "";
+                    setDropPricePerPack(defaultPrice);
+                    
+                    // Update total calculation with the newly fetched price
+                    updateCalculatedPrice(newProdId, dropQty, dropUnit, defaultPrice); 
+                  }} 
+                  className="input-field w-full"
+                >
                   <option value="">— Pilih produk —</option>
                   {products?.map((p) => ( <option key={p.id} value={p.id}>{p.name}</option> ))}
                 </select>
