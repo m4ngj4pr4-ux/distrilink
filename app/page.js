@@ -69,20 +69,6 @@ export default function DashboardPage() {
     }
   }
 
-  // Helper untuk format stok Karton - Slop
-  function formatStockDetailed(cartons, product) {
-    if (!product) return "0 Ct";
-    const slopsPerKarton = (product.slopsPerBall || 20) * (product.ballsPerKarton || 5);
-    
-    const fullCartons = Math.floor(cartons);
-    const remainingCartons = cartons - fullCartons;
-    const remainingSlops = Math.round(remainingCartons * slopsPerKarton);
-    
-    if (fullCartons === 0 && remainingSlops > 0) return `${remainingSlops} Slop`;
-    if (remainingSlops === 0) return `${fullCartons} Ct`;
-    return `${fullCartons} Ct - ${remainingSlops} Slop`;
-  }
-
   function renderContent() {
     switch (activeSection) {
       case "dashboard":
@@ -115,31 +101,64 @@ export default function DashboardPage() {
                   <HiCube className="text-blue-400" size={22} />
                 </div>
                 <div>
-                  <h2 className="text-lg font-bold text-white">Stok Gudang per Produk</h2>
-                  <p className="text-xs text-slate-400">Rincian sisa barang di gudang</p>
+                  <h2 className="text-lg font-bold text-white">Katalog & Stok Gudang</h2>
+                  <p className="text-xs text-slate-400">Rincian sisa stok (akumulasi) dan patokan harga distribusi</p>
                 </div>
               </div>
               <div className="overflow-x-auto">
-                <table className="data-table">
+                <table className="data-table whitespace-nowrap">
                   <thead>
-                    <tr>
+                    <tr className="text-[10px] uppercase tracking-wider text-slate-500">
                       <th>Produk</th>
-                      <th className="text-center">Konversi</th>
+                      <th className="text-right">HPP Terakhir / Pk</th>
+                      <th className="text-right">Target Jual / Pk</th>
                       <th className="text-right">Sisa Stok</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-400/5">
-                    {products.map((p) => (
-                      <tr key={p.id}>
-                        <td className="font-medium text-white">{p.name}</td>
-                        <td className="text-center text-[10px] text-slate-500">
-                          1 Ct = {(p.slopsPerBall || 20) * (p.ballsPerKarton || 5)} Slop
-                        </td>
-                        <td className="text-right font-bold text-emerald-400">
-                          {formatStockDetailed(p.stockCartons || 0, p)}
+                    {products.map((p) => {
+                      // Gunakan totalPacks sebagai sumber kebenaran utama
+                      const totalPacks = p.totalPacks || 0;
+                      const packsPerSlop = p.packsPerSlop || 10;
+                      
+                      // Konversi matematika murni ke Bal & Slop
+                      const totalSlops = Math.floor(totalPacks / packsPerSlop);
+                      const fullBals = Math.floor(totalSlops / 10); // 1 Bal = 10 Slop
+                      const remainingSlops = totalSlops % 10;
+                      
+                      // Format text konsisten
+                      const stockText = `${fullBals} Bal - ${remainingSlops} Slop`;
+
+                      // Format Rupiah helper inline
+                      const formatRp = (num) => num ? new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(num) : "-";
+
+                      return (
+                        <tr key={p.id}>
+                          <td className="font-bold text-white text-sm">{p.name}</td>
+                          <td className="text-right font-mono text-slate-300">
+                            {formatRp(p.lastHPP || (p.currentSellingPrice ? p.currentSellingPrice * 0.9 : 0))}
+                          </td>
+                          <td className="text-right font-mono font-bold text-blue-400">
+                            {formatRp(p.currentSellingPrice)}
+                          </td>
+                          <td className="text-right font-bold text-emerald-400 text-sm">
+                            {stockText}
+                            {totalPacks > 0 && (
+                               <div className="text-[10px] text-slate-500 font-normal mt-0.5">
+                                 Total: {totalPacks.toLocaleString("id-ID")} Bungkus
+                               </div>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                    {products.length === 0 && (
+                      <tr>
+                        <td colSpan="4" className="text-center py-6 text-slate-500 italic text-sm">
+                          Belum ada produk di master data.
                         </td>
                       </tr>
-                    ))}
+                    )}
                   </tbody>
                 </table>
               </div>
