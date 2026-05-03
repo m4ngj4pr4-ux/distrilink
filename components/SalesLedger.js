@@ -378,7 +378,17 @@ export default function SalesLedger({ teams, products }) {
                 <div className="flex gap-2">
                   <div className="flex-1">
                     <label className="block text-xs font-medium text-slate-400 mb-1.5">Jumlah</label>
-                    <input type="number" value={dropQty} onChange={(e) => { setDropQty(e.target.value); updateCalculatedPrice(selectedProductId, e.target.value, dropUnit, dropPricePerPack); }} placeholder="0" className="input-field" min="0" step="any" />
+                    <input 
+                      type="text" 
+                      value={formatNumber(dropQty)} 
+                      onChange={(e) => { 
+                        const raw = parseRupiah(e.target.value);
+                        setDropQty(raw); 
+                        updateCalculatedPrice(selectedProductId, raw, dropUnit, dropPricePerPack); 
+                      }} 
+                      placeholder="0" 
+                      className="input-field" 
+                    />
                   </div>
                   <div className="w-24">
                     <label className="block text-xs font-medium text-slate-400 mb-1.5">Satuan</label>
@@ -391,12 +401,28 @@ export default function SalesLedger({ teams, products }) {
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-slate-400 mb-1.5">Harga / Pack (Rp)</label>
-                  <input type="number" value={dropPricePerPack} onChange={(e) => { setDropPricePerPack(e.target.value); updateCalculatedPrice(selectedProductId, dropQty, dropUnit, e.target.value); }} placeholder="0" className="input-field" />
+                  <input 
+                    type="text" 
+                    value={formatNumber(dropPricePerPack)} 
+                    onChange={(e) => { 
+                      const raw = parseRupiah(e.target.value);
+                      setDropPricePerPack(raw); 
+                      updateCalculatedPrice(selectedProductId, dropQty, dropUnit, raw); 
+                    }} 
+                    placeholder="0" 
+                    className="input-field" 
+                  />
                 </div>
               </div>
               <div>
                 <label className="block text-xs font-medium text-slate-400 mb-1.5">Total Nilai Distribusi (Rp)</label>
-                <input type="number" value={dropAmount} onChange={(e) => setDropAmount(e.target.value)} placeholder="0" className="input-field bg-dark-700/50 font-bold text-emerald-400" />
+                <input 
+                  type="text" 
+                  value={formatNumber(dropAmount)} 
+                  onChange={(e) => setDropAmount(parseRupiah(e.target.value))} 
+                  placeholder="0" 
+                  className="input-field bg-dark-700/50 font-bold text-emerald-400" 
+                />
               </div>
             </div>
             <div className="flex items-center gap-3">
@@ -412,7 +438,13 @@ export default function SalesLedger({ teams, products }) {
         <div className="modal-overlay" onClick={() => setDepositModal(null)}>
           <div className="modal-content max-w-md" onClick={(e) => e.stopPropagation()}>
             <h3 className="text-base font-bold text-white mb-5">Tambah Setoran - {depositModal.name}</h3>
-            <input type="number" value={depositAmount} onChange={(e) => setDepositAmount(e.target.value)} placeholder="Jumlah Setoran (Rp)" className="input-field mb-5" />
+            <input 
+              type="text" 
+              value={formatNumber(depositAmount)} 
+              onChange={(e) => setDepositAmount(parseRupiah(e.target.value))} 
+              placeholder="Jumlah Setoran (Rp)" 
+              className="input-field mb-5" 
+            />
             <div className="flex items-center gap-3">
               <button onClick={() => setDepositModal(null)} className="btn-ghost flex-1">Batal</button>
               <button onClick={handleDeposit} disabled={processing} className="btn-primary flex-1">Simpan</button>
