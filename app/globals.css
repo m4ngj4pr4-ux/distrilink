@@ -210,7 +210,6 @@ select.input-field option {
   border-radius: 20px;
   padding: 28px;
   width: 100%;
-  max-width: 460px;
   margin: 16px;
   box-shadow: 0 25px 60px rgba(0, 0, 0, 0.6);
   animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
