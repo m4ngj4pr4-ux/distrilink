@@ -12,7 +12,7 @@ import {
   HiOutlineClipboardList,
   HiOutlineReply,
   HiOutlineTrendingUp,
-  HiOutlineOfficeBuilding
+  HiOutlineLocationMarker
 } from "react-icons/hi";
 
 const navItems = [
@@ -22,7 +22,7 @@ const navItems = [
   { icon: HiOutlineCube, label: "Stok Barang", id: "stock" },
   { icon: HiOutlineTrendingUp, label: "Laba Rugi", id: "laba-rugi" },
   { icon: HiOutlineUserGroup, label: "Buku Penjualan", id: "sales" },
-  { icon: HiOutlineOfficeBuilding, label: "Pemasaran Retail", id: "retail" },
+  { icon: HiOutlineLocationMarker, label: "Pemasaran Retail", id: "retail" },
   { icon: HiOutlineReply, label: "Retur Barang", id: "returns" },
   { icon: HiOutlineCog, label: "Pengaturan", id: "settings" },
 ];

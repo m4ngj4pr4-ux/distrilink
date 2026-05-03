@@ -8,6 +8,7 @@ import POHistory from "@/components/POHistory";
 import SalesLedger from "@/components/SalesLedger";
 import ReturnsForm from "@/components/ReturnsForm";
 import ProfitLossReport from "@/components/ProfitLossReport";
+import RetailMarketing from "@/components/RetailMarketing";
 import DashboardWidgets from "@/components/DashboardWidgets";
 import Settings from "@/components/Settings";
 import { HiCube, HiInformationCircle, HiRefresh } from "react-icons/hi";
@@ -19,6 +20,7 @@ import {
   subscribeSalesTeams,
   subscribeReturns,
   subscribeFactoryReturns,
+  subscribeRetailStores,
   subscribeAllDistributions,
   syncProductPacks,
   recalculateSummary
@@ -39,6 +41,7 @@ export default function DashboardPage() {
   const [teams, setTeams] = useState([]);
   const [returns, setReturns] = useState([]);
   const [factoryReturns, setFactoryReturns] = useState([]);
+  const [stores, setStores] = useState([]);
   const [allDistributions, setAllDistributions] = useState([]);
 
   useEffect(() => {
@@ -52,6 +55,7 @@ export default function DashboardPage() {
     const unsubTeams = subscribeSalesTeams(setTeams);
     const unsubReturns = subscribeReturns(setReturns);
     const unsubFactoryReturns = subscribeFactoryReturns(setFactoryReturns);
+    const unsubStores = subscribeRetailStores(setStores);
     const unsubAllDist = subscribeAllDistributions(setAllDistributions);
 
     return () => {
@@ -62,6 +66,7 @@ export default function DashboardPage() {
       unsubTeams();
       unsubReturns();
       unsubFactoryReturns();
+      unsubStores();
       unsubAllDist();
     };
   }, []);
@@ -184,6 +189,13 @@ export default function DashboardPage() {
           <div className="space-y-8 animate-fadeIn">
             <SummaryCards summary={summary} products={products} />
             <SalesLedger teams={teams} products={products} />
+          </div>
+        );
+      case "retail":
+        return (
+          <div className="space-y-8 animate-fadeIn">
+            <SummaryCards summary={summary} products={products} />
+            <RetailMarketing stores={stores} />
           </div>
         );
       case "returns":
