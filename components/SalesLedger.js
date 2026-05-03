@@ -12,7 +12,8 @@ import {
 } from "react-icons/hi";
 import { formatRupiah, formatNumber, formatInputNumber, parseInputNumber } from "@/lib/utils";
 import {
-  addDeposit,
+  addDepositTransaction,
+  subscribeDeposits,
   addGoodsDropTransaction,
   addSalesTeam,
   updateSalesTeam,
@@ -39,27 +40,33 @@ export default function SalesLedger({ teams, products }) {
   const [newTeamName, setNewTeamName] = useState("");
   const [processing, setProcessing] = useState(false);
   const [distributions, setDistributions] = useState([]);
+  const [depositHistory, setDepositHistory] = useState([]);
 
   useEffect(() => {
     if (!detailModal) {
       setDistributions([]);
+      setDepositHistory([]);
       return;
     }
-    const unsub = subscribeDistributions(detailModal.id, (data) => {
+    const unsubDist = subscribeDistributions(detailModal.id, (data) => {
       setDistributions(data);
     });
-    return () => unsub();
+    const unsubDep = subscribeDeposits(detailModal.id, (data) => {
+      setDepositHistory(data);
+    });
+    return () => {
+      unsubDist();
+      unsubDep();
+    };
   }, [detailModal]);
 
   async function handleDeposit() {
     if (!depositModal) return;
-    const amount = parseFloat(depositAmount);
+    const amount = parseFloat(parseInputNumber(depositAmount));
     if (!amount || amount <= 0) return toast.error("Masukkan jumlah setoran");
     setProcessing(true);
     try {
-      await addDeposit(depositModal.id, amount);
-      await incrementSummaryField("salesReceivables", -amount);
-      await incrementSummaryField("totalAssets", amount);
+      await addDepositTransaction(depositModal.id, amount);
       toast.success(`Setoran ${formatRupiah(amount)} berhasil!`);
       setDepositModal(null);
       setDepositAmount("");
@@ -327,6 +334,39 @@ export default function SalesLedger({ teams, products }) {
                           {formatRupiah(d.pricePerPack || (d.amount / d.totalPacksDistributed) * (d.packsPerSlop || 10) / (d.packsPerSlop || 10))}
                         </td>
                         <td className="py-3 text-right font-bold text-emerald-400">{formatRupiah(d.amount)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+
+            {/* RIWAYAT SETORAN */}
+            <div className="mt-8 border-t border-slate-400/10 pt-6">
+              <h4 className="text-sm font-bold text-white mb-4">Riwayat Setoran Uang</h4>
+              {depositHistory.length === 0 ? (
+                <p className="text-center py-4 text-slate-500 text-sm italic">Belum ada riwayat setoran.</p>
+              ) : (
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="text-[10px] uppercase tracking-wider text-slate-500 border-b border-slate-400/10">
+                      <th className="py-2 font-semibold">Tanggal</th>
+                      <th className="py-2 font-semibold text-right text-emerald-400">Nominal Setoran</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-400/5">
+                    {depositHistory.map((dep) => (
+                      <tr key={dep.id} className="text-xs hover:bg-white/5 transition-colors">
+                        <td className="py-2 text-slate-400">
+                          {dep.createdAt?.toDate().toLocaleDateString("id-ID", { 
+                            day: "2-digit", 
+                            month: "short", 
+                            year: "numeric", 
+                            hour: "2-digit", 
+                            minute: "2-digit" 
+                          })}
+                        </td>
+                        <td className="py-2 text-right font-bold text-emerald-400">{formatRupiah(dep.amount)}</td>
                       </tr>
                     ))}
                   </tbody>
