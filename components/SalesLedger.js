@@ -26,6 +26,7 @@ export default function SalesLedger({ teams, products }) {
   const [depositAmount, setDepositAmount] = useState("");
   const [dropAmount, setDropAmount] = useState("");
   const [dropQty, setDropQty] = useState("");
+  const [dropPricePerPack, setDropPricePerPack] = useState("");
   const [dropUnit, setDropUnit] = useState("Ct"); // Ct atau Slop
   const [selectedProductId, setSelectedProductId] = useState("");
   const [newTeamName, setNewTeamName] = useState("");
@@ -104,10 +105,22 @@ export default function SalesLedger({ teams, products }) {
   }
 
   // Fungsi helper untuk hitung harga otomatis
-  function updateCalculatedPrice(prodId, qty, unit) {
-    if (!prodId || !qty) return;
+  function updateCalculatedPrice(prodId, qty, unit, customPrice = null) {
+    if (!prodId) return;
     const product = products.find(p => p.id === prodId);
-    if (!product || !product.currentSellingPrice) return;
+    if (!product) return;
+
+    // Gunakan customPrice jika sedang diedit, jika tidak pakai currentSellingPrice
+    const priceToUse = customPrice !== null ? customPrice : product.currentSellingPrice;
+    
+    if (customPrice === null) {
+      setDropPricePerPack(product.currentSellingPrice?.toString() || "");
+    }
+
+    if (!qty || !priceToUse) {
+      setDropAmount("");
+      return;
+    }
 
     const packsPerSlop = product.packsPerSlop || 10;
     const slopsPerBall = product.slopsPerBall || 20;
@@ -115,12 +128,12 @@ export default function SalesLedger({ teams, products }) {
     
     let totalPacks = 0;
     if (unit === "Ct") {
-      totalPacks = qty * (packsPerSlop * slopsPerBall * ballsPerKarton);
+      totalPacks = parseFloat(qty) * (packsPerSlop * slopsPerBall * ballsPerKarton);
     } else {
-      totalPacks = qty * packsPerSlop;
+      totalPacks = parseFloat(qty) * packsPerSlop;
     }
 
-    const totalValue = totalPacks * product.currentSellingPrice;
+    const totalValue = totalPacks * parseFloat(priceToUse);
     setDropAmount(Math.round(totalValue).toString());
   }
 
@@ -429,7 +442,7 @@ export default function SalesLedger({ teams, products }) {
                       value={dropQty}
                       onChange={(e) => {
                         setDropQty(e.target.value);
-                        updateCalculatedPrice(selectedProductId, e.target.value, dropUnit);
+                        updateCalculatedPrice(selectedProductId, e.target.value, dropUnit, dropPricePerPack);
                       }}
                       placeholder="mis. 1"
                       className="input-field"
@@ -445,7 +458,7 @@ export default function SalesLedger({ teams, products }) {
                       value={dropUnit}
                       onChange={(e) => {
                         setDropUnit(e.target.value);
-                        updateCalculatedPrice(selectedProductId, dropQty, e.target.value);
+                        updateCalculatedPrice(selectedProductId, dropQty, e.target.value, dropPricePerPack);
                       }}
                       className="input-field"
                     >
@@ -456,16 +469,32 @@ export default function SalesLedger({ teams, products }) {
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-slate-400 mb-1.5">
-                    Total Nilai (Rp)
+                    Harga / Pack (Rp)
                   </label>
                   <input
                     type="number"
-                    value={dropAmount}
-                    onChange={(e) => setDropAmount(e.target.value)}
-                    placeholder="mis. 5000000"
+                    value={dropPricePerPack}
+                    onChange={(e) => {
+                      setDropPricePerPack(e.target.value);
+                      updateCalculatedPrice(selectedProductId, dropQty, dropUnit, e.target.value);
+                    }}
+                    placeholder="mis. 18000"
                     className="input-field"
                   />
                 </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-slate-400 mb-1.5">
+                  Total Nilai Distribusi (Rp)
+                </label>
+                <input
+                  type="number"
+                  value={dropAmount}
+                  onChange={(e) => setDropAmount(e.target.value)}
+                  placeholder="0"
+                  className="input-field bg-dark-700/50 font-bold text-emerald-400"
+                />
               </div>
 
               {selectedProductId && dropQty > 0 && (
@@ -482,6 +511,7 @@ export default function SalesLedger({ teams, products }) {
                   setSelectedProductId("");
                   setDropQty("");
                   setDropAmount("");
+                  setDropPricePerPack("");
                   setDropUnit("Ct");
                 }}
                 className="btn-ghost flex-1"
