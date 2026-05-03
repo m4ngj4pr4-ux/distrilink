@@ -218,12 +218,12 @@ export default function DashboardPage() {
 
             {/* Profil Pemilik - Pindahan dari Sidebar */}
             <div className="flex items-center gap-3 pl-6 border-l border-slate-400/10">
-              <div className="text-right hidden sm:block">
-                <p className="text-sm font-bold text-slate-200">Pemilik</p>
-                <p className="text-[10px] text-slate-500 font-medium uppercase tracking-tight">Admin Utama</p>
+              <div className="text-center hidden sm:block">
+                <p className="text-sm font-bold text-slate-200 leading-tight">Owner</p>
+                <p className="text-[10px] text-slate-500 font-medium uppercase tracking-tight">Admin</p>
               </div>
               <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center text-white text-sm font-bold shadow-lg shadow-emerald-500/20">
-                P
+                O
               </div>
             </div>
           </div>
