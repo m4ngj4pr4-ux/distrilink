@@ -11,7 +11,7 @@ import {
 import { formatRupiah } from "@/lib/utils";
 import {
   addDeposit,
-  addGoodsDropped,
+  addGoodsDropTransaction,
   addSalesTeam,
   deleteSalesTeam,
   incrementSummaryField,
@@ -24,6 +24,8 @@ export default function SalesLedger({ teams }) {
   const [addTeamModal, setAddTeamModal] = useState(false);
   const [depositAmount, setDepositAmount] = useState("");
   const [dropAmount, setDropAmount] = useState("");
+  const [dropQty, setDropQty] = useState("");
+  const [selectedProductId, setSelectedProductId] = useState("");
   const [newTeamName, setNewTeamName] = useState("");
   const [processing, setProcessing] = useState(false);
 
@@ -56,20 +58,32 @@ export default function SalesLedger({ teams }) {
   async function handleGoodsDrop() {
     if (!dropModal) return;
     const amount = parseFloat(dropAmount);
-    if (!amount || amount <= 0) {
-      toast.error("Masukkan nilai barang yang valid");
-      return;
-    }
+    const qty = parseInt(dropQty);
+    
+    if (!selectedProductId) return toast.error("Pilih produk");
+    if (!qty || qty <= 0) return toast.error("Masukkan jumlah karton");
+    if (!amount || amount <= 0) return toast.error("Nilai barang tidak valid");
+
+    const product = products.find(p => p.id === selectedProductId);
+
     setProcessing(true);
     try {
-      await addGoodsDropped(dropModal.id, amount);
-      // Tambah piutang sales
-      await incrementSummaryField("salesReceivables", amount);
+      await addGoodsDropTransaction({
+        teamId: dropModal.id,
+        teamName: dropModal.name,
+        productId: selectedProductId,
+        productName: product.name,
+        jumlahKarton: qty,
+        amount: amount,
+      });
+
       toast.success(
-        `Barang turun ${formatRupiah(amount)} untuk ${dropModal.name} berhasil!`
+        `Barang turun ${product.name} (${qty} Ktn) untuk ${dropModal.name} berhasil!`
       );
       setDropModal(null);
       setDropAmount("");
+      setDropQty("");
+      setSelectedProductId("");
     } catch (err) {
       toast.error("Gagal: " + err.message);
     } finally {
@@ -348,22 +362,73 @@ export default function SalesLedger({ teams }) {
               </button>
             </div>
 
-            <label className="block text-xs font-medium text-slate-400 mb-1.5">
-              Nilai Barang Turun (Rp)
-            </label>
-            <input
-              type="number"
-              value={dropAmount}
-              onChange={(e) => setDropAmount(e.target.value)}
-              placeholder="mis. 5000000"
-              className="input-field mb-5"
-              autoFocus
-              min="0"
-            />
+            <div className="space-y-4 mb-6">
+              <div>
+                <label className="block text-xs font-medium text-slate-400 mb-1.5">
+                  Pilih Produk
+                </label>
+                <select
+                  value={selectedProductId}
+                  onChange={(e) => {
+                    const prodId = e.target.value;
+                    setSelectedProductId(prodId);
+                    // Opsi: Auto fill harga jika ada data targetHargaJual
+                    // Tapi di SalesLedger kita mungkin butuh input manual atau sistem pintar
+                  }}
+                  className="input-field w-full"
+                >
+                  <option value="">— Pilih produk —</option>
+                  {products?.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-medium text-slate-400 mb-1.5">
+                    Jumlah (Karton)
+                  </label>
+                  <input
+                    type="number"
+                    value={dropQty}
+                    onChange={(e) => setDropQty(e.target.value)}
+                    placeholder="mis. 1"
+                    className="input-field"
+                    min="1"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-slate-400 mb-1.5">
+                    Total Nilai (Rp)
+                  </label>
+                  <input
+                    type="number"
+                    value={dropAmount}
+                    onChange={(e) => setDropAmount(e.target.value)}
+                    placeholder="mis. 5000000"
+                    className="input-field"
+                  />
+                </div>
+              </div>
+
+              {selectedProductId && dropQty > 0 && (
+                <div className="p-3 rounded-lg bg-blue-500/5 border border-blue-500/10 text-[11px] text-blue-300">
+                  ⚠️ Barang akan dikurangi dari stok gudang sebanyak **{dropQty} Karton**.
+                </div>
+              )}
+            </div>
 
             <div className="flex items-center gap-3">
               <button
-                onClick={() => setDropModal(null)}
+                onClick={() => {
+                  setDropModal(null);
+                  setSelectedProductId("");
+                  setDropQty("");
+                  setDropAmount("");
+                }}
                 className="btn-ghost flex-1"
               >
                 Batal
@@ -373,7 +438,7 @@ export default function SalesLedger({ teams }) {
                 disabled={processing}
                 className="btn-primary flex-1"
               >
-                {processing ? "Menyimpan..." : "Simpan"}
+                {processing ? "Menyimpan..." : "Simpan Distribusi"}
               </button>
             </div>
           </div>

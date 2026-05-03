@@ -135,7 +135,7 @@ export default function DashboardPage() {
                   <SummaryCards summary={summary} inventory={inventory} />
                   <div className="grid grid-cols-1 gap-6">
                     <FactoryPOForm products={products} />
-                    <SalesLedger teams={salesTeams} />
+                    <SalesLedger teams={salesTeams} products={products} />
                   </div>
                 </>
               )}
@@ -160,7 +160,7 @@ export default function DashboardPage() {
               {activeSection === "sales" && (
                 <>
                   <SummaryCards summary={summary} inventory={inventory} />
-                  <SalesLedger teams={salesTeams} />
+                  <SalesLedger teams={salesTeams} products={products} />
                 </>
               )}
 
