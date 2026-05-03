@@ -8,6 +8,7 @@ import POHistory from "@/components/POHistory";
 import SalesLedger from "@/components/SalesLedger";
 import ReturnsForm from "@/components/ReturnsForm";
 import ProfitLossReport from "@/components/ProfitLossReport";
+import DashboardWidgets from "@/components/DashboardWidgets";
 import Settings from "@/components/Settings";
 import { HiCube, HiInformationCircle, HiRefresh } from "react-icons/hi";
 import { 
@@ -81,8 +82,9 @@ export default function DashboardPage() {
     switch (activeSection) {
       case "dashboard":
         return (
-          <div className="space-y-8 animate-fadeIn">
+          <div className="space-y-0 animate-fadeIn">
             <SummaryCards summary={summary} products={products} />
+            <DashboardWidgets products={products} teams={teams} />
           </div>
         );
       case "po":
