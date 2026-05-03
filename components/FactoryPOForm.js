@@ -81,14 +81,31 @@ export default function FactoryPOForm({ products }) {
     }
 
     const conv = getConversion(selectedProduct);
-    const jumlahKarton = parseInt(form.jumlahKarton) || 0;
-    const hargaBeliPerPack = parseFloat(form.hargaBeliPerPack) || 0;
-    const targetHargaJual = parseFloat(form.targetHargaJual) || 0;
-    const biayaPengiriman = parseFloat(form.biayaPengiriman) || 0;
-    const uangMuka = parseFloat(form.uangMuka) || 0;
+    const jumlahKarton = parseFloat(form.jumlahKarton);
+    const hargaBeliPerPack = parseFloat(form.hargaBeliPerPack);
+    const targetHargaJual = parseFloat(form.targetHargaJual);
+    const biayaPengiriman = parseFloat(form.biayaPengiriman);
+    const uangMuka = parseFloat(form.uangMuka);
 
-    if (jumlahKarton <= 0 || hargaBeliPerPack <= 0) {
-      toast.error("Jumlah karton dan harga per pack harus lebih dari 0");
+    // VALIDASI KETAT
+    if (!form.jumlahKarton || isNaN(jumlahKarton) || jumlahKarton <= 0) {
+      toast.error("Jumlah Karton harus berupa angka lebih dari 0");
+      return;
+    }
+    if (!form.hargaBeliPerPack || isNaN(hargaBeliPerPack) || hargaBeliPerPack <= 0) {
+      toast.error("Harga Beli harus berupa angka lebih dari 0");
+      return;
+    }
+    if (isNaN(biayaPengiriman) || biayaPengiriman < 0) {
+      toast.error("Biaya Pengiriman tidak boleh negatif");
+      return;
+    }
+    if (isNaN(uangMuka) || uangMuka < 0) {
+      toast.error("Uang Muka tidak boleh negatif");
+      return;
+    }
+    if (!form.targetHargaJual || isNaN(targetHargaJual) || targetHargaJual <= 0) {
+      toast.error("Target Harga Jual harus lebih dari 0");
       return;
     }
 
@@ -125,7 +142,10 @@ export default function FactoryPOForm({ products }) {
   }
 
   async function handleSubmit() {
-    if (!result) return;
+    if (!result) {
+      toast.error("Silakan hitung HPP terlebih dahulu");
+      return;
+    }
     setSaving(true);
     try {
       // 1. Simpan data pembelian

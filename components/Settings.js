@@ -1,25 +1,25 @@
 "use client";
 
 import { useState } from "react";
-import { HiOutlineShieldCheck, HiOutlineRefresh, HiOutlineDatabase, HiDatabase, HiRefresh, HiShieldCheck } from "react-icons/hi";
+import { HiOutlineShieldCheck, HiOutlineRefresh, HiDatabase, HiOutlineExclamation, HiOutlineX } from "react-icons/hi";
 import { factoryResetDatabase } from "@/lib/firestore";
 import toast from "react-hot-toast";
 
 export default function Settings({ onRecalculate, isRecalculating }) {
   const [isResetting, setIsResetting] = useState(false);
+  const [showResetModal, setShowResetModal] = useState(false);
+  const [confirmText, setConfirmText] = useState("");
 
   async function handleFactoryReset() {
-    const confirm1 = confirm("⚠️ PERINGATAN BAHAYA ⚠️\nApakah Anda yakin ingin MENGHAPUS SEMUA DATA transaksi, produk, dan tim? Ini tidak bisa dibatalkan.");
-    if (!confirm1) return;
-    
-    const confirm2 = confirm("Anda yakin? Database akan benar-benar dikosongkan untuk testing baru.");
-    if (!confirm2) return;
+    if (confirmText !== "HAPUS") return;
     
     setIsResetting(true);
     try {
       await factoryResetDatabase();
       toast.success("DATABASE BERHASIL DIKOSONGKAN TOTAL!");
-      if (onRecalculate) await onRecalculate(); // Segarkan angka di header
+      setShowResetModal(false);
+      setConfirmText("");
+      if (onRecalculate) await onRecalculate();
     } catch (err) {
       toast.error("Gagal mereset: " + err.message);
     } finally {
@@ -29,60 +29,38 @@ export default function Settings({ onRecalculate, isRecalculating }) {
 
   return (
     <div className="max-w-4xl mx-auto space-y-6 animate-fadeIn">
+      {/* CARD 1: REKONSILIASI */}
       <div className="glass-card p-6">
         <div className="flex items-center gap-3 mb-6">
-          <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-400">
-            <HiDatabase size={24} />
+          <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-400">
+            <HiOutlineShieldCheck size={24} />
           </div>
           <div>
-            <h2 className="text-lg font-bold text-white">Pemeliharaan Data</h2>
-            <p className="text-xs text-slate-400">Kelola dan sinkronkan ulang data dashboard Anda</p>
+            <h2 className="text-lg font-bold text-white">Sistem & Keamanan</h2>
+            <p className="text-xs text-slate-400">Sinkronisasi ulang saldo dan database</p>
           </div>
         </div>
 
         <div className="p-5 rounded-2xl bg-dark-800/50 border border-slate-400/5 flex items-center justify-between gap-6">
           <div className="flex-1">
-            <h3 className="text-sm font-semibold text-white mb-1">Reset & Hitung Ulang Dashboard</h3>
+            <h3 className="text-sm font-semibold text-white mb-1">Sinkronisasi Ulang Saldo</h3>
             <p className="text-xs text-slate-400 leading-relaxed">
-              Gunakan fitur ini jika angka di Dashboard (Aset, Hutang, Piutang) terasa tidak akurat. 
-              Sistem akan menghitung ulang seluruh saldo dari transaksi yang ada.
+              Gunakan fitur ini jika angka pada dashboard tidak sesuai dengan total transaksi. 
+              Sistem akan menghitung ulang seluruh saldo Piutang, Hutang, dan Aset secara manual.
             </p>
           </div>
           <button 
             onClick={onRecalculate}
-            disabled={isRecalculating}
-            className="flex-shrink-0 flex items-center gap-2 px-5 py-2.5 rounded-xl bg-blue-500 hover:bg-blue-600 text-white text-sm font-bold transition-all shadow-lg shadow-blue-500/20 disabled:opacity-50 disabled:cursor-not-allowed active:scale-95"
+            disabled={isRecalculating || isResetting}
+            className="flex-shrink-0 px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold transition-all flex items-center gap-2 shadow-lg shadow-emerald-500/20 disabled:opacity-50"
           >
-            <HiRefresh className={isRecalculating ? "animate-spin" : ""} size={18} />
-            <span>{isRecalculating ? "Memproses..." : "Hitung Ulang Sekarang"}</span>
+            <HiOutlineRefresh className={isRecalculating ? "animate-spin" : ""} size={18} />
+            {isRecalculating ? "Memproses..." : "Sinkron Sekarang"}
           </button>
         </div>
       </div>
 
-      <div className="glass-card p-6">
-        <div className="flex items-center gap-3 mb-6">
-          <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-400">
-            <HiShieldCheck size={24} />
-          </div>
-          <div>
-            <h2 className="text-lg font-bold text-white">Sistem & Keamanan</h2>
-            <p className="text-xs text-slate-400">Informasi status aplikasi</p>
-          </div>
-        </div>
-        
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div className="p-4 rounded-xl bg-dark-800/30 border border-slate-400/5">
-            <p className="text-[10px] text-slate-500 uppercase mb-1">Status Sinkronisasi</p>
-            <p className="text-sm font-medium text-emerald-400">Real-time Aktif</p>
-          </div>
-          <div className="p-4 rounded-xl bg-dark-800/30 border border-slate-400/5">
-            <p className="text-[10px] text-slate-500 uppercase mb-1">Versi Aplikasi</p>
-            <p className="text-sm font-medium text-white">v1.2.0-MVP</p>
-          </div>
-        </div>
-      </div>
-
-      {/* DANGER ZONE */}
+      {/* CARD 2: DANGER ZONE */}
       <div className="glass-card p-6 border border-rose-500/20">
         <div className="flex items-center gap-3 mb-6">
           <div className="w-10 h-10 rounded-xl bg-rose-500/10 flex items-center justify-center text-rose-400">
@@ -99,18 +77,69 @@ export default function Settings({ onRecalculate, isRecalculating }) {
             <h3 className="text-sm font-semibold text-white mb-1">Factory Reset (Kosongkan Database)</h3>
             <p className="text-xs text-rose-400/80 leading-relaxed">
               Hapus SELURUH data produk, PO pabrik, stok, tim sales, dan riwayat transaksi. 
-              Gunakan hanya jika Anda ingin memulai aplikasi dari nol (fresh start).
             </p>
           </div>
           <button 
-            onClick={handleFactoryReset}
+            onClick={() => setShowResetModal(true)}
             disabled={isResetting || isRecalculating}
             className="flex-shrink-0 px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-sm font-bold transition-all shadow-lg shadow-rose-500/20 disabled:opacity-50"
           >
-            {isResetting ? "Menghapus..." : "Hapus Semua Data"}
+            Hapus Semua Data
           </button>
         </div>
       </div>
+
+      {/* MODAL KONFIRMASI RESET */}
+      {showResetModal && (
+        <div className="modal-overlay z-[9999]" onClick={() => setShowResetModal(false)}>
+          <div className="modal-content max-w-md border border-rose-500/30" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-rose-500/20 flex items-center justify-center text-rose-500">
+                  <HiOutlineExclamation size={24} />
+                </div>
+                <h3 className="text-lg font-bold text-white">Konfirmasi Reset</h3>
+              </div>
+              <button onClick={() => setShowResetModal(false)} className="text-slate-500 hover:text-white"><HiOutlineX size={20}/></button>
+            </div>
+
+            <div className="space-y-4">
+              <p className="text-sm text-slate-300 leading-relaxed">
+                Anda akan menghapus <span className="text-rose-400 font-bold underline">seluruh data aplikasi</span>. Tindakan ini permanen dan tidak dapat dipulihkan.
+              </p>
+              
+              <div className="bg-rose-500/10 p-3 rounded-lg border border-rose-500/20">
+                <p className="text-[11px] text-rose-400 font-medium uppercase mb-2">Ketik kata kunci di bawah untuk melanjutkan:</p>
+                <p className="text-xl font-black text-white tracking-widest text-center mb-3 select-none">HAPUS</p>
+                <input 
+                  type="text" 
+                  value={confirmText}
+                  onChange={(e) => setConfirmText(e.target.value.toUpperCase())}
+                  placeholder="Ketik di sini..."
+                  className="input-field w-full text-center border-rose-500/30 focus:border-rose-500"
+                  autoFocus
+                />
+              </div>
+
+              <div className="flex flex-col gap-2 pt-2">
+                <button 
+                  onClick={handleFactoryReset}
+                  disabled={confirmText !== "HAPUS" || isResetting}
+                  className="w-full py-3 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                >
+                  {isResetting ? "Menghapus Database..." : "Ya, Hapus Semua Data"}
+                </button>
+                <button 
+                  onClick={() => setShowResetModal(false)}
+                  className="w-full py-3 text-sm text-slate-400 hover:text-white font-medium"
+                >
+                  Batalkan
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
