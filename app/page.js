@@ -167,10 +167,10 @@ export default function DashboardPage() {
                             <div className="font-bold text-white text-sm group-hover:text-blue-400 transition-colors">{p.name}</div>
                           </td>
                           <td className="py-3 px-4 text-right font-mono text-slate-300">
-                            {formatRp(p.lastHPP)}
+                            {totalPacks > 0 ? formatRp(p.lastHPP) : <span className="text-slate-500">-</span>}
                           </td>
                           <td className="py-3 px-4 text-right font-mono font-bold text-blue-400 bg-blue-500/5">
-                            {formatRp(p.currentSellingPrice)}
+                            {totalPacks > 0 ? formatRp(p.currentSellingPrice) : <span className="text-slate-500">-</span>}
                           </td>
                           <td className="py-3 px-4 text-right">
                             <div className="font-bold text-emerald-400 text-sm">{stockText}</div>
