@@ -9,9 +9,10 @@ import SalesLedger from "@/components/SalesLedger";
 import ReturnsForm from "@/components/ReturnsForm";
 import ProfitLossReport from "@/components/ProfitLossReport";
 import RetailMarketing from "@/components/RetailMarketing";
+import EditProductModal from "@/components/EditProductModal";
 import DashboardWidgets from "@/components/DashboardWidgets";
 import Settings from "@/components/Settings";
-import { HiCube, HiInformationCircle, HiRefresh } from "react-icons/hi";
+import { HiCube, HiInformationCircle, HiRefresh, HiOutlinePencil } from "react-icons/hi";
 import { 
   subscribeProducts, 
   subscribeSummary, 
@@ -44,6 +45,7 @@ export default function DashboardPage() {
   const [retailStores, setRetailStores] = useState([]);
   const [allDistributions, setAllDistributions] = useState([]);
   const [previewImage, setPreviewImage] = useState(null);
+  const [editingProduct, setEditingProduct] = useState(null);
 
   useEffect(() => {
     const unsubProducts = subscribeProducts((data) => {
@@ -129,7 +131,8 @@ export default function DashboardPage() {
                       <th className="py-3 px-4 font-semibold text-left">Produk</th>
                       <th className="py-3 px-4 font-semibold text-right">HPP Terakhir / Pk</th>
                       <th className="py-3 px-4 font-semibold text-right">Target Jual / Pk</th>
-                      <th className="py-3 px-4 font-semibold text-right rounded-tr-lg">Sisa Stok</th>
+                      <th className="py-3 px-4 font-semibold text-right">Sisa Stok</th>
+                      <th className="py-3 px-4 font-semibold text-center rounded-tr-lg">Aksi</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-400/5">
@@ -177,6 +180,14 @@ export default function DashboardPage() {
                               </div>
                             )}
                           </td>
+                          <td className="py-3 px-4 text-center">
+                            <button 
+                              onClick={() => setEditingProduct(p)}
+                              className="p-1.5 rounded hover:bg-emerald-500/10 text-slate-500 hover:text-emerald-400 transition-colors"
+                            >
+                              <HiOutlinePencil size={18} />
+                            </button>
+                          </td>
                         </tr>
                       );
                     })}
@@ -211,6 +222,12 @@ export default function DashboardPage() {
                 </div>
               </div>
             )}
+
+            <EditProductModal 
+              product={editingProduct} 
+              isOpen={!!editingProduct} 
+              onClose={() => setEditingProduct(null)} 
+            />
           </div>
         );
       case "laba-rugi":
