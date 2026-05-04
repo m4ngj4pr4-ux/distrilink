@@ -6,7 +6,7 @@ import { updatePO } from "@/lib/firestore";
 import { formatRupiah } from "@/lib/utils";
 import toast from "react-hot-toast";
 
-export default function EditPOModal({ po, onClose }) {
+export default function EditPOModal({ po, onClose, distributions }) {
   const [form, setForm] = useState({
     jumlahKarton: "",
     hargaBeliPerPack: "",
@@ -15,6 +15,9 @@ export default function EditPOModal({ po, onClose }) {
     uangMuka: ""
   });
   const [saving, setSaving] = useState(false);
+
+  // LOGIKA KUNCI QTY: Cek apakah produk ini sudah pernah didistribusikan
+  const isQtyLocked = distributions?.some(d => d.productId === po.productId);
 
   useEffect(() => {
     if (po) {
@@ -95,7 +98,18 @@ export default function EditPOModal({ po, onClose }) {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-medium text-slate-400 mb-1.5">Jumlah Karton</label>
-              <input type="number" value={form.jumlahKarton} onChange={e => setForm({...form, jumlahKarton: e.target.value})} className="input-field" />
+              <input 
+                type="number" 
+                value={form.jumlahKarton} 
+                onChange={e => setForm({...form, jumlahKarton: e.target.value})} 
+                disabled={isQtyLocked}
+                className={`input-field ${isQtyLocked ? "opacity-50 cursor-not-allowed bg-dark-800" : ""}`} 
+              />
+              {isQtyLocked && (
+                <p className="text-[10px] text-amber-500 mt-1.5 flex items-center gap-1">
+                  <span>🔒</span> Qty dikunci karena barang sudah didistribusikan.
+                </p>
+              )}
             </div>
             <div>
               <label className="block text-xs font-medium text-slate-400 mb-1.5">Harga Beli / Pack</label>

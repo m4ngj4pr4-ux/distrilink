@@ -7,7 +7,7 @@ import { deletePurchase, payFactoryDebt, subscribeFactoryPayments } from "@/lib/
 import EditPOModal from "./EditPOModal";
 import toast from "react-hot-toast";
 
-export default function POHistory({ purchases }) {
+export default function POHistory({ purchases, distributions }) {
   const [searchTerm, setSearchTerm] = useState("");
   const [payModal, setPayModal] = useState(null);
   const [detailModal, setDetailModal] = useState(null);
@@ -243,7 +243,11 @@ export default function POHistory({ purchases }) {
       )}
 
       {editingPO && (
-        <EditPOModal po={editingPO} onClose={() => setEditingPO(null)} />
+        <EditPOModal 
+          po={editingPO} 
+          onClose={() => setEditingPO(null)} 
+          distributions={distributions}
+        />
       )}
     </div>
   );

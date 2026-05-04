@@ -106,7 +106,7 @@ export default function DashboardPage() {
         return (
           <div className="space-y-8 animate-fadeIn">
             <SummaryCards summary={summary} products={products} />
-            <POHistory purchases={purchases} />
+            <POHistory purchases={purchases} distributions={allDistributions} />
           </div>
         );
       case "stock":
