@@ -144,20 +144,25 @@ export default function POHistory({ purchases, distributions }) {
                     </td>
                     <td>
                       <div className="flex justify-center gap-2">
+                        {/* Selalu Bisa Lihat Detail */}
                         <button onClick={() => setDetailModal(p)} className="p-2 rounded-lg bg-dark-700 hover:bg-dark-600 text-slate-400" title="Detail Cicilan">
                           <HiOutlineEye size={16} />
                         </button>
-                        <button onClick={() => setEditingPO(p)} className="p-2 rounded-lg hover:bg-amber-500/10 text-slate-500 hover:text-amber-400 transition-colors" title="Edit PO">
-                          <HiOutlinePencil size={16} />
-                        </button>
+
+                        {/* Aksi Edit, Bayar, & Hapus Hanya Jika Belum Lunas */}
                         {p.sisaHutang > 0 && (
-                          <button onClick={() => setPayModal(p)} className="btn-emerald text-[10px] py-1 px-2">
-                            Bayar
-                          </button>
+                          <>
+                            <button onClick={() => setEditingPO(p)} className="p-2 rounded-lg hover:bg-amber-500/10 text-slate-500 hover:text-amber-400 transition-colors" title="Edit PO">
+                              <HiOutlinePencil size={16} />
+                            </button>
+                            <button onClick={() => setPayModal(p)} className="btn-emerald text-[10px] py-1 px-2">
+                              Bayar
+                            </button>
+                            <button onClick={() => handleDelete(p)} className="p-2 rounded-lg hover:bg-rose-500/10 text-slate-500 hover:text-rose-400 transition-colors" title="Hapus PO">
+                              <HiOutlineTrash size={16} />
+                            </button>
+                          </>
                         )}
-                        <button onClick={() => handleDelete(p)} className="p-2 rounded-lg hover:bg-rose-500/10 text-slate-500 hover:text-rose-400 transition-colors">
-                          <HiOutlineTrash size={16} />
-                        </button>
                       </div>
                     </td>
                   </tr>
