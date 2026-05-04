@@ -1,9 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { HiOutlineSearch, HiOutlineTrash, HiOutlineDocumentText, HiTrendingUp, HiOutlineEye, HiOutlineX } from "react-icons/hi";
+import { HiOutlineSearch, HiOutlineTrash, HiOutlineDocumentText, HiTrendingUp, HiOutlineEye, HiOutlineX, HiOutlinePencil } from "react-icons/hi";
 import { formatRupiah, parseInputNumber, formatInputNumber } from "@/lib/utils";
 import { deletePurchase, payFactoryDebt, subscribeFactoryPayments } from "@/lib/firestore";
+import EditPOModal from "./EditPOModal";
 import toast from "react-hot-toast";
 
 export default function POHistory({ purchases }) {
@@ -12,6 +13,7 @@ export default function POHistory({ purchases }) {
   const [detailModal, setDetailModal] = useState(null);
   const [payAmount, setPayAmount] = useState("");
   const [paymentHistory, setPaymentHistory] = useState([]);
+  const [editingPO, setEditingPO] = useState(null);
   const [processing, setProcessing] = useState(false);
 
   useEffect(() => {
@@ -145,6 +147,9 @@ export default function POHistory({ purchases }) {
                         <button onClick={() => setDetailModal(p)} className="p-2 rounded-lg bg-dark-700 hover:bg-dark-600 text-slate-400" title="Detail Cicilan">
                           <HiOutlineEye size={16} />
                         </button>
+                        <button onClick={() => setEditingPO(p)} className="p-2 rounded-lg hover:bg-amber-500/10 text-slate-500 hover:text-amber-400 transition-colors" title="Edit PO">
+                          <HiOutlinePencil size={16} />
+                        </button>
                         {p.sisaHutang > 0 && (
                           <button onClick={() => setPayModal(p)} className="btn-emerald text-[10px] py-1 px-2">
                             Bayar
@@ -235,6 +240,10 @@ export default function POHistory({ purchases }) {
             </div>
           </div>
         </div>
+      )}
+
+      {editingPO && (
+        <EditPOModal po={editingPO} onClose={() => setEditingPO(null)} />
       )}
     </div>
   );
