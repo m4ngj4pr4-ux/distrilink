@@ -11,6 +11,8 @@ import {
   HiOutlineInformationCircle,
   HiOutlineExclamation,
 } from "react-icons/hi";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { storage } from "@/lib/firebase";
 import { formatRupiah, formatNumber, formatInputNumber, parseInputNumber } from "@/lib/utils";
 import {
   addPurchase,
@@ -33,6 +35,7 @@ export default function FactoryPOForm({ products }) {
     ballsPerKarton: "",
     imageUrl: "",
   });
+  const [imageFile, setImageFile] = useState(null);
 
   const [form, setForm] = useState({
     jumlahKarton: "",
@@ -225,13 +228,30 @@ export default function FactoryPOForm({ products }) {
       return toast.error("Semua konversi satuan wajib diisi");
 
     setSavingProduct(true);
+    let finalImageUrl = newProduct.imageUrl.trim();
+
+    // LOGIKA UPLOAD KE FIREBASE STORAGE
+    if (imageFile) {
+      toast.loading("Mengunggah foto...", { id: "uploadToast" });
+      try {
+        const storageRef = ref(storage, `products/${Date.now()}_${imageFile.name}`);
+        const snapshot = await uploadBytes(storageRef, imageFile);
+        finalImageUrl = await getDownloadURL(snapshot.ref);
+        toast.dismiss("uploadToast");
+      } catch (err) {
+        toast.dismiss("uploadToast");
+        setSavingProduct(false);
+        return toast.error("Gagal mengunggah foto: " + err.message);
+      }
+    }
+
     try {
       await addProduct({
         name: name.trim(),
         packsPerSlop: parseInt(packsPerSlop),
         slopsPerBall: parseInt(slopsPerBall),
         ballsPerKarton: parseInt(ballsPerKarton),
-        imageUrl: newProduct.imageUrl.trim(),
+        imageUrl: finalImageUrl,
       });
       toast.success(`Produk "${name.trim()}" berhasil ditambahkan!`);
       setNewProduct({
@@ -241,6 +261,7 @@ export default function FactoryPOForm({ products }) {
         ballsPerKarton: "",
         imageUrl: "",
       });
+      setImageFile(null);
       setShowAddProduct(false);
     } catch (err) {
       toast.error("Gagal menambah produk: " + err.message);
@@ -547,6 +568,18 @@ export default function FactoryPOForm({ products }) {
                   placeholder="mis. SURYA 12"
                   className="input-field"
                   autoFocus
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-slate-400 mb-1.5">
+                  Foto Produk (Opsional)
+                </label>
+                <input 
+                  type="file" 
+                  accept="image/*" 
+                  onChange={(e) => setImageFile(e.target.files[0])} 
+                  className="w-full text-sm text-slate-400 file:mr-4 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-bold file:bg-emerald-500/10 file:text-emerald-400 hover:file:bg-emerald-500/20 transition-colors"
                 />
               </div>
 
