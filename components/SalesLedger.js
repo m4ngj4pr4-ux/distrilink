@@ -61,6 +61,40 @@ export default function SalesLedger({ teams, products, purchases }) {
     };
   }, [detailModal]);
 
+  // AUTO-RECALCULATE TOTAL NILAI DISTRIBUSI
+  useEffect(() => {
+    if (!selectedPoId || !dropQty || !dropUnit || !dropPricePerPack) {
+      setDropAmount("0");
+      return;
+    }
+
+    const po = purchases.find(p => p.id === selectedPoId);
+    if (!po) return;
+    
+    const product = products.find(p => p.id === po.productId);
+    if (!product) return;
+
+    const qtyNum = parseFloat(dropQty) || 0;
+    const priceNum = parseFloat(dropPricePerPack) || 0;
+    
+    const packsPerSlop = product.packsPerSlop || 10;
+    const slopsPerBall = product.slopsPerBall || 20;
+    const ballsPerKarton = product.ballsPerKarton || 5;
+    
+    let totalPacks = 0;
+    if (dropUnit === "Ct") {
+      totalPacks = qtyNum * (ballsPerKarton * slopsPerBall * packsPerSlop);
+    } else if (dropUnit === "Bal") {
+      totalPacks = qtyNum * (slopsPerBall * packsPerSlop);
+    } else if (dropUnit === "Slop") {
+      totalPacks = qtyNum * packsPerSlop;
+    } else {
+      totalPacks = qtyNum;
+    }
+
+    setDropAmount(Math.round(totalPacks * priceNum).toString());
+  }, [selectedPoId, dropQty, dropUnit, dropPricePerPack, purchases, products]);
+
   async function handleDeposit() {
     if (!depositModal) return;
     const amount = parseFloat(parseInputNumber(depositAmount));
@@ -159,37 +193,6 @@ export default function SalesLedger({ teams, products, purchases }) {
     }
   }
 
-  function updateCalculatedPrice(prodId, qty, unit, customPrice = null) {
-    if (!prodId) return;
-    const product = products.find(p => p.id === prodId);
-    if (!product) return;
-
-    const priceToUse = customPrice !== null ? customPrice : (product.currentSellingPrice || 0);
-    if (customPrice === null) {
-      setDropPricePerPack(product.currentSellingPrice ? product.currentSellingPrice.toString() : "");
-    }
-
-    const qtyNum = parseFloat(qty);
-    if (isNaN(qtyNum) || !priceToUse) {
-      setDropAmount("");
-      return;
-    }
-
-    const packsPerSlop = product.packsPerSlop || 10;
-    const slopsPerKarton = (product.slopsPerBall || 20) * (product.ballsPerKarton || 5);
-    
-    let totalPacks = 0;
-    if (unit === "Ct") {
-      totalPacks = qtyNum * slopsPerKarton * packsPerSlop;
-    } else if (unit === "Bal") {
-      totalPacks = qtyNum * 10 * packsPerSlop; // 1 Bal = 10 Slop
-    } else {
-      totalPacks = qtyNum * packsPerSlop;
-    }
-
-    const totalValue = totalPacks * parseFloat(priceToUse);
-    setDropAmount(Math.round(totalValue).toString());
-  }
 
   async function handleAddTeam() {
     if (!newTeamName.trim()) return toast.error("Masukkan nama tim");
@@ -441,9 +444,6 @@ export default function SalesLedger({ teams, products, purchases }) {
                     const po = purchases?.find(p => p.id === newPoId);
                     const defaultPrice = po?.targetHargaJual ? po.targetHargaJual.toString() : "";
                     setDropPricePerPack(defaultPrice);
-                    
-                    // Update total
-                    updateCalculatedPrice(po?.productId, dropQty, dropUnit, defaultPrice); 
                   }} 
                   className="input-field w-full"
                 >
@@ -468,7 +468,6 @@ export default function SalesLedger({ teams, products, purchases }) {
                       onChange={(e) => { 
                         const raw = parseInputNumber(e.target.value);
                         setDropQty(raw); 
-                        updateCalculatedPrice(selectedProductId, raw, dropUnit, dropPricePerPack); 
                       }} 
                       placeholder="0" 
                       className="input-field" 
@@ -476,7 +475,7 @@ export default function SalesLedger({ teams, products, purchases }) {
                   </div>
                   <div className="w-24">
                     <label className="block text-xs font-medium text-slate-400 mb-1.5">Satuan</label>
-                    <select value={dropUnit} onChange={(e) => { setDropUnit(e.target.value); updateCalculatedPrice(selectedProductId, dropQty, e.target.value, dropPricePerPack); }} className="input-field">
+                    <select value={dropUnit} onChange={(e) => setDropUnit(e.target.value)} className="input-field">
                       <option value="Ct">Ct</option>
                       <option value="Bal">Bal</option>
                       <option value="Slop">Slop</option>
@@ -491,7 +490,6 @@ export default function SalesLedger({ teams, products, purchases }) {
                     onChange={(e) => { 
                       const raw = parseInputNumber(e.target.value);
                       setDropPricePerPack(raw); 
-                      updateCalculatedPrice(selectedProductId, dropQty, dropUnit, raw); 
                     }} 
                     placeholder="0" 
                     className="input-field" 
