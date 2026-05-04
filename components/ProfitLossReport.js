@@ -14,27 +14,41 @@ export default function ProfitLossReport({ products, purchases }) {
   }, []);
 
   // HITUNG DATA PER BATCH PO
-  const reportData = purchases.map(po => {
-    // Cari distribusi yang menggunakan poId ini
+  const batchData = purchases.map(po => {
     const poDist = distributions.filter(d => d.poId === po.id);
-    
     const qtyPacks = poDist.reduce((sum, d) => sum + (d.totalPacksDistributed || 0), 0);
     const revenue = poDist.reduce((sum, d) => sum + (d.amount || 0), 0);
     const cogs = poDist.reduce((sum, d) => sum + ((d.totalPacksDistributed || 0) * (d.hppSnapshot || po.hpp || 0)), 0);
     const profit = revenue - cogs;
-    
     const tgl = po.createdAt?.toDate().toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "2-digit" });
-
     return { 
       id: po.id, 
       name: `${tgl} — ${po.productName}`, 
-      qtyPacks, 
-      revenue, 
-      cogs, 
-      profit,
+      qtyPacks, revenue, cogs, profit,
       margin: revenue > 0 ? (profit / revenue) * 100 : 0
     };
-  }).filter(item => item.qtyPacks > 0); // Hanya tampilkan PO yang sudah ada penjualannya
+  }).filter(item => item.qtyPacks > 0);
+
+  // HITUNG DATA LAMA (Tanpa poId)
+  const legacyDist = distributions.filter(d => !d.poId);
+  const legacyData = [];
+  if (legacyDist.length > 0) {
+    const qtyPacks = legacyDist.reduce((sum, d) => sum + (d.totalPacksDistributed || 0), 0);
+    const revenue = legacyDist.reduce((sum, d) => sum + (d.amount || 0), 0);
+    const cogs = legacyDist.reduce((sum, d) => {
+      const p = products.find(prod => prod.id === d.productId);
+      return sum + ((d.totalPacksDistributed || 0) * (d.hppSnapshot || p?.lastHPP || 0));
+    }, 0);
+    const profit = revenue - cogs;
+    legacyData.push({
+      id: "legacy-batch",
+      name: "Data Historis (Legacy)",
+      qtyPacks, revenue, cogs, profit,
+      margin: revenue > 0 ? (profit / revenue) * 100 : 0
+    });
+  }
+
+  const reportData = [...batchData, ...legacyData];
 
   const totalRevenue = reportData.reduce((sum, item) => sum + item.revenue, 0);
   const totalCOGS = reportData.reduce((sum, item) => sum + item.cogs, 0);
