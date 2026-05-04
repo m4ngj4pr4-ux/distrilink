@@ -18,7 +18,14 @@ export default function ProfitLossReport({ products }) {
     const productDist = distributions.filter(d => d.productId === p.id);
     const qtyPacks = productDist.reduce((sum, d) => sum + (d.totalPacksDistributed || 0), 0);
     const revenue = productDist.reduce((sum, d) => sum + (d.amount || 0), 0);
-    const cogs = qtyPacks * (p.lastHPP || 0);
+    
+    // HITUNG HPP BERDASARKAN SNAPSHOT HISTORIS
+    const cogs = productDist.reduce((sum, d) => {
+      // Fallback ke HPP master saat ini jika data lama tidak punya snapshot
+      const snapshot = d.hppSnapshot !== undefined ? d.hppSnapshot : (p.lastHPP || 0);
+      return sum + ((d.totalPacksDistributed || 0) * snapshot);
+    }, 0);
+
     const profit = revenue - cogs;
     
     return { 

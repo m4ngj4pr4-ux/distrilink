@@ -136,6 +136,7 @@ export default function SalesLedger({ teams, products }) {
         unit: dropUnit,
         qtyOriginal: qty,
         pricePerPack: parseFloat(dropPricePerPack),
+        hppSnapshot: product.lastHPP || 0, // KUNCI HPP SAAT INI
       });
 
       toast.success(`Distribusi ${product.name} (${qty} ${dropUnit}) berhasil!`);
