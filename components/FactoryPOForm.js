@@ -31,6 +31,7 @@ export default function FactoryPOForm({ products }) {
     packsPerSlop: "",
     slopsPerBall: "",
     ballsPerKarton: "",
+    imageUrl: "",
   });
 
   const [form, setForm] = useState({
@@ -230,6 +231,7 @@ export default function FactoryPOForm({ products }) {
         packsPerSlop: parseInt(packsPerSlop),
         slopsPerBall: parseInt(slopsPerBall),
         ballsPerKarton: parseInt(ballsPerKarton),
+        imageUrl: newProduct.imageUrl.trim(),
       });
       toast.success(`Produk "${name.trim()}" berhasil ditambahkan!`);
       setNewProduct({
@@ -237,6 +239,7 @@ export default function FactoryPOForm({ products }) {
         packsPerSlop: "",
         slopsPerBall: "",
         ballsPerKarton: "",
+        imageUrl: "",
       });
       setShowAddProduct(false);
     } catch (err) {
@@ -630,6 +633,21 @@ export default function FactoryPOForm({ products }) {
                     </p>
                   </div>
                 )}
+
+              <div>
+                <label className="block text-xs font-medium text-slate-400 mb-1.5">
+                  URL Foto Produk (Optional)
+                </label>
+                <input
+                  type="text"
+                  value={newProduct.imageUrl}
+                  onChange={(e) =>
+                    setNewProduct({ ...newProduct, imageUrl: e.target.value })
+                  }
+                  placeholder="https://... atau /images/..."
+                  className="input-field"
+                />
+              </div>
             </div>
 
             <div className="flex items-center gap-3 mt-5">
