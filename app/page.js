@@ -237,7 +237,7 @@ export default function DashboardPage() {
             <ProfitLossReport products={products} purchases={purchases} />
           </div>
         );
-      case "sales-ledger":
+      case "sales":
         return (
           <div className="space-y-8 animate-fadeIn">
             <SummaryCards summary={summary} products={products} />
