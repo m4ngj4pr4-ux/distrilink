@@ -5,7 +5,7 @@ import { HiOutlineChartBar, HiTrendingUp, HiTrendingDown, HiOutlineDocumentRepor
 import { formatRupiah } from "@/lib/utils";
 import { subscribeAllDistributions } from "@/lib/firestore";
 
-export default function ProfitLossReport({ products }) {
+export default function ProfitLossReport({ products, purchases }) {
   const [distributions, setDistributions] = useState([]);
 
   useEffect(() => {
@@ -13,31 +13,28 @@ export default function ProfitLossReport({ products }) {
     return () => unsub();
   }, []);
 
-  // Hitung Data per Produk
-  const reportData = products.map(p => {
-    const productDist = distributions.filter(d => d.productId === p.id);
-    const qtyPacks = productDist.reduce((sum, d) => sum + (d.totalPacksDistributed || 0), 0);
-    const revenue = productDist.reduce((sum, d) => sum + (d.amount || 0), 0);
+  // HITUNG DATA PER BATCH PO
+  const reportData = purchases.map(po => {
+    // Cari distribusi yang menggunakan poId ini
+    const poDist = distributions.filter(d => d.poId === po.id);
     
-    // HITUNG HPP BERDASARKAN SNAPSHOT HISTORIS
-    const cogs = productDist.reduce((sum, d) => {
-      // Fallback ke HPP master saat ini jika data lama tidak punya snapshot
-      const snapshot = d.hppSnapshot !== undefined ? d.hppSnapshot : (p.lastHPP || 0);
-      return sum + ((d.totalPacksDistributed || 0) * snapshot);
-    }, 0);
-
+    const qtyPacks = poDist.reduce((sum, d) => sum + (d.totalPacksDistributed || 0), 0);
+    const revenue = poDist.reduce((sum, d) => sum + (d.amount || 0), 0);
+    const cogs = poDist.reduce((sum, d) => sum + ((d.totalPacksDistributed || 0) * (d.hppSnapshot || po.hpp || 0)), 0);
     const profit = revenue - cogs;
     
+    const tgl = po.createdAt?.toDate().toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "2-digit" });
+
     return { 
-      id: p.id, 
-      name: p.name, 
+      id: po.id, 
+      name: `${tgl} — ${po.productName}`, 
       qtyPacks, 
       revenue, 
       cogs, 
       profit,
       margin: revenue > 0 ? (profit / revenue) * 100 : 0
     };
-  }).filter(item => item.qtyPacks > 0); // Hanya tampilkan produk yang sudah terjual
+  }).filter(item => item.qtyPacks > 0); // Hanya tampilkan PO yang sudah ada penjualannya
 
   const totalRevenue = reportData.reduce((sum, item) => sum + item.revenue, 0);
   const totalCOGS = reportData.reduce((sum, item) => sum + item.cogs, 0);
@@ -68,8 +65,8 @@ export default function ProfitLossReport({ products }) {
             <HiOutlineDocumentReport className="text-emerald-400" size={22} />
           </div>
           <div>
-            <h2 className="text-lg font-bold text-white">Rincian Laba per Produk</h2>
-            <p className="text-xs text-slate-400">Analisis margin keuntungan berdasarkan barang yang keluar</p>
+            <h2 className="text-lg font-bold text-white">Rincian Laba per PO (Batch)</h2>
+            <p className="text-xs text-slate-400">Analisis margin keuntungan berdasarkan batch barang masuk</p>
           </div>
         </div>
 

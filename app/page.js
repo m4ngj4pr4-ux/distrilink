@@ -234,14 +234,14 @@ export default function DashboardPage() {
         return (
           <div className="space-y-8 animate-fadeIn">
             <SummaryCards summary={summary} products={products} />
-            <ProfitLossReport products={products} />
+            <ProfitLossReport products={products} purchases={purchases} />
           </div>
         );
-      case "sales":
+      case "sales-ledger":
         return (
           <div className="space-y-8 animate-fadeIn">
             <SummaryCards summary={summary} products={products} />
-            <SalesLedger teams={teams} products={products} />
+            <SalesLedger teams={teams} products={products} purchases={purchases} />
           </div>
         );
       case "retail":

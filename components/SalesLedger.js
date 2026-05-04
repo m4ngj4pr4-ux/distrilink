@@ -24,7 +24,7 @@ import {
 } from "@/lib/firestore";
 import toast from "react-hot-toast";
 
-export default function SalesLedger({ teams, products }) {
+export default function SalesLedger({ teams, products, purchases }) {
   const [depositModal, setDepositModal] = useState(null);
   const [dropModal, setDropModal] = useState(null);
   const [addTeamModal, setAddTeamModal] = useState(false);
@@ -36,7 +36,7 @@ export default function SalesLedger({ teams, products }) {
   const [dropQty, setDropQty] = useState("");
   const [dropPricePerPack, setDropPricePerPack] = useState("");
   const [dropUnit, setDropUnit] = useState("Ct"); // Ct, Bal, atau Slop
-  const [selectedProductId, setSelectedProductId] = useState("");
+  const [selectedPoId, setSelectedPoId] = useState("");
   
   const [newTeamName, setNewTeamName] = useState("");
   const [processing, setProcessing] = useState(false);
@@ -100,11 +100,16 @@ export default function SalesLedger({ teams, products }) {
     const amount = parseFloat(dropAmount);
     const qty = parseFloat(dropQty);
     
-    if (!selectedProductId) return toast.error("Pilih produk");
+    if (!selectedPoId) return toast.error("Pilih Batch PO");
     if (!qty || qty <= 0) return toast.error("Masukkan jumlah");
     if (!amount || amount <= 0) return toast.error("Nilai barang tidak valid");
 
-    const product = products.find(p => p.id === selectedProductId);
+    const po = purchases.find(p => p.id === selectedPoId);
+    if (!po) return toast.error("Data PO tidak ditemukan");
+
+    const product = products.find(p => p.id === po.productId);
+    if (!product) return toast.error("Data produk tidak ditemukan");
+
     const packsPerSlop = product.packsPerSlop || 10;
     const slopsPerKarton = (product.slopsPerBall || 20) * (product.ballsPerKarton || 5);
 
@@ -128,22 +133,23 @@ export default function SalesLedger({ teams, products }) {
       await addGoodsDropTransaction({
         teamId: dropModal.id,
         teamName: dropModal.name,
-        productId: selectedProductId,
-        productName: product.name,
+        poId: selectedPoId,
+        productId: po.productId,
+        productName: po.productName,
         totalPacksDistributed: totalPacksDistributed,
         jumlahKarton: totalPacksDistributed / (slopsPerKarton * packsPerSlop),
         amount: amount,
         unit: dropUnit,
         qtyOriginal: qty,
         pricePerPack: parseFloat(dropPricePerPack),
-        hppSnapshot: product.lastHPP || 0, // KUNCI HPP SAAT INI
+        hppSnapshot: po.hpp || 0, // KUNCI HPP DARI BATCH INI
       });
 
-      toast.success(`Distribusi ${product.name} (${qty} ${dropUnit}) berhasil!`);
+      toast.success(`Distribusi ${po.productName} (${qty} ${dropUnit}) berhasil!`);
       setDropModal(null);
       setDropAmount("");
       setDropQty("");
-      setSelectedProductId("");
+      setSelectedPoId("");
       setDropPricePerPack("");
       setDropUnit("Ct");
     } catch (err) {
@@ -424,25 +430,32 @@ export default function SalesLedger({ teams, products }) {
             </div>
             <div className="space-y-4 mb-6">
               <div>
-                <label className="block text-xs font-medium text-slate-400 mb-1.5">Pilih Produk</label>
+                <label className="block text-xs font-medium text-slate-400 mb-1.5">Pilih Batch PO (Sisa Stok)</label>
                 <select 
-                  value={selectedProductId} 
+                  value={selectedPoId} 
                   onChange={(e) => { 
-                    const newProdId = e.target.value;
-                    setSelectedProductId(newProdId); 
+                    const newPoId = e.target.value;
+                    setSelectedPoId(newPoId); 
                     
-                    // Auto-fill price logic from Master Product
-                    const selectedProd = products?.find(p => p.id === newProdId);
-                    const defaultPrice = selectedProd?.currentSellingPrice ? selectedProd.currentSellingPrice.toString() : "";
+                    // Ambil data PO untuk auto-fill harga
+                    const po = purchases?.find(p => p.id === newPoId);
+                    const defaultPrice = po?.targetHargaJual ? po.targetHargaJual.toString() : "";
                     setDropPricePerPack(defaultPrice);
                     
-                    // Update total calculation with the newly fetched price
-                    updateCalculatedPrice(newProdId, dropQty, dropUnit, defaultPrice); 
+                    // Update total
+                    updateCalculatedPrice(po?.productId, dropQty, dropUnit, defaultPrice); 
                   }} 
                   className="input-field w-full"
                 >
-                  <option value="">— Pilih produk —</option>
-                  {products?.map((p) => ( <option key={p.id} value={p.id}>{p.name}</option> ))}
+                  <option value="">— Pilih batch PO —</option>
+                  {purchases?.filter(p => (p.totalPack || 0) > 0).map((p) => {
+                    const tgl = p.createdAt?.toDate().toLocaleDateString("id-ID", { day: "2-digit", month: "short" });
+                    return (
+                      <option key={p.id} value={p.id}>
+                        {tgl} — {p.productName} (Sisa: {p.totalPack?.toLocaleString("id-ID")} Pk) — Modal: {formatRupiah(p.hpp)}
+                      </option>
+                    );
+                  })}
                 </select>
               </div>
               <div className="grid grid-cols-2 gap-3">
