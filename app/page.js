@@ -43,6 +43,7 @@ export default function DashboardPage() {
   const [factoryReturns, setFactoryReturns] = useState([]);
   const [retailStores, setRetailStores] = useState([]);
   const [allDistributions, setAllDistributions] = useState([]);
+  const [previewImage, setPreviewImage] = useState(null);
 
   useEffect(() => {
     const unsubProducts = subscribeProducts((data) => {
@@ -124,7 +125,8 @@ export default function DashboardPage() {
                 <table className="w-full text-left border-collapse min-w-[700px]">
                   <thead>
                     <tr className="text-[10px] uppercase tracking-wider text-slate-500 border-b border-slate-400/10 bg-dark-800/30">
-                      <th className="py-3 px-4 font-semibold text-left rounded-tl-lg">Produk</th>
+                      <th className="py-3 px-4 font-semibold text-left rounded-tl-lg w-20">Foto</th>
+                      <th className="py-3 px-4 font-semibold text-left">Produk</th>
                       <th className="py-3 px-4 font-semibold text-right">HPP Terakhir / Pk</th>
                       <th className="py-3 px-4 font-semibold text-right">Target Jual / Pk</th>
                       <th className="py-3 px-4 font-semibold text-right rounded-tr-lg">Sisa Stok</th>
@@ -144,6 +146,20 @@ export default function DashboardPage() {
 
                       return (
                         <tr key={p.id} className="hover:bg-white/5 transition-colors group">
+                          <td className="py-3 px-4">
+                            {p.imageUrl ? (
+                              <img 
+                                src={p.imageUrl} 
+                                alt={p.name} 
+                                onClick={() => setPreviewImage({ url: p.imageUrl, name: p.name })}
+                                className="w-12 h-12 rounded-lg object-cover cursor-pointer border border-slate-400/20 hover:scale-110 transition-transform" 
+                              />
+                            ) : (
+                              <div className="w-12 h-12 rounded-lg bg-dark-700 border border-dashed border-slate-600 flex items-center justify-center text-[10px] text-slate-500">
+                                No Pic
+                              </div>
+                            )}
+                          </td>
                           <td className="py-3 px-4">
                             <div className="font-bold text-white text-sm group-hover:text-blue-400 transition-colors">{p.name}</div>
                           </td>
@@ -175,6 +191,26 @@ export default function DashboardPage() {
                 </table>
               </div>
             </div>
+
+            {/* Modal Preview Gambar */}
+            {previewImage && (
+              <div className="modal-overlay z-[100] p-4 flex items-center justify-center" onClick={() => setPreviewImage(null)}>
+                <div className="relative max-w-2xl w-full p-2 animate-zoomIn" onClick={e => e.stopPropagation()}>
+                  <button 
+                    onClick={() => setPreviewImage(null)}
+                    className="absolute -top-10 right-0 text-white hover:text-rose-400 transition-colors flex items-center gap-2 font-bold"
+                  >
+                    Tutup (X)
+                  </button>
+                  <img 
+                    src={previewImage.url} 
+                    alt={previewImage.name} 
+                    className="w-full h-auto rounded-2xl shadow-2xl border-4 border-white/10" 
+                  />
+                  <p className="text-center text-white mt-4 font-bold text-lg">{previewImage.name}</p>
+                </div>
+              </div>
+            )}
           </div>
         );
       case "laba-rugi":
