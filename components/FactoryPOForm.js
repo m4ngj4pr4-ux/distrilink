@@ -667,20 +667,7 @@ export default function FactoryPOForm({ products }) {
                   </div>
                 )}
 
-              <div>
-                <label className="block text-xs font-medium text-slate-400 mb-1.5">
-                  URL Foto Produk (Optional)
-                </label>
-                <input
-                  type="text"
-                  value={newProduct.imageUrl}
-                  onChange={(e) =>
-                    setNewProduct({ ...newProduct, imageUrl: e.target.value })
-                  }
-                  placeholder="https://... atau /images/..."
-                  className="input-field"
-                />
-              </div>
+                )}
             </div>
 
             <div className="flex items-center gap-3 mt-5">
