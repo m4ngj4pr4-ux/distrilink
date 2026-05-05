@@ -80,16 +80,30 @@ export default function RetailMap({ stores, center, onMarkerClick, onMapClick, t
               }}
             >
               <Popup className="custom-popup">
-                <div className="p-1">
-                  <h3 className="font-bold text-dark-800">{store.namaToko}</h3>
-                  <p className="text-xs text-slate-500 mb-2">{store.pemilik}</p>
-                  <a 
-                    href={`https://wa.me/${store.nomorHp}`} 
-                    target="_blank" 
-                    className="text-[10px] bg-emerald-500 text-white px-2 py-1 rounded block text-center"
-                  >
-                    WhatsApp
-                  </a>
+                <div className="flex flex-col gap-2 min-w-[180px] p-0.5">
+                  <div>
+                    <h3 className="font-bold text-slate-800 text-sm mb-0.5">{store.namaToko}</h3>
+                    <p className="text-[11px] text-slate-600 mb-1 leading-tight">{store.alamat}</p>
+                    <div className="space-y-0.5">
+                      {store.pemilik && <p className="text-[10px] text-slate-500 font-medium flex items-center gap-1">👤 {store.pemilik}</p>}
+                      {store.nomorHp && (
+                        <a href={`https://wa.me/${store.nomorHp}`} target="_blank" rel="noopener noreferrer" className="text-[10px] text-emerald-600 hover:underline flex items-center gap-1 font-semibold">
+                          📞 {store.nomorHp} (WA)
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                  
+                  <div className="border-t border-slate-200 pt-2 mt-1">
+                    <a 
+                      href={`https://www.google.com/maps?q=${store.latitude},${store.longitude}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-full bg-blue-500 hover:bg-blue-600 text-white text-[11px] font-bold py-1.5 px-3 rounded flex items-center justify-center gap-1.5 transition-colors no-underline shadow-sm"
+                    >
+                      🗺️ Buka Google Maps
+                    </a>
+                  </div>
                 </div>
               </Popup>
             </Marker>
