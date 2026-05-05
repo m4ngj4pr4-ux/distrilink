@@ -186,17 +186,30 @@ export default function RetailMarketing() {
                 value={newStore.nomorHp} onChange={e => setNewStore({...newStore, nomorHp: e.target.value})}
                 className="input-field text-xs" 
               />
-              <div className="grid grid-cols-2 gap-2">
-                <input 
-                  type="text" placeholder="Lat" readOnly
-                  value={newStore.latitude}
-                  className="input-field text-xs bg-dark-700/50 cursor-default" 
-                />
-                <input 
-                  type="text" placeholder="Lng" readOnly
-                  value={newStore.longitude}
-                  className="input-field text-xs bg-dark-700/50 cursor-default" 
-                />
+              <div className="space-y-1">
+                <div className="grid grid-cols-2 gap-2">
+                  <input 
+                    type="number" step="any" placeholder="Lat" 
+                    value={newStore.latitude}
+                    onChange={e => {
+                      setNewStore({...newStore, latitude: e.target.value});
+                      setTempCoords({ lat: parseFloat(e.target.value), lng: parseFloat(newStore.longitude) || 0 });
+                    }}
+                    className="input-field text-xs" 
+                  />
+                  <input 
+                    type="number" step="any" placeholder="Lng" 
+                    value={newStore.longitude}
+                    onChange={e => {
+                      setNewStore({...newStore, longitude: e.target.value});
+                      setTempCoords({ lat: parseFloat(newStore.latitude) || 0, lng: parseFloat(e.target.value) });
+                    }}
+                    className="input-field text-xs" 
+                  />
+                </div>
+                <p className="text-[9px] text-slate-500 italic px-1">
+                  Klik pada peta untuk mengisi otomatis, atau ketik/paste koordinat manual.
+                </p>
               </div>
               <button type="submit" className="btn-primary w-full py-2 text-xs">Simpan Toko</button>
             </form>
