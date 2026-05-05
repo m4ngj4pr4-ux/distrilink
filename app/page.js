@@ -248,7 +248,7 @@ export default function DashboardPage() {
         return (
           <div className="space-y-8 animate-fadeIn">
             <SummaryCards summary={summary} products={products} />
-            <RetailMarketing stores={retailStores} />
+            <RetailMarketing />
           </div>
         );
       case "returns":

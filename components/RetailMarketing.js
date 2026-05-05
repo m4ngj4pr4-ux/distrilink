@@ -1,106 +1,182 @@
 "use client";
-import { useState } from "react";
-import { HiOutlineLocationMarker, HiOutlinePlus, HiOutlineTrash } from "react-icons/hi";
-import { addRetailStore, deleteRetailStore } from "@/lib/firestore";
-import { formatRupiah } from "@/lib/utils";
+
+import { useState, useEffect } from "react";
+import dynamic from "next/dynamic";
+import { HiOutlineSearch, HiOutlineLocationMarker, HiOutlinePlus, HiOutlinePhone, HiOutlineUser, HiOutlineTrash } from "react-icons/hi";
+import { subscribeRetailStores, addRetailStore, deleteRetailStore } from "@/lib/firestore";
 import toast from "react-hot-toast";
 
-export default function RetailMarketing({ stores }) {
-  const [storeName, setStoreName] = useState("");
-  const [ownerName, setOwnerName] = useState("");
-  const [address, setAddress] = useState("");
-  const [coordinates, setCoordinates] = useState("");
-  const [processing, setProcessing] = useState(false);
+// Import Map with SSR disabled
+const RetailMap = dynamic(() => import("./RetailMap"), { 
+  ssr: false,
+  loading: () => (
+    <div className="w-full h-full bg-dark-800 animate-pulse flex items-center justify-center text-slate-500">
+      Memuat Peta...
+    </div>
+  )
+});
+
+export default function RetailMarketing() {
+  const [stores, setStores] = useState([]);
+  const [search, setSearch] = useState("");
+  const [mapCenter, setMapCenter] = useState(null);
+  const [showAddForm, setShowAddForm] = useState(false);
+  
+  // Form State
+  const [newStore, setNewStore] = useState({
+    namaToko: "",
+    pemilik: "",
+    alamat: "",
+    nomorHp: "",
+    coordinates: "" // User can paste "lat, lng"
+  });
+
+  useEffect(() => {
+    const unsub = subscribeRetailStores(setStores);
+    return () => unsub();
+  }, []);
+
+  const filteredStores = stores.filter(s => 
+    s.namaToko?.toLowerCase().includes(search.toLowerCase()) ||
+    s.pemilik?.toLowerCase().includes(search.toLowerCase()) ||
+    s.alamat?.toLowerCase().includes(search.toLowerCase())
+  );
 
   async function handleAddStore(e) {
     e.preventDefault();
-    if (!storeName || !address) return toast.error("Nama Toko dan Alamat wajib diisi!");
-    setProcessing(true);
+    const [lat, lng] = newStore.coordinates.split(",").map(c => c.trim());
+    
+    if (!lat || !lng) return toast.error("Format koordinat salah (Gunakan: lat, lng)");
+
     try {
-      await addRetailStore({ name: storeName, owner: ownerName, address, coordinates });
-      toast.success("Toko berhasil ditambahkan!");
-      setStoreName(""); setOwnerName(""); setAddress(""); setCoordinates("");
+      await addRetailStore({
+        namaToko: newStore.namaToko,
+        pemilik: newStore.pemilik,
+        alamat: newStore.alamat,
+        nomorHp: newStore.nomorHp,
+        latitude: lat,
+        longitude: lng
+      });
+      toast.success("Toko berhasil didaftarkan");
+      setNewStore({ namaToko: "", pemilik: "", alamat: "", nomorHp: "", coordinates: "" });
+      setShowAddForm(false);
     } catch (err) {
       toast.error("Gagal: " + err.message);
-    } finally {
-      setProcessing(false);
     }
   }
 
+  async function handleDelete(id) {
+    if (!confirm("Hapus toko ini dari database?")) return;
+    await deleteRetailStore(id);
+    toast.success("Toko dihapus");
+  }
+
   return (
-    <div className="space-y-6 animate-fadeIn">
-      {/* Form Tambah Toko */}
-      <div className="glass-card p-6 border-t-4 border-pink-500">
-        <div className="flex items-center gap-3 mb-6">
-          <div className="w-10 h-10 rounded-xl bg-pink-500/10 flex items-center justify-center">
-            <HiOutlineLocationMarker className="text-pink-400" size={22} />
+    <div className="flex flex-col lg:flex-row h-[calc(100vh-180px)] gap-6 animate-fadeIn">
+      {/* Sidebar List */}
+      <div className="w-full lg:w-96 flex flex-col gap-4">
+        <div className="glass-card p-4 flex flex-col h-full overflow-hidden">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="font-bold text-white flex items-center gap-2">
+              <HiOutlineLocationMarker className="text-blue-400" />
+              Titik Retail
+            </h2>
+            <button 
+              onClick={() => setShowAddForm(!showAddForm)}
+              className="p-1.5 rounded-lg bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 transition-colors"
+            >
+              <HiOutlinePlus size={18} />
+            </button>
           </div>
-          <div>
-            <h2 className="text-lg font-bold text-white">Database Toko Retail</h2>
-            <p className="text-xs text-slate-400">Kelola daftar warung dan titik wilayah pemasaran sales</p>
+
+          <div className="relative mb-4">
+            <HiOutlineSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+            <input 
+              type="text" 
+              placeholder="Cari toko atau wilayah..." 
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="input-field pl-10 text-sm"
+            />
+          </div>
+
+          <div className="flex-1 overflow-y-auto space-y-2 pr-2 custom-scrollbar">
+            {filteredStores.map((store) => (
+              <div 
+                key={store.id}
+                onClick={() => setMapCenter([parseFloat(store.latitude), parseFloat(store.longitude)])}
+                className="p-3 rounded-xl bg-dark-700/50 border border-slate-400/5 hover:border-blue-500/30 cursor-pointer group transition-all"
+              >
+                <div className="flex justify-between items-start mb-1">
+                  <h4 className="font-bold text-white text-sm group-hover:text-blue-400 transition-colors">{store.namaToko}</h4>
+                  <button 
+                    onClick={(e) => { e.stopPropagation(); handleDelete(store.id); }}
+                    className="opacity-0 group-hover:opacity-100 p-1 text-slate-500 hover:text-rose-400 transition-all"
+                  >
+                    <HiOutlineTrash size={14} />
+                  </button>
+                </div>
+                <p className="text-[11px] text-slate-400 flex items-center gap-1.5 mb-1">
+                  <HiOutlineUser size={12} className="text-slate-500" /> {store.pemilik}
+                </p>
+                <p className="text-[11px] text-slate-500 truncate">{store.alamat}</p>
+              </div>
+            ))}
+            {filteredStores.length === 0 && (
+              <div className="text-center py-10 text-slate-500 italic text-sm">Toko tidak ditemukan.</div>
+            )}
           </div>
         </div>
-
-        <form onSubmit={handleAddStore} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-          <input type="text" placeholder="Nama Toko/Warung" value={storeName} onChange={e => setStoreName(e.target.value)} className="input-field" />
-          <input type="text" placeholder="Nama Pemilik" value={ownerName} onChange={e => setOwnerName(e.target.value)} className="input-field" />
-          <input type="text" placeholder="Alamat / Wilayah" value={address} onChange={e => setAddress(e.target.value)} className="input-field" />
-          <input type="text" placeholder="Koordinat (Lat, Long)" value={coordinates} onChange={e => setCoordinates(e.target.value)} className="input-field" />
-          <button type="submit" disabled={processing} className="btn-primary w-full flex items-center justify-center gap-2 bg-pink-600 hover:bg-pink-700 shadow-pink-500/20 text-sm">
-            <HiOutlinePlus /> Tambah Toko
-          </button>
-        </form>
       </div>
 
-      {/* Tabel Toko */}
-      <div className="glass-card p-6">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse min-w-[800px]">
-            <thead>
-              <tr className="text-[10px] uppercase tracking-wider text-slate-500 border-b border-slate-400/10 bg-dark-800/30">
-                <th className="py-3 px-4 font-semibold rounded-tl-lg">Nama Toko</th>
-                <th className="py-3 px-4 font-semibold">Pemilik</th>
-                <th className="py-3 px-4 font-semibold">Wilayah</th>
-                <th className="py-3 px-4 font-semibold">Lokasi</th>
-                <th className="py-3 px-4 font-semibold text-right">Total Piutang</th>
-                <th className="py-3 px-4 font-semibold text-center rounded-tr-lg">Aksi</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-400/5">
-              {stores?.length === 0 ? (
-                <tr><td colSpan="6" className="text-center py-8 text-slate-500 italic text-sm">Belum ada data toko retail terdaftar.</td></tr>
-              ) : (
-                stores?.map(s => (
-                  <tr key={s.id} className="hover:bg-white/5 transition-colors">
-                    <td className="py-3 px-4 font-bold text-white text-sm">{s.name}</td>
-                    <td className="py-3 px-4 text-slate-400">{s.owner || "-"}</td>
-                    <td className="py-3 px-4 text-slate-400 text-xs">{s.address}</td>
-                    <td className="py-3 px-4 text-xs">
-                      {s.coordinates ? (
-                        <a 
-                          href={`https://www.google.com/maps?q=${s.coordinates}`} 
-                          target="_blank" 
-                          rel="noopener noreferrer"
-                          className="text-blue-400 hover:underline flex items-center gap-1"
-                        >
-                          <HiOutlineLocationMarker size={14} /> Lihat Map
-                        </a>
-                      ) : (
-                        <span className="text-slate-600 italic">No GPS</span>
-                      )}
-                    </td>
-                    <td className="py-3 px-4 text-right font-mono font-bold text-amber-400">{formatRupiah(s.totalPiutang || 0)}</td>
-                    <td className="py-3 px-4 text-center">
-                      <button onClick={() => {if(confirm(`Hapus toko ${s.name}?`)) deleteRetailStore(s.id)}} className="p-1.5 rounded hover:bg-rose-500/10 text-slate-500 hover:text-rose-400 transition-colors">
-                        <HiOutlineTrash size={16} />
-                      </button>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
+      {/* Map Area */}
+      <div className="flex-1 relative min-h-[400px]">
+        <RetailMap 
+          stores={stores} 
+          center={mapCenter} 
+          onMarkerClick={(s) => setMapCenter([parseFloat(s.latitude), parseFloat(s.longitude)])}
+        />
+
+        {/* Floating Add Form */}
+        {showAddForm && (
+          <div className="absolute top-4 right-4 z-[1000] w-80 glass-card p-5 border-t-4 border-blue-500 shadow-2xl animate-slideIn">
+            <h3 className="font-bold text-white mb-4 flex items-center justify-between">
+              Registrasi Toko Baru
+              <button onClick={() => setShowAddForm(false)} className="text-slate-500 hover:text-white"><HiOutlinePlus className="rotate-45" /></button>
+            </h3>
+            <form onSubmit={handleAddStore} className="space-y-3">
+              <input 
+                type="text" placeholder="Nama Toko" required
+                value={newStore.namaToko} onChange={e => setNewStore({...newStore, namaToko: e.target.value})}
+                className="input-field text-xs" 
+              />
+              <input 
+                type="text" placeholder="Nama Pemilik" required
+                value={newStore.pemilik} onChange={e => setNewStore({...newStore, pemilik: e.target.value})}
+                className="input-field text-xs" 
+              />
+              <input 
+                type="text" placeholder="Alamat / Wilayah" required
+                value={newStore.alamat} onChange={e => setNewStore({...newStore, alamat: e.target.value})}
+                className="input-field text-xs" 
+              />
+              <input 
+                type="text" placeholder="Nomor HP (WhatsApp)" required
+                value={newStore.nomorHp} onChange={e => setNewStore({...newStore, nomorHp: e.target.value})}
+                className="input-field text-xs" 
+              />
+              <div className="space-y-1">
+                <input 
+                  type="text" placeholder="Koordinat (lat, lng)" required
+                  value={newStore.coordinates} onChange={e => setNewStore({...newStore, coordinates: e.target.value})}
+                  className="input-field text-xs" 
+                />
+                <p className="text-[9px] text-slate-500">Tips: Klik kanan di Google Maps {'>'} Salin Koordinat</p>
+              </div>
+              <button type="submit" className="btn-primary w-full py-2 text-xs">Simpan Titik</button>
+            </form>
+          </div>
+        )}
       </div>
     </div>
   );
