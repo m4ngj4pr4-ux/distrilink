@@ -21,6 +21,7 @@ export default function RetailMarketing() {
   const [search, setSearch] = useState("");
   const [mapCenter, setMapCenter] = useState(null);
   const [showAddForm, setShowAddForm] = useState(false);
+  const [tempCoords, setTempCoords] = useState(null);
   
   // Form State
   const [newStore, setNewStore] = useState({
@@ -28,7 +29,8 @@ export default function RetailMarketing() {
     pemilik: "",
     alamat: "",
     nomorHp: "",
-    coordinates: "" // User can paste "lat, lng"
+    latitude: "",
+    longitude: ""
   });
 
   useEffect(() => {
@@ -42,11 +44,21 @@ export default function RetailMarketing() {
     s.alamat?.toLowerCase().includes(search.toLowerCase())
   );
 
+  const handleMapClick = (latlng) => {
+    if (showAddForm) {
+      setNewStore(prev => ({
+        ...prev,
+        latitude: latlng.lat.toFixed(6),
+        longitude: latlng.lng.toFixed(6)
+      }));
+      setTempCoords(latlng);
+      toast.success("Koordinat ditangkap!", { id: "map-click", duration: 1000 });
+    }
+  };
+
   async function handleAddStore(e) {
     e.preventDefault();
-    const [lat, lng] = newStore.coordinates.split(",").map(c => c.trim());
-    
-    if (!lat || !lng) return toast.error("Format koordinat salah (Gunakan: lat, lng)");
+    if (!newStore.latitude || !newStore.longitude) return toast.error("Klik peta untuk menentukan lokasi");
 
     try {
       await addRetailStore({
@@ -54,11 +66,12 @@ export default function RetailMarketing() {
         pemilik: newStore.pemilik,
         alamat: newStore.alamat,
         nomorHp: newStore.nomorHp,
-        latitude: lat,
-        longitude: lng
+        latitude: newStore.latitude,
+        longitude: newStore.longitude
       });
       toast.success("Toko berhasil didaftarkan");
-      setNewStore({ namaToko: "", pemilik: "", alamat: "", nomorHp: "", coordinates: "" });
+      setNewStore({ namaToko: "", pemilik: "", alamat: "", nomorHp: "", latitude: "", longitude: "" });
+      setTempCoords(null);
       setShowAddForm(false);
     } catch (err) {
       toast.error("Gagal: " + err.message);
@@ -82,13 +95,17 @@ export default function RetailMarketing() {
               Titik Retail
             </h2>
             <button 
-              onClick={() => setShowAddForm(!showAddForm)}
-              className="p-1.5 rounded-lg bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 transition-colors"
+              onClick={() => {
+                setShowAddForm(!showAddForm);
+                if (!showAddForm) setTempCoords(null);
+              }}
+              className={`p-1.5 rounded-lg transition-colors ${showAddForm ? "bg-rose-500/10 text-rose-400" : "bg-blue-500/10 text-blue-400 hover:bg-blue-500/20"}`}
             >
-              <HiOutlinePlus size={18} />
+              {showAddForm ? <HiOutlinePlus className="rotate-45" size={18} /> : <HiOutlinePlus size={18} />}
             </button>
           </div>
 
+          {/* ... (Search input and list remain same) ... */}
           <div className="relative mb-4">
             <HiOutlineSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
             <input 
@@ -135,15 +152,19 @@ export default function RetailMarketing() {
           stores={stores} 
           center={mapCenter} 
           onMarkerClick={(s) => setMapCenter([parseFloat(s.latitude), parseFloat(s.longitude)])}
+          onMapClick={handleMapClick}
+          tempMarker={tempCoords}
         />
 
         {/* Floating Add Form */}
         {showAddForm && (
           <div className="absolute top-4 right-4 z-[1000] w-80 glass-card p-5 border-t-4 border-blue-500 shadow-2xl animate-slideIn">
-            <h3 className="font-bold text-white mb-4 flex items-center justify-between">
+            <h3 className="font-bold text-white mb-1 flex items-center justify-between">
               Registrasi Toko Baru
-              <button onClick={() => setShowAddForm(false)} className="text-slate-500 hover:text-white"><HiOutlinePlus className="rotate-45" /></button>
             </h3>
+            <p className="text-[10px] text-amber-500 mb-4 font-medium animate-pulse">
+              📍 Klik lokasi pada peta untuk mengisi koordinat otomatis
+            </p>
             <form onSubmit={handleAddStore} className="space-y-3">
               <input 
                 type="text" placeholder="Nama Toko" required
@@ -165,15 +186,19 @@ export default function RetailMarketing() {
                 value={newStore.nomorHp} onChange={e => setNewStore({...newStore, nomorHp: e.target.value})}
                 className="input-field text-xs" 
               />
-              <div className="space-y-1">
+              <div className="grid grid-cols-2 gap-2">
                 <input 
-                  type="text" placeholder="Koordinat (lat, lng)" required
-                  value={newStore.coordinates} onChange={e => setNewStore({...newStore, coordinates: e.target.value})}
-                  className="input-field text-xs" 
+                  type="text" placeholder="Lat" readOnly
+                  value={newStore.latitude}
+                  className="input-field text-xs bg-dark-700/50 cursor-default" 
                 />
-                <p className="text-[9px] text-slate-500">Tips: Klik kanan di Google Maps {'>'} Salin Koordinat</p>
+                <input 
+                  type="text" placeholder="Lng" readOnly
+                  value={newStore.longitude}
+                  className="input-field text-xs bg-dark-700/50 cursor-default" 
+                />
               </div>
-              <button type="submit" className="btn-primary w-full py-2 text-xs">Simpan Titik</button>
+              <button type="submit" className="btn-primary w-full py-2 text-xs">Simpan Toko</button>
             </form>
           </div>
         )}

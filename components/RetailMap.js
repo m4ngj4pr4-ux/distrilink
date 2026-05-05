@@ -27,8 +27,18 @@ function ChangeView({ center }) {
   return null;
 }
 
-export default function RetailMap({ stores, center, onMarkerClick }) {
-  const defaultCenter = [-6.200000, 106.816666]; // Jakarta default
+// NEW: Click handler to pick coordinates
+function MapClickHandler({ onMapClick }) {
+  useMapEvents({
+    click(e) {
+      if (onMapClick) onMapClick(e.latlng);
+    },
+  });
+  return null;
+}
+
+export default function RetailMap({ stores, center, onMarkerClick, onMapClick, tempMarker }) {
+  const defaultCenter = [-7.9666, 112.6326]; // Malang default
 
   return (
     <div className="w-full h-full rounded-2xl overflow-hidden shadow-2xl border border-slate-400/10">
@@ -45,6 +55,14 @@ export default function RetailMap({ stores, center, onMarkerClick }) {
         />
         
         <ChangeView center={center} />
+        <MapClickHandler onMapClick={onMapClick} />
+
+        {/* Temp Marker for adding new store */}
+        {tempMarker && (
+          <Marker position={[tempMarker.lat, tempMarker.lng]}>
+            <Popup>📍 Lokasi Toko Baru</Popup>
+          </Marker>
+        )}
 
         {stores.map((store) => {
           const lat = parseFloat(store.latitude);
