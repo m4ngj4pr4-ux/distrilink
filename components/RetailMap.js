@@ -16,13 +16,21 @@ function ChangeView({ center }) {
   return null;
 }
 
-// NEW: Click handler to pick coordinates
-function MapClickHandler({ onMapClick }) {
-  useMapEvents({
-    click(e) {
-      if (onMapClick) onMapClick(e.latlng);
-    },
-  });
+// NEW: Component to automatically fit markers on screen
+function FitBounds({ stores }) {
+  const map = useMap();
+  useEffect(() => {
+    if (stores && stores.length > 0) {
+      const latLngs = stores
+        .map(s => [parseFloat(s.latitude), parseFloat(s.longitude)])
+        .filter(coord => !isNaN(coord[0]) && !isNaN(coord[1]));
+      
+      if (latLngs.length > 0) {
+        const bounds = L.latLngBounds(latLngs);
+        map.fitBounds(bounds, { padding: [50, 50] });
+      }
+    }
+  }, [stores, map]);
   return null;
 }
 
@@ -39,12 +47,12 @@ export default function RetailMap({ stores, center, onMarkerClick, onMapClick, t
     L.Marker.prototype.options.icon = DefaultIcon;
   }, []);
 
-  const defaultCenter = [-7.9666, 112.6326]; // Malang default
+  const fallbackCenter = [-3.3166, 114.5901]; // Banjarmasin fallback
 
   return (
     <div className="w-full h-full rounded-2xl overflow-hidden shadow-2xl border border-slate-400/10">
       <MapContainer
-        center={center || defaultCenter}
+        center={center || fallbackCenter}
         zoom={13}
         style={{ height: "100%", width: "100%" }}
         zoomControl={false}
@@ -57,6 +65,7 @@ export default function RetailMap({ stores, center, onMarkerClick, onMapClick, t
         
         <ChangeView center={center} />
         <MapClickHandler onMapClick={onMapClick} />
+        <FitBounds stores={stores} />
 
         {/* Temp Marker for adding new store */}
         {tempMarker && (
