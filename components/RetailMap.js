@@ -16,6 +16,16 @@ function ChangeView({ center }) {
   return null;
 }
 
+// NEW: Click handler to pick coordinates
+function MapClickHandler({ onMapClick }) {
+  useMapEvents({
+    click(e) {
+      if (onMapClick) onMapClick(e.latlng);
+    },
+  });
+  return null;
+}
+
 // NEW: Component to automatically fit markers on screen
 function FitBounds({ stores }) {
   const map = useMap();
