@@ -29,8 +29,7 @@ export default function RetailMarketing() {
     pemilik: "",
     alamat: "",
     nomorHp: "",
-    latitude: "",
-    longitude: ""
+    coordinates: ""
   });
 
   useEffect(() => {
@@ -46,10 +45,10 @@ export default function RetailMarketing() {
 
   const handleMapClick = (latlng) => {
     if (showAddForm) {
+      const coordsString = `${latlng.lat.toFixed(6)}, ${latlng.lng.toFixed(6)}`;
       setNewStore(prev => ({
         ...prev,
-        latitude: latlng.lat.toFixed(6),
-        longitude: latlng.lng.toFixed(6)
+        coordinates: coordsString
       }));
       setTempCoords(latlng);
       toast.success("Koordinat ditangkap!", { id: "map-click", duration: 1000 });
@@ -58,7 +57,19 @@ export default function RetailMarketing() {
 
   async function handleAddStore(e) {
     e.preventDefault();
-    if (!newStore.latitude || !newStore.longitude) return toast.error("Klik peta untuk menentukan lokasi");
+    
+    // Parse Koordinat (Lat, Lng)
+    let lat = 0;
+    let lng = 0;
+    if (newStore.coordinates) {
+      const parts = newStore.coordinates.split(",");
+      if (parts.length === 2) {
+        lat = parseFloat(parts[0].trim());
+        lng = parseFloat(parts[1].trim());
+      }
+    }
+
+    if (!lat || !lng) return toast.error("Klik peta atau masukkan koordinat (Lat, Lng)");
 
     try {
       await addRetailStore({
@@ -66,11 +77,11 @@ export default function RetailMarketing() {
         pemilik: newStore.pemilik,
         alamat: newStore.alamat,
         nomorHp: newStore.nomorHp,
-        latitude: newStore.latitude,
-        longitude: newStore.longitude
+        latitude: lat.toString(),
+        longitude: lng.toString()
       });
       toast.success("Toko berhasil didaftarkan");
-      setNewStore({ namaToko: "", pemilik: "", alamat: "", nomorHp: "", latitude: "", longitude: "" });
+      setNewStore({ namaToko: "", pemilik: "", alamat: "", nomorHp: "", coordinates: "" });
       setTempCoords(null);
       setShowAddForm(false);
     } catch (err) {
@@ -187,31 +198,29 @@ export default function RetailMarketing() {
                 className="input-field text-xs" 
               />
               <div className="space-y-1">
-                <div className="grid grid-cols-2 gap-2">
-                  <input 
-                    type="number" step="any" placeholder="Lat" 
-                    value={newStore.latitude}
-                    onChange={e => {
-                      setNewStore({...newStore, latitude: e.target.value});
-                      setTempCoords({ lat: parseFloat(e.target.value), lng: parseFloat(newStore.longitude) || 0 });
-                    }}
-                    className="input-field text-xs" 
-                  />
-                  <input 
-                    type="number" step="any" placeholder="Lng" 
-                    value={newStore.longitude}
-                    onChange={e => {
-                      setNewStore({...newStore, longitude: e.target.value});
-                      setTempCoords({ lat: parseFloat(newStore.latitude) || 0, lng: parseFloat(e.target.value) });
-                    }}
-                    className="input-field text-xs" 
-                  />
-                </div>
+                <label className="block text-xs font-medium text-slate-400 mb-1.5">Titik Koordinat (Lat, Lng)</label>
+                <input 
+                  type="text" placeholder="-7.9666, 112.6326" required
+                  value={newStore.coordinates} 
+                  onChange={e => {
+                    const val = e.target.value;
+                    setNewStore({...newStore, coordinates: val});
+                    
+                    // Update temp marker if format is correct
+                    const parts = val.split(",");
+                    if (parts.length === 2) {
+                      const lat = parseFloat(parts[0].trim());
+                      const lng = parseFloat(parts[1].trim());
+                      if (!isNaN(lat) && !isNaN(lng)) setTempCoords({ lat, lng });
+                    }
+                  }}
+                  className="input-field text-xs" 
+                />
                 <p className="text-[9px] text-slate-500 italic px-1">
-                  Klik pada peta untuk mengisi otomatis, atau ketik/paste koordinat manual.
+                  Klik pada peta untuk otomatis, atau paste dari Google Maps.
                 </p>
               </div>
-              <button type="submit" className="btn-primary w-full py-2 text-xs">Simpan Toko</button>
+              <button type="submit" className="btn-primary w-full py-2 text-xs mt-2">Simpan Toko</button>
             </form>
           </div>
         )}
