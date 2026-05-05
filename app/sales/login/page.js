@@ -35,7 +35,7 @@ export default function SalesLogin() {
       const user = await verifySalesLogin(selectedName, pin);
       if (user) {
         localStorage.setItem("sales_user", JSON.stringify(user));
-        toast.success(`Selamat datang, ${user.nama}!`);
+        toast.success(`Selamat datang, ${user.name}!`);
         router.replace("/sales");
       } else {
         toast.error("PIN salah!");
@@ -69,7 +69,7 @@ export default function SalesLogin() {
           >
             <option value="">— Pilih Nama —</option>
             {salesList.map(sales => (
-              <option key={sales.id} value={sales.nama}>{sales.nama}</option>
+              <option key={sales.id} value={sales.name}>{sales.name}</option>
             ))}
           </select>
         </div>

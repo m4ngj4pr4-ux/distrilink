@@ -39,6 +39,7 @@ export default function SalesLedger({ teams, products, purchases }) {
   const [selectedPoId, setSelectedPoId] = useState("");
   
   const [newTeamName, setNewTeamName] = useState("");
+  const [newTeamPin, setNewTeamPin] = useState("");
   const [processing, setProcessing] = useState(false);
   const [distributions, setDistributions] = useState([]);
   const [depositHistory, setDepositHistory] = useState([]);
@@ -196,11 +197,13 @@ export default function SalesLedger({ teams, products, purchases }) {
 
   async function handleAddTeam() {
     if (!newTeamName.trim()) return toast.error("Masukkan nama tim");
+    if (!newTeamPin || newTeamPin.length < 6) return toast.error("PIN harus 6 angka");
     setProcessing(true);
     try {
-      await addSalesTeam(newTeamName.trim());
+      await addSalesTeam(newTeamName.trim(), newTeamPin);
       toast.success(`${newTeamName.trim()} berhasil ditambahkan!`);
       setNewTeamName("");
+      setNewTeamPin("");
       setAddTeamModal(false);
     } catch (err) {
       toast.error("Gagal: " + err.message);
@@ -211,12 +214,14 @@ export default function SalesLedger({ teams, products, purchases }) {
 
   async function handleUpdateTeam() {
     if (!editTeamModal || !newTeamName.trim()) return;
+    if (!newTeamPin || newTeamPin.length < 6) return toast.error("PIN harus 6 angka");
     setProcessing(true);
     try {
-      await updateSalesTeam(editTeamModal.id, { name: newTeamName.trim() });
-      toast.success("Nama tim berhasil diperbarui");
+      await updateSalesTeam(editTeamModal.id, { name: newTeamName.trim(), pin: newTeamPin });
+      toast.success("Tim berhasil diperbarui");
       setEditTeamModal(null);
       setNewTeamName("");
+      setNewTeamPin("");
     } catch (err) {
       toast.error("Gagal: " + err.message);
     } finally {
@@ -281,7 +286,7 @@ export default function SalesLedger({ teams, products, purchases }) {
                         {team.name?.charAt(0) || "T"}
                       </div>
                       <span className="font-medium text-white">{team.name}</span>
-                      <button onClick={() => { setEditTeamModal(team); setNewTeamName(team.name); }} className="opacity-0 group-hover:opacity-100 p-1 text-slate-500 hover:text-blue-400 transition-all">
+                      <button onClick={() => { setEditTeamModal(team); setNewTeamName(team.name); setNewTeamPin(team.pin || ""); }} className="opacity-0 group-hover:opacity-100 p-1 text-slate-500 hover:text-blue-400 transition-all">
                         <HiOutlinePencilAlt size={14} />
                       </button>
                     </div>
@@ -543,7 +548,24 @@ export default function SalesLedger({ teams, products, purchases }) {
         <div className="modal-overlay" onClick={() => setAddTeamModal(false)}>
           <div className="modal-content max-w-md" onClick={(e) => e.stopPropagation()}>
             <h3 className="text-base font-bold text-white mb-5">Tambah Tim Sales</h3>
-            <input type="text" value={newTeamName} onChange={(e) => setNewTeamName(e.target.value)} placeholder="Nama Tim" className="input-field mb-5" />
+            <div className="mb-4">
+              <label className="block text-xs font-medium text-slate-400 mb-1.5">Nama Tim</label>
+              <input type="text" value={newTeamName} onChange={(e) => setNewTeamName(e.target.value)} placeholder="Contoh: Budi Darmawan" className="input-field w-full" />
+            </div>
+            <div className="mb-6">
+              <label className="block text-xs font-medium text-slate-400 mb-1.5">PIN Akses Aplikasi (6 Angka)</label>
+              <input 
+                type="text" 
+                maxLength="6"
+                pattern="\d{6}"
+                value={newTeamPin} 
+                onChange={(e) => setNewTeamPin(e.target.value.replace(/\D/g, ''))}
+                className="input-field w-full text-center tracking-[0.5em] font-mono text-lg"
+                placeholder="123456"
+                required
+              />
+              <p className="text-[10px] text-slate-500 mt-1">PIN ini akan digunakan sales untuk login ke aplikasi HP.</p>
+            </div>
             <div className="flex items-center gap-3">
               <button onClick={() => setAddTeamModal(false)} className="btn-ghost flex-1">Batal</button>
               <button onClick={handleAddTeam} disabled={processing} className="btn-primary flex-1">Simpan</button>
@@ -555,7 +577,24 @@ export default function SalesLedger({ teams, products, purchases }) {
         <div className="modal-overlay" onClick={() => setEditTeamModal(null)}>
           <div className="modal-content max-w-md" onClick={(e) => e.stopPropagation()}>
             <h3 className="text-base font-bold text-white mb-5">Edit Tim</h3>
-            <input type="text" value={newTeamName} onChange={(e) => setNewTeamName(e.target.value)} className="input-field mb-5" />
+            <div className="mb-4">
+              <label className="block text-xs font-medium text-slate-400 mb-1.5">Nama Tim</label>
+              <input type="text" value={newTeamName} onChange={(e) => setNewTeamName(e.target.value)} className="input-field w-full" />
+            </div>
+            <div className="mb-6">
+              <label className="block text-xs font-medium text-slate-400 mb-1.5">PIN Akses Aplikasi (6 Angka)</label>
+              <input 
+                type="text" 
+                maxLength="6"
+                pattern="\d{6}"
+                value={newTeamPin} 
+                onChange={(e) => setNewTeamPin(e.target.value.replace(/\D/g, ''))}
+                className="input-field w-full text-center tracking-[0.5em] font-mono text-lg"
+                placeholder="123456"
+                required
+              />
+              <p className="text-[10px] text-slate-500 mt-1">Ubah PIN jika sales lupa atau ganti device.</p>
+            </div>
             <div className="flex items-center gap-3">
               <button onClick={() => setEditTeamModal(null)} className="btn-ghost flex-1">Batal</button>
               <button onClick={handleUpdateTeam} disabled={processing} className="btn-primary flex-1">Simpan</button>
