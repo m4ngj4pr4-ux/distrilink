@@ -1,20 +1,24 @@
 "use client";
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { getStokBawaanSales } from '@/lib/firestore';
 
 export default function SalesDashboard() {
   const [user, setUser] = useState(null);
   const [stokBawaan, setStokBawaan] = useState(0);
+  const router = useRouter();
 
   useEffect(() => {
-    // 1. Get the logged in user from localStorage
     const storedUser = localStorage.getItem('sales_user');
     if (storedUser) {
       const parsedUser = JSON.parse(storedUser);
       setUser(parsedUser);
       
-      // 2. TODO: Fetch active stock for this specific user from Firestore
-      // Example: fetchStokBawaan(parsedUser.name).then(res => setStokBawaan(res));
-      setStokBawaan(0); // Placeholder until we link the drop logic
+      const fetchStok = async () => {
+        const stok = await getStokBawaanSales(parsedUser.id);
+        setStokBawaan(stok);
+      };
+      fetchStok();
     }
   }, []);
 
@@ -41,7 +45,10 @@ export default function SalesDashboard() {
       
       {/* Quick Actions */}
       <div className="grid grid-cols-2 gap-3 mt-6">
-        <button className="bg-blue-600 hover:bg-blue-500 transition-colors p-4 rounded-xl flex flex-col items-center justify-center gap-2 shadow-lg active:scale-95">
+        <button 
+          onClick={() => router.push('/sales/toko')}
+          className="bg-blue-600 hover:bg-blue-500 transition-colors p-4 rounded-xl flex flex-col items-center justify-center gap-2 shadow-lg active:scale-95"
+        >
           <span className="text-2xl">🗺️</span>
           <span className="text-xs font-bold text-white">Drop ke Toko</span>
         </button>
