@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { getStokBawaanSales } from '@/lib/firestore';
+import { getSisaStokSales } from '@/lib/firestore';
 
 export default function SalesDashboard() {
   const [user, setUser] = useState(null);
@@ -15,7 +15,7 @@ export default function SalesDashboard() {
       setUser(parsedUser);
       
       const fetchStok = async () => {
-        const stok = await getStokBawaanSales(parsedUser.id);
+        const stok = await getSisaStokSales(parsedUser.id);
         setStokBawaan(stok);
       };
       fetchStok();
