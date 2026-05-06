@@ -65,9 +65,12 @@ export default function Sidebar({ activeSection, onNavigate }) {
         <div className="flex items-center justify-between px-5 h-[70px] border-b border-slate-400/8">
           {!collapsed && (
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-500 to-violet-500 flex items-center justify-center text-white font-bold text-sm shadow-lg shadow-blue-500/20">
-                D
-              </div>
+              <img 
+                src="/icon.png" 
+                alt="DistriLink Logo" 
+                className="w-10 h-10 rounded-xl object-cover shadow-lg border border-slate-700/50"
+                onError={(e) => { e.target.style.display = 'none'; }}
+              />
               <div>
                 <h1 className="text-base font-bold text-white leading-tight">
                   DistriLink
@@ -80,9 +83,12 @@ export default function Sidebar({ activeSection, onNavigate }) {
           )}
 
           {collapsed && (
-            <div className="w-9 h-9 mx-auto rounded-xl bg-gradient-to-br from-blue-500 to-violet-500 flex items-center justify-center text-white font-bold text-sm">
-              D
-            </div>
+            <img 
+              src="/icon.png" 
+              alt="DistriLink Logo" 
+              className="w-9 h-9 mx-auto rounded-lg object-cover shadow-lg border border-slate-700/50"
+              onError={(e) => { e.target.style.display = 'none'; }}
+            />
           )}
 
           {/* Collapse toggle (desktop) */}
