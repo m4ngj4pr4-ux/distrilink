@@ -1,12 +1,13 @@
 "use client";
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { addSetoranDana, getRiwayatSetoran } from '@/lib/firestore';
+import { addSetoranDana, getRiwayatSetoran, getSalesProfile } from '@/lib/firestore';
 import toast from 'react-hot-toast';
 
 export default function ProfilPage() {
   const router = useRouter();
   const [user, setUser] = useState(null);
+  const [profileData, setProfileData] = useState(null);
   
   // Setoran States
   const [isSetorModalOpen, setIsSetorModalOpen] = useState(false);
@@ -22,8 +23,9 @@ export default function ProfilPage() {
     const parsedUser = JSON.parse(storedUser);
     setUser(parsedUser);
     
-    // Fetch deposit history
+    // Fetch deposit history and latest profile data
     getRiwayatSetoran(parsedUser.id).then(setRiwayatSetoran);
+    getSalesProfile(parsedUser.id).then(setProfileData);
   }, [router]);
 
   const handleLogout = () => {
@@ -67,6 +69,8 @@ export default function ProfilPage() {
 
   if (!user) return null;
 
+  const hutang = profileData ? (profileData.goodsDropped || 0) - (profileData.totalDeposited || 0) : 0;
+
   return (
     <div className="p-4 pb-20 animate-fadeIn">
       <header className="mb-6 mt-2">
@@ -87,6 +91,22 @@ export default function ProfilPage() {
             </div>
           </div>
         </div>
+        
+        {profileData && (
+          <div className="mt-6 pt-5 border-t border-slate-700/50 flex justify-between items-center relative z-10">
+            <div>
+              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-1">Hutang Sales</p>
+              <p className={`text-lg font-black ${hutang > 0 ? "text-amber-400" : "text-emerald-400"}`}>
+                Rp {hutang.toLocaleString('id-ID')}
+              </p>
+            </div>
+            {hutang <= 0 && (
+              <div className="bg-emerald-500/10 text-emerald-400 p-2 rounded-xl border border-emerald-500/20">
+                <span className="text-xl">✅</span>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Menu Setoran */}
