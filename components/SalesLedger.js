@@ -109,7 +109,7 @@ export default function SalesLedger({ teams, products, purchases }) {
 
     setProcessing(true);
     try {
-      await addDepositTransaction(depositModal.id, amount);
+      await addDepositTransaction(depositModal.id, amount, depositModal.name);
       toast.success(`Setoran ${formatRupiah(amount)} berhasil!`);
       setDepositModal(null);
       setDepositAmount("");
@@ -400,20 +400,25 @@ export default function SalesLedger({ teams, products, purchases }) {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-400/5">
-                    {depositHistory.map((dep) => (
-                      <tr key={dep.id} className="text-xs hover:bg-white/5 transition-colors">
-                        <td className="py-2 text-slate-400">
-                          {dep.createdAt?.toDate().toLocaleDateString("id-ID", { 
-                            day: "2-digit", 
-                            month: "short", 
-                            year: "numeric", 
-                            hour: "2-digit", 
-                            minute: "2-digit" 
-                          })}
-                        </td>
-                        <td className="py-2 text-right font-bold text-emerald-400">{formatRupiah(dep.amount)}</td>
-                      </tr>
-                    ))}
+                     {depositHistory.map((dep) => (
+                       <tr key={dep.id} className="text-xs hover:bg-white/5 transition-colors">
+                         <td className="py-2 text-slate-400">
+                           {dep.waktu ? dep.waktu.toDate().toLocaleDateString("id-ID", { 
+                             day: "2-digit", 
+                             month: "short", 
+                             year: "numeric", 
+                             hour: "2-digit", 
+                             minute: "2-digit" 
+                           }) : dep.createdAt?.toDate().toLocaleDateString("id-ID")}
+                         </td>
+                         <td className="py-2 text-right font-bold text-emerald-400">
+                           {formatRupiah(dep.nominal || dep.amount)}
+                           {dep.status === "Menunggu Verifikasi" && (
+                             <span className="block text-[8px] text-amber-400 uppercase tracking-tighter">Verifikasi HP</span>
+                           )}
+                         </td>
+                       </tr>
+                     ))}
                   </tbody>
                 </table>
               )}
