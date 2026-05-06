@@ -18,6 +18,13 @@ export const metadata = {
   description:
     "Owner dashboard for managing cigarette distribution, factory POs, COGS calculation, and sales team ledger.",
   keywords: ["cigarette", "distribution", "dashboard", "COGS", "sales ledger"],
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "DistriLink",
+  },
+  themeColor: "#000000",
 };
 
 export default function RootLayout({ children }) {
