@@ -109,22 +109,22 @@ export default function ProfilPage() {
 
         {riwayatSetoran.length > 0 && (
           <div className="mt-6 pt-6 border-t border-slate-700/50">
-            <p className="text-[10px] uppercase tracking-widest text-slate-500 font-bold mb-4">Riwayat Setoran Terbaru</p>
-            <div className="space-y-3">
-              {riwayatSetoran.slice(0, 3).map(item => (
+            <p className="text-[10px] uppercase tracking-widest text-slate-500 font-bold mb-4">Riwayat Setoran Lengkap</p>
+            <div className="space-y-3 max-h-[300px] overflow-y-auto pr-1 custom-scrollbar">
+              {riwayatSetoran.map(item => (
                 <div key={item.id} className="flex justify-between items-start bg-dark-900/50 p-2.5 rounded-lg border border-slate-700/30">
                   <div>
                     <p className="text-[10px] text-slate-400">
-                      {item.waktu ? new Date(item.waktu.toDate()).toLocaleDateString('id-ID', { day: '2-digit', month: 'short' }) : 'Baru saja'}
+                      {item.waktu ? new Date(item.waktu.toDate()).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) : 'Baru saja'}
                     </p>
                     <p className="text-[9px] text-slate-600 mt-0.5 truncate max-w-[120px]">{item.catatan}</p>
                   </div>
                   <div className="text-right">
                     <p className="text-xs font-black text-emerald-400">Rp {item.nominal?.toLocaleString('id-ID')}</p>
                     <span className={`text-[8px] px-1.5 py-0.5 rounded font-bold uppercase tracking-tighter mt-1 inline-block ${
-                      item.status === "Diverifikasi Admin" ? "bg-emerald-500/10 text-emerald-500" : "bg-amber-500/10 text-amber-500"
+                      item.status === "Diverifikasi Admin" || item.status === "Selesai (Sistem Lama)" ? "bg-emerald-500/10 text-emerald-500" : "bg-amber-500/10 text-amber-500"
                     }`}>
-                      {item.status === "Diverifikasi Admin" ? "Selesai" : "Proses"}
+                      {item.status === "Diverifikasi Admin" || item.status === "Selesai (Sistem Lama)" ? "Selesai" : "Proses"}
                     </span>
                   </div>
                 </div>
