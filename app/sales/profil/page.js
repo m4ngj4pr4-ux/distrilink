@@ -95,7 +95,7 @@ export default function ProfilPage() {
         {profileData && (
           <div className="mt-6 pt-5 border-t border-slate-700/50 flex justify-between items-center relative z-10">
             <div>
-              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-1">Hutang Sales</p>
+              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-1">Tagihan</p>
               <p className={`text-lg font-black ${hutang > 0 ? "text-amber-400" : "text-emerald-400"}`}>
                 Rp {hutang.toLocaleString('id-ID')}
               </p>
