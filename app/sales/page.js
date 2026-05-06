@@ -40,9 +40,17 @@ export default function SalesDashboard() {
 
   return (
     <div className="p-4 animate-fadeIn pb-20">
-      <header className="mb-6 mt-4">
-        <h1 className="text-2xl font-bold text-white tracking-tight">Halo, {user.name}! 👋</h1>
-        <p className="text-xs text-slate-400 mt-1">Siap mendistribusikan barang hari ini?</p>
+      <header className="mb-6 mt-4 flex justify-between items-center">
+        <div>
+          <h1 className="text-2xl font-bold text-white tracking-tight">Halo, {user.name}! 👋</h1>
+          <p className="text-xs text-slate-400 mt-1">Siap mendistribusikan barang hari ini?</p>
+        </div>
+        <img 
+          src="/icon.png" 
+          alt="Logo" 
+          className="w-12 h-12 rounded-xl shadow-lg border border-slate-700/50 object-cover" 
+          onError={(e) => { e.target.style.display = 'none'; }}
+        />
       </header>
       
       {/* Stok Widget - Now Clickable */}

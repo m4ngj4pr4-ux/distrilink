@@ -49,14 +49,15 @@ export default function SalesLogin() {
   };
 
   return (
-    <div className="p-6 flex flex-col items-center justify-center w-full animate-fadeIn">
-      <div className="w-16 h-16 bg-blue-500/10 rounded-full flex items-center justify-center mb-6 text-blue-400">
-        <HiOutlineLockClosed size={32} />
+    <div className="p-6 flex flex-col items-center justify-center w-full animate-fadeIn min-h-[80vh]">
+      <div className="w-28 h-28 mb-8 rounded-[32px] overflow-hidden shadow-2xl border border-slate-700/50 bg-dark-800 relative group">
+        <div className="absolute inset-0 bg-blue-500/20 mix-blend-overlay group-hover:bg-transparent transition-all"></div>
+        <img src="/icon.png" alt="DistriLink Logo" className="w-full h-full object-cover" onError={(e) => { e.target.src = "https://via.placeholder.com/150?text=Logo"; }} />
       </div>
       
-      <div className="text-center mb-8">
-        <h1 className="text-2xl font-bold text-white mb-2">Portal Sales</h1>
-        <p className="text-sm text-slate-400">Masuk untuk mengelola rute dan stok Anda</p>
+      <div className="text-center mb-10">
+        <h1 className="text-3xl font-black text-white mb-2 tracking-tight">Distri<span className="text-blue-500">Link</span></h1>
+        <p className="text-xs text-slate-400 uppercase tracking-widest font-bold">Portal Sales Mobile</p>
       </div>
 
       <form onSubmit={handleLogin} className="w-full space-y-4">
