@@ -41,11 +41,11 @@ export default function SalesLayout({ children }) {
             </Link>
             <Link className="flex flex-col items-center text-slate-400 hover:text-emerald-500 transition-all active:scale-95" href="/sales/toko">
               <HiOutlineMap size={22} />
-              <span className="text-[10px] mt-1 font-medium">Toko</span>
+              <span className="text-[10px] mt-1 font-medium">Direktori</span>
             </Link>
             <Link className="flex flex-col items-center text-slate-400 hover:text-emerald-500 transition-all active:scale-95" href="/sales/transaksi">
               <HiOutlineClipboardList size={22} />
-              <span className="text-[10px] mt-1 font-medium">Riwayat</span>
+              <span className="text-[10px] mt-1 font-medium">Rute</span>
             </Link>
             <Link className="flex flex-col items-center text-slate-400 hover:text-emerald-500 transition-all active:scale-95" href="/sales/profil">
               <HiOutlineUser size={22} />

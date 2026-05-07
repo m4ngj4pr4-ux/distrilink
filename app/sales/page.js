@@ -74,11 +74,11 @@ export default function SalesDashboard() {
       {/* Quick Actions */}
       <div className="grid grid-cols-2 gap-3 mt-6">
         <button 
-          onClick={() => router.push('/sales/toko')}
+          onClick={() => router.push('/sales/transaksi')}
           className="bg-blue-600 hover:bg-blue-500 transition-colors p-4 rounded-xl flex flex-col items-center justify-center gap-2 shadow-lg active:scale-95"
         >
-          <span className="text-2xl">🗺️</span>
-          <span className="text-xs font-bold text-white">Drop ke Toko</span>
+          <span className="text-2xl">📦</span>
+          <span className="text-xs font-bold text-white">Rute & Drop</span>
         </button>
         <button 
           onClick={() => router.push('/sales/profil')}
