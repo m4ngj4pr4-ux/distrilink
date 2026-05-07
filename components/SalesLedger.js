@@ -63,22 +63,42 @@ export default function SalesLedger({ teams, products, purchases, allDistributio
     };
   }, [detailModal]);
 
-  // HITUNG SISA STOK PO REAL-TIME
+  // HITUNG SISA STOK PO REAL-TIME (METODE FIFO)
+  // Menjamin sinkronisasi absolut dengan Stok Gudang (product.totalPacks)
   const availableBatches = useMemo(() => {
-    if (!purchases) return [];
-    const usedPacks = {};
-    (allDistributions || []).forEach(dist => {
-      if (dist.poId) {
-        usedPacks[dist.poId] = (usedPacks[dist.poId] || 0) + (dist.totalPacksDistributed || 0);
-      }
+    if (!purchases || !products) return [];
+    
+    let resultBatches = [];
+    
+    // Kelompokkan PO berdasarkan produk
+    products.forEach(product => {
+      let remainingGlobalStock = product.totalPacks || 0;
+      if (remainingGlobalStock <= 0) return; // Lewati jika stok gudang habis
+      
+      // Ambil semua PO untuk produk ini, urutkan dari yang TERBARU (Descending)
+      const productPOs = purchases
+        .filter(po => po.productId === product.id)
+        .sort((a, b) => (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0));
+        
+      // Alokasikan stok global ke batch PO (mengisi PO terbaru lebih dulu)
+      productPOs.forEach(po => {
+        if (remainingGlobalStock <= 0) return;
+        
+        const poOriginalCapacity = po.totalPack || 0;
+        const allocated = Math.min(remainingGlobalStock, poOriginalCapacity);
+        
+        if (allocated > 0) {
+          resultBatches.push({
+            ...po,
+            realSisa: allocated
+          });
+          remainingGlobalStock -= allocated;
+        }
+      });
     });
     
-    return purchases.map(po => {
-      const original = po.totalPack || 0;
-      const used = usedPacks[po.id] || 0;
-      return { ...po, realSisa: original - used };
-    }).filter(b => b.realSisa > 0 && b.productName);
-  }, [purchases, allDistributions]);
+    return resultBatches;
+  }, [purchases, products]);
 
   // AUTO-RECALCULATE TOTAL NILAI DISTRIBUSI
   useEffect(() => {
