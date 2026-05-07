@@ -121,7 +121,9 @@ export default function SalesDashboard() {
                       )}
                       <div className="flex-1">
                         <h3 className="font-bold text-sm text-white">{item.productName}</h3>
-                        <p className="text-[10px] text-emerald-400 font-medium uppercase tracking-widest mt-0.5">{item.brand}</p>
+                        {item.brand && (
+                          <p className="text-[10px] text-emerald-400 font-medium uppercase tracking-widest mt-0.5">{item.brand}</p>
+                        )}
                       </div>
                       <div className="text-right">
                         <p className="text-lg font-black text-white">{item.totalAssigned}</p>
