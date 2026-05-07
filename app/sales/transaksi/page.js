@@ -45,7 +45,7 @@ export default function TransaksiPage() {
                 </div>
               </div>
               <div className="bg-emerald-500/10 text-emerald-400 px-3 py-1.5 rounded-lg font-black text-sm">
-                -{item.jumlahDrop} <span className="text-[10px] font-medium">Pk</span>
+                {item.jumlahDrop} <span className="text-[10px] font-medium">Pk</span>
               </div>
             </div>
           ))}
