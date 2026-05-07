@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState } from 'react';
-import { getRetailStoresList, addDropTransaction, getSisaStokSales, addRetailStore } from '@/lib/firestore';
+import { getRetailStoresList, addDropTransaction, getSisaStokSales, addRetailStore, updateRetailStore } from '@/lib/firestore';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 
@@ -16,8 +16,9 @@ export default function SalesTokoPage() {
   const [jumlahDrop, setJumlahDrop] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Add Store State
+  // Add/Edit Store State
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [editingStoreId, setEditingStoreId] = useState(null);
   const [newToko, setNewToko] = useState({ namaToko: "", alamat: "", latitude: "", longitude: "" });
   const [isLocating, setIsLocating] = useState(false);
 
@@ -99,25 +100,46 @@ export default function SalesTokoPage() {
     e.preventDefault();
     setIsSubmitting(true);
     try {
-      await addRetailStore({
+      const storeData = {
         namaToko: newToko.namaToko,
         alamat: newToko.alamat,
         latitude: parseFloat(newToko.latitude) || 0,
         longitude: parseFloat(newToko.longitude) || 0,
         diinputOleh: user.name,
         teamId: user.id
-      });
-      toast.success("Toko baru berhasil didaftarkan!");
+      };
+
+      if (editingStoreId) {
+        await updateRetailStore(editingStoreId, storeData);
+        toast.success("Data toko berhasil diperbarui!");
+      } else {
+        await addRetailStore(storeData);
+        toast.success("Toko baru berhasil didaftarkan!");
+      }
+      
       setIsAddModalOpen(false);
+      setEditingStoreId(null);
       setNewToko({ namaToko: "", alamat: "", latitude: "", longitude: "" });
       
       const updatedStores = await getRetailStoresList();
       setStores(updatedStores);
     } catch (error) {
-      toast.error("Gagal menyimpan toko.");
+      toast.error("Gagal memproses data.");
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleEditToko = (e, store) => {
+    e.stopPropagation();
+    setNewToko({
+      namaToko: store.namaToko,
+      alamat: store.alamat,
+      latitude: store.latitude,
+      longitude: store.longitude
+    });
+    setEditingStoreId(store.id);
+    setIsAddModalOpen(true);
   };
 
   return (
@@ -149,12 +171,20 @@ export default function SalesTokoPage() {
       <div className="flex flex-col gap-3">
         {filteredStores.map(store => (
           <div key={store.id} onClick={() => setSelectedStore(store)} className="bg-dark-800 border border-slate-700 p-4 rounded-xl active:bg-dark-700 transition-all cursor-pointer flex justify-between items-center shadow-sm active:scale-[0.98]">
-            <div>
-              <h3 className="font-bold text-sm text-emerald-400">{store.namaToko}</h3>
+            <div className="flex-1 overflow-hidden pr-2">
+              <h3 className="font-bold text-sm text-emerald-400 truncate">{store.namaToko}</h3>
               <p className="text-[10px] text-slate-400 mt-1 line-clamp-1">{store.alamat}</p>
             </div>
-            <div className="bg-slate-800/50 p-2 rounded-lg border border-slate-700/50">
-              <span className="text-lg">📦</span>
+            <div className="flex items-center gap-2">
+              <button 
+                onClick={(e) => handleEditToko(e, store)}
+                className="p-2 bg-slate-700/50 rounded-lg border border-slate-600 active:scale-90 transition-all text-xs"
+              >
+                ✏️
+              </button>
+              <div className="bg-slate-800/50 p-2 rounded-lg border border-slate-700/50">
+                <span className="text-lg">📦</span>
+              </div>
             </div>
           </div>
         ))}
@@ -208,8 +238,8 @@ export default function SalesTokoPage() {
           <div className="bg-dark-900 w-full max-w-md rounded-t-2xl p-5 border-t border-slate-700 animate-slideIn max-h-[85vh] flex flex-col">
             <div className="flex justify-between items-center mb-4 shrink-0">
               <div>
-                <h2 className="text-lg font-bold text-white">Daftar Toko Baru</h2>
-                <p className="text-[10px] text-slate-400">Tambahkan lokasi warung/toko baru</p>
+                <h2 className="text-lg font-bold text-white">{editingStoreId ? "Edit Detail Toko" : "Daftar Toko Baru"}</h2>
+                <p className="text-[10px] text-slate-400">{editingStoreId ? "Perbarui informasi warung/toko" : "Tambahkan lokasi warung/toko baru"}</p>
               </div>
               <button onClick={() => setIsAddModalOpen(false)} className="text-slate-400 font-bold text-2xl px-2 hover:text-white transition-colors">&times;</button>
             </div>

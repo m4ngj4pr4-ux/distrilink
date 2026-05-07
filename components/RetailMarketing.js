@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
-import { HiOutlineSearch, HiOutlineLocationMarker, HiOutlinePlus, HiOutlinePhone, HiOutlineUser, HiOutlineTrash } from "react-icons/hi";
-import { subscribeRetailStores, addRetailStore, deleteRetailStore } from "@/lib/firestore";
+import { HiOutlineSearch, HiOutlineLocationMarker, HiOutlinePlus, HiOutlinePhone, HiOutlineUser, HiOutlineTrash, HiOutlinePencilAlt } from "react-icons/hi";
+import { subscribeRetailStores, addRetailStore, deleteRetailStore, updateRetailStore } from "@/lib/firestore";
 import toast from "react-hot-toast";
 
 // Import Map with SSR disabled
@@ -22,6 +22,7 @@ export default function RetailMarketing() {
   const [mapCenter, setMapCenter] = useState(null);
   const [showAddForm, setShowAddForm] = useState(false);
   const [tempCoords, setTempCoords] = useState(null);
+  const [editingStoreId, setEditingStoreId] = useState(null);
   
   // Form State
   const [newStore, setNewStore] = useState({
@@ -71,22 +72,45 @@ export default function RetailMarketing() {
 
     if (!lat || !lng) return toast.error("Klik peta atau masukkan koordinat (Lat, Lng)");
 
+    const storeData = {
+      namaToko: newStore.namaToko,
+      pemilik: newStore.pemilik,
+      alamat: newStore.alamat,
+      nomorHp: newStore.nomorHp,
+      latitude: lat.toString(),
+      longitude: lng.toString()
+    };
+
     try {
-      await addRetailStore({
-        namaToko: newStore.namaToko,
-        pemilik: newStore.pemilik,
-        alamat: newStore.alamat,
-        nomorHp: newStore.nomorHp,
-        latitude: lat.toString(),
-        longitude: lng.toString()
-      });
-      toast.success("Toko berhasil didaftarkan");
+      if (editingStoreId) {
+        await updateRetailStore(editingStoreId, storeData);
+        toast.success("Toko berhasil diperbarui");
+      } else {
+        await addRetailStore(storeData);
+        toast.success("Toko berhasil didaftarkan");
+      }
+      
       setNewStore({ namaToko: "", pemilik: "", alamat: "", nomorHp: "", coordinates: "" });
       setTempCoords(null);
       setShowAddForm(false);
+      setEditingStoreId(null);
     } catch (err) {
       toast.error("Gagal: " + err.message);
     }
+  }
+
+  function handleEdit(store) {
+    setNewStore({
+      namaToko: store.namaToko,
+      pemilik: store.pemilik,
+      alamat: store.alamat,
+      nomorHp: store.nomorHp || "",
+      coordinates: `${store.latitude}, ${store.longitude}`
+    });
+    setEditingStoreId(store.id);
+    setTempCoords({ lat: parseFloat(store.latitude), lng: parseFloat(store.longitude) });
+    setMapCenter([parseFloat(store.latitude), parseFloat(store.longitude)]);
+    setShowAddForm(true);
   }
 
   async function handleDelete(id) {
@@ -108,7 +132,11 @@ export default function RetailMarketing() {
             <button 
               onClick={() => {
                 setShowAddForm(!showAddForm);
-                if (!showAddForm) setTempCoords(null);
+                if (!showAddForm) {
+                  setTempCoords(null);
+                  setEditingStoreId(null);
+                  setNewStore({ namaToko: "", pemilik: "", alamat: "", nomorHp: "", coordinates: "" });
+                }
               }}
               className={`p-1.5 rounded-lg transition-colors ${showAddForm ? "bg-rose-500/10 text-rose-400" : "bg-blue-500/10 text-blue-400 hover:bg-blue-500/20"}`}
             >
@@ -137,12 +165,20 @@ export default function RetailMarketing() {
               >
                 <div className="flex justify-between items-start mb-1">
                   <h4 className="font-bold text-white text-sm group-hover:text-blue-400 transition-colors">{store.namaToko}</h4>
-                  <button 
-                    onClick={(e) => { e.stopPropagation(); handleDelete(store.id); }}
-                    className="opacity-0 group-hover:opacity-100 p-1 text-slate-500 hover:text-rose-400 transition-all"
-                  >
-                    <HiOutlineTrash size={14} />
-                  </button>
+                  <div className="flex gap-1">
+                    <button 
+                      onClick={(e) => { e.stopPropagation(); handleEdit(store); }}
+                      className="opacity-0 group-hover:opacity-100 p-1 text-slate-500 hover:text-emerald-400 transition-all"
+                    >
+                      <HiOutlinePencilAlt size={14} />
+                    </button>
+                    <button 
+                      onClick={(e) => { e.stopPropagation(); handleDelete(store.id); }}
+                      className="opacity-0 group-hover:opacity-100 p-1 text-slate-500 hover:text-rose-400 transition-all"
+                    >
+                      <HiOutlineTrash size={14} />
+                    </button>
+                  </div>
                 </div>
                 <p className="text-[11px] text-slate-400 flex items-center gap-1.5 mb-1">
                   <HiOutlineUser size={12} className="text-slate-500" /> {store.pemilik}
@@ -171,7 +207,7 @@ export default function RetailMarketing() {
         {showAddForm && (
           <div className="absolute top-4 right-4 z-[1000] w-80 glass-card p-5 border-t-4 border-blue-500 shadow-2xl animate-slideIn">
             <h3 className="font-bold text-white mb-1 flex items-center justify-between">
-              Registrasi Toko Baru
+              {editingStoreId ? "Edit Toko" : "Registrasi Toko Baru"}
             </h3>
             <p className="text-[10px] text-amber-500 mb-4 font-medium animate-pulse">
               📍 Klik lokasi pada peta untuk mengisi koordinat otomatis
@@ -220,7 +256,9 @@ export default function RetailMarketing() {
                   Klik pada peta untuk otomatis, atau paste dari Google Maps.
                 </p>
               </div>
-              <button type="submit" className="btn-primary w-full py-2 text-xs mt-2">Simpan Toko</button>
+              <button type="submit" className="btn-primary w-full py-2 text-xs mt-2">
+                {editingStoreId ? "Simpan Perubahan" : "Simpan Toko"}
+              </button>
             </form>
           </div>
         )}
