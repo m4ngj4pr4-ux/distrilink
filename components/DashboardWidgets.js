@@ -9,10 +9,15 @@ export default function DashboardWidgets({ products, teams }) {
     .sort((a, b) => (b.goodsDropped || 0) - (a.goodsDropped || 0))
     .slice(0, 5);
 
-  // Ambil produk dengan stok di bawah 5 Bal (1 Bal = 10 Slop = 100 Pack)
-  // 5 Bal = 500 Pack
+  // Ambil produk dengan stok di bawah 15 Bal (1 Bal = 10 Slop = 100 Pack)
+  // 15 Bal = 1500 Pack
   const lowStockProducts = (products || [])
-    .filter(p => (p.totalPacks || 0) < 500)
+    .filter(p => {
+      const packsPerSlop = p.packsPerSlop || 10;
+      const totalSlops = Math.floor((p.totalPacks || 0) / packsPerSlop);
+      const fullBals = Math.floor(totalSlops / 10);
+      return fullBals < 15; // Ambang batas dinaikkan menjadi 15 Bal agar lebih sensitif
+    })
     .sort((a, b) => (a.totalPacks || 0) - (b.totalPacks || 0));
 
   return (
@@ -64,7 +69,7 @@ export default function DashboardWidgets({ products, teams }) {
           </div>
           <div>
             <h3 className="text-base font-bold text-white">Radar Peringatan Stok</h3>
-            <p className="text-xs text-slate-400">Produk menipis (Di bawah 5 Bal)</p>
+            <p className="text-xs text-slate-400">Produk menipis (Di bawah 15 Bal)</p>
           </div>
         </div>
 
