@@ -359,6 +359,58 @@ export default function DashboardPage() {
         </header>
         {renderContent()}
       </main>
+
+      {/* Global Verification Hub Modal */}
+      {isVerificationQueueOpen && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
+          <div className="bg-dark-900 w-full max-w-2xl rounded-2xl border border-slate-700 shadow-2xl flex flex-col max-h-[80vh] animate-slideIn">
+            
+            {/* Modal Header */}
+            <div className="p-5 border-b border-slate-700 flex justify-between items-center bg-dark-800 rounded-t-2xl shrink-0">
+              <div>
+                <h2 className="text-lg font-bold text-white flex items-center gap-2">
+                  <span>🔔</span> Antrean Verifikasi Setoran
+                </h2>
+                <p className="text-xs text-slate-400 mt-1">Daftar setoran sales yang menunggu persetujuan Anda</p>
+              </div>
+              <button onClick={() => setIsVerificationQueueOpen(false)} className="text-slate-400 hover:text-white text-2xl px-2">&times;</button>
+            </div>
+
+            {/* Modal Body (Scrollable List) */}
+            <div className="p-5 overflow-y-auto custom-scrollbar flex-1">
+              <div className="flex flex-col gap-3">
+                {pendingList.map(item => (
+                  <div key={item.id} className="bg-dark-800 border border-slate-700 p-4 rounded-xl flex items-center justify-between hover:border-emerald-500/50 transition-colors">
+                    <div>
+                      <h3 className="font-bold text-emerald-400">{item.namaSales}</h3>
+                      <p className="text-[11px] font-medium text-slate-400 mb-1">
+                        {item.waktu ? new Date(item.waktu.toDate()).toLocaleString('id-ID', {
+                          day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
+                        }) : '-'}
+                      </p>
+                      {item.catatan && <p className="text-[10px] text-slate-500 italic max-w-[200px] truncate">"{item.catatan}"</p>}
+                    </div>
+                    
+                    <div className="flex items-center gap-5">
+                      <div className="text-right">
+                        <p className="text-[9px] uppercase tracking-widest text-slate-500 font-bold mb-0.5">Nominal Setor</p>
+                        <p className="font-black text-white text-lg">Rp {item.nominal?.toLocaleString('id-ID')}</p>
+                      </div>
+                      <button 
+                        onClick={() => handleGlobalVerify(item)}
+                        className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-4 py-2 rounded-lg transition-all shadow-lg shadow-emerald-900/30 whitespace-nowrap active:scale-95"
+                      >
+                        ✅ Sahkan
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+            
+          </div>
+        </div>
+      )}
     </div>
   );
 }
