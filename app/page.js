@@ -305,7 +305,7 @@ export default function DashboardPage() {
         return (
           <div className="space-y-8 animate-fadeIn">
             <SummaryCards summary={summary} products={products} />
-            <SalesLedger teams={teams} products={products} purchases={purchases} />
+            <SalesLedger teams={teams} products={products} purchases={purchases} allDistributions={allDistributions} />
           </div>
         );
       case "retail":

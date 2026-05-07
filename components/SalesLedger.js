@@ -25,7 +25,7 @@ import {
 } from "@/lib/firestore";
 import toast from "react-hot-toast";
 
-export default function SalesLedger({ teams, products, purchases }) {
+export default function SalesLedger({ teams, products, purchases, allDistributions }) {
   const [depositModal, setDepositModal] = useState(null);
   const [dropModal, setDropModal] = useState(null);
   const [addTeamModal, setAddTeamModal] = useState(false);
@@ -62,6 +62,23 @@ export default function SalesLedger({ teams, products, purchases }) {
       unsubDep();
     };
   }, [detailModal]);
+
+  // HITUNG SISA STOK PO REAL-TIME
+  const availableBatches = React.useMemo(() => {
+    if (!purchases) return [];
+    const usedPacks = {};
+    (allDistributions || []).forEach(dist => {
+      if (dist.poId) {
+        usedPacks[dist.poId] = (usedPacks[dist.poId] || 0) + (dist.totalPacksDistributed || 0);
+      }
+    });
+    
+    return purchases.map(po => {
+      const original = po.totalPack || 0;
+      const used = usedPacks[po.id] || 0;
+      return { ...po, realSisa: original - used };
+    }).filter(b => b.realSisa > 0 && b.productName);
+  }, [purchases, allDistributions]);
 
   // AUTO-RECALCULATE TOTAL NILAI DISTRIBUSI
   useEffect(() => {
@@ -172,10 +189,12 @@ export default function SalesLedger({ teams, products, purchases }) {
       totalPacksDistributed = qty * packsPerSlop;
     }
 
-    // VALIDASI STOK: Cegah stok minus
-    const currentStockPacks = product.totalPacks || 0;
-    if (totalPacksDistributed > currentStockPacks) {
-      return toast.error(`Stok tidak cukup! Sisa stok ${product.name} hanya ${currentStockPacks.toLocaleString("id-ID")} Bungkus.`);
+    // VALIDASI STOK: Cegah stok batch minus
+    const selectedBatch = availableBatches.find(b => b.id === selectedPoId);
+    if (!selectedBatch) return toast.error("Batch PO tidak valid atau stok sudah habis!");
+
+    if (totalPacksDistributed > selectedBatch.realSisa) {
+      return toast.error(`Gagal! Sisa stok di batch ini hanya ${selectedBatch.realSisa.toLocaleString("id-ID")} Bungkus. Anda mencoba mendistribusikan ${totalPacksDistributed.toLocaleString("id-ID")} Bungkus.`);
     }
 
     setProcessing(true);
@@ -487,11 +506,11 @@ export default function SalesLedger({ teams, products, purchases }) {
                   className="input-field w-full"
                 >
                   <option value="">— Pilih batch PO —</option>
-                  {purchases?.filter(p => (p.totalPack || 0) > 0).map((p) => {
-                    const tgl = p.createdAt?.toDate().toLocaleDateString("id-ID", { day: "2-digit", month: "short" });
+                  {availableBatches.map((batch) => {
+                    const tgl = batch.createdAt?.toDate().toLocaleDateString("id-ID", { day: "2-digit", month: "short" });
                     return (
-                      <option key={p.id} value={p.id}>
-                        {tgl} — {p.productName} (Sisa: {p.totalPack?.toLocaleString("id-ID")} Pk) — Modal: {formatRupiah(p.hpp)}
+                      <option key={batch.id} value={batch.id}>
+                        {tgl} — {batch.productName} (Sisa: {batch.realSisa.toLocaleString("id-ID")} Pk) — Modal: {formatRupiah(batch.hpp)}
                       </option>
                     );
                   })}
