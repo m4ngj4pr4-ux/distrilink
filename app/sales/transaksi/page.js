@@ -39,6 +39,7 @@ export default function TransaksiPage() {
                 <div className="w-10 h-10 bg-slate-700/50 rounded-lg flex items-center justify-center text-lg">🏪</div>
                 <div>
                   <h3 className="font-bold text-sm text-white">{item.namaToko}</h3>
+                  {item.productName && <p className="text-[10px] text-emerald-400 font-medium">{item.productName}</p>}
                   <p className="text-[10px] text-slate-500 mt-0.5">
                     {item.waktu ? new Date(item.waktu.toDate()).toLocaleString('id-ID', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : 'Baru saja'}
                   </p>
