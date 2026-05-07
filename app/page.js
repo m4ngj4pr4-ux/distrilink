@@ -24,7 +24,8 @@ import {
   subscribeRetailStores,
   subscribeAllDistributions,
   syncProductPacks,
-  recalculateSummary
+  recalculateSummary,
+  getCountPendingSetoran
 } from "@/lib/firestore";
 import toast from "react-hot-toast";
 
@@ -46,6 +47,7 @@ export default function DashboardPage() {
   const [allDistributions, setAllDistributions] = useState([]);
   const [previewImage, setPreviewImage] = useState(null);
   const [editingProduct, setEditingProduct] = useState(null);
+  const [pendingCount, setPendingCount] = useState(0);
 
   useEffect(() => {
     const unsubProducts = subscribeProducts((data) => {
@@ -74,6 +76,16 @@ export default function DashboardPage() {
     };
   }, []);
 
+  useEffect(() => {
+    const fetchTasks = async () => {
+      const count = await getCountPendingSetoran();
+      setPendingCount(count);
+    };
+    fetchTasks();
+    const interval = setInterval(fetchTasks, 60000);
+    return () => clearInterval(interval);
+  }, []);
+
   async function handleRecalculate() {
     setIsRecalculating(true);
     try {
@@ -90,7 +102,34 @@ export default function DashboardPage() {
     switch (activeSection) {
       case "dashboard":
         return (
-          <div className="space-y-0 animate-fadeIn">
+          <div className="space-y-6 animate-fadeIn">
+            {/* Notification Card */}
+            <div 
+              onClick={() => setActiveSection('sales')}
+              className={`cursor-pointer p-5 rounded-2xl border transition-all ${
+                pendingCount > 0 
+                ? 'bg-amber-500/10 border-amber-500 shadow-lg shadow-amber-900/20 animate-pulse' 
+                : 'bg-dark-800 border-slate-800 opacity-60 hover:opacity-100'
+              }`}
+            >
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs font-medium text-slate-400 mb-1">Tugas Perlu Verifikasi</p>
+                  <h3 className="text-2xl font-black text-white">
+                    {pendingCount} <span className="text-sm font-normal text-slate-500">Setoran</span>
+                  </h3>
+                </div>
+                <div className={`p-3 rounded-xl ${pendingCount > 0 ? 'bg-amber-500' : 'bg-slate-700'}`}>
+                  <span className="text-xl">🔔</span>
+                </div>
+              </div>
+              {pendingCount > 0 && (
+                <p className="text-[10px] text-amber-500 mt-3 font-bold">
+                  ⚠️ Klik untuk segera proses verifikasi di Buku Penjualan
+                </p>
+              )}
+            </div>
+
             <SummaryCards summary={summary} products={products} />
             <DashboardWidgets products={products} teams={teams} />
           </div>
