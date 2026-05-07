@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import {
   HiOutlineUserGroup,
   HiOutlinePlus,
@@ -64,7 +64,7 @@ export default function SalesLedger({ teams, products, purchases, allDistributio
   }, [detailModal]);
 
   // HITUNG SISA STOK PO REAL-TIME
-  const availableBatches = React.useMemo(() => {
+  const availableBatches = useMemo(() => {
     if (!purchases) return [];
     const usedPacks = {};
     (allDistributions || []).forEach(dist => {
