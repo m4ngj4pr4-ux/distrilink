@@ -21,6 +21,7 @@ import {
   incrementSummaryField,
   subscribeDistributions,
   deleteDistribution,
+  verifikasiSetoranAdmin,
 } from "@/lib/firestore";
 import toast from "react-hot-toast";
 
@@ -115,6 +116,20 @@ export default function SalesLedger({ teams, products, purchases }) {
       setDepositAmount("");
     } catch (err) {
       toast.error("Gagal: " + err.message);
+    } finally {
+      setProcessing(false);
+    }
+  }
+
+  async function handleVerifikasi(dep) {
+    if (!confirm(`Sahkan setoran ${formatRupiah(dep.nominal)} dari ${dep.namaSales || 'Sales'}? Piutang akan dikurangi secara permanen.`)) return;
+    
+    setProcessing(true);
+    try {
+      await verifikasiSetoranAdmin(dep.id, dep.teamId, dep.nominal);
+      toast.success("Setoran berhasil disahkan!");
+    } catch (err) {
+      toast.error("Gagal verifikasi: " + err.message);
     } finally {
       setProcessing(false);
     }
@@ -397,6 +412,7 @@ export default function SalesLedger({ teams, products, purchases }) {
                     <tr className="text-[10px] uppercase tracking-wider text-slate-500 border-b border-slate-400/10">
                       <th className="py-2 font-semibold">Tanggal</th>
                       <th className="py-2 font-semibold text-right text-emerald-400">Nominal Setoran</th>
+                      <th className="py-2 font-semibold text-right">Aksi</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-400/5">
@@ -413,8 +429,21 @@ export default function SalesLedger({ teams, products, purchases }) {
                          </td>
                          <td className="py-2 text-right font-bold text-emerald-400">
                            {formatRupiah(dep.nominal || dep.amount)}
-                           {dep.status === "Menunggu Verifikasi" && (
-                             <span className="block text-[8px] text-amber-400 uppercase tracking-tighter">Verifikasi HP</span>
+                         </td>
+                         <td className="py-2 text-right">
+                           {dep.status === "Menunggu Verifikasi" ? (
+                             <button 
+                               onClick={() => handleVerifikasi(dep)}
+                               className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[10px] px-2 py-1 rounded transition-colors shadow-sm"
+                             >
+                               Sahkan
+                             </button>
+                           ) : (
+                             <span className={`text-[10px] px-2 py-0.5 rounded font-bold uppercase tracking-tighter ${
+                               dep.status === "Diverifikasi Admin" || dep.status === "Selesai (Sistem Lama)" ? "bg-emerald-500/10 text-emerald-500" : "bg-slate-800 text-slate-500"
+                             }`}>
+                               {dep.status === "Diverifikasi Admin" ? "Selesai" : dep.status}
+                             </span>
                            )}
                          </td>
                        </tr>
