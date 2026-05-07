@@ -101,7 +101,9 @@ export default function DashboardWidgets({ products, teams }) {
                     {/* Product Details */}
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-bold text-white truncate">{p.name}</p>
-                      <p className="text-[10px] text-slate-500 uppercase font-bold tracking-widest mt-0.5">{p.brand || 'No Brand'}</p>
+                      {p.brand && (
+                        <p className="text-[10px] text-slate-500 uppercase font-bold tracking-widest mt-0.5">{p.brand}</p>
+                      )}
                       <div className="flex items-center gap-2 mt-1.5">
                         <span className="text-[9px] bg-rose-500/10 text-rose-500 border border-rose-500/20 px-1.5 py-0.5 rounded font-bold uppercase tracking-wider">
                           Kritis
