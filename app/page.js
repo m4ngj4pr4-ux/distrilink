@@ -25,7 +25,9 @@ import {
   subscribeAllDistributions,
   syncProductPacks,
   recalculateSummary,
-  getCountPendingSetoran
+  getCountPendingSetoran,
+  getSemuaPendingSetoran,
+  verifikasiSetoranAdmin
 } from "@/lib/firestore";
 import toast from "react-hot-toast";
 
@@ -48,6 +50,8 @@ export default function DashboardPage() {
   const [previewImage, setPreviewImage] = useState(null);
   const [editingProduct, setEditingProduct] = useState(null);
   const [pendingCount, setPendingCount] = useState(0);
+  const [pendingList, setPendingList] = useState([]);
+  const [isVerificationQueueOpen, setIsVerificationQueueOpen] = useState(false);
 
   useEffect(() => {
     const unsubProducts = subscribeProducts((data) => {
@@ -76,11 +80,13 @@ export default function DashboardPage() {
     };
   }, []);
 
+  const fetchTasks = async () => {
+    const list = await getSemuaPendingSetoran();
+    setPendingList(list);
+    setPendingCount(list.length);
+  };
+
   useEffect(() => {
-    const fetchTasks = async () => {
-      const count = await getCountPendingSetoran();
-      setPendingCount(count);
-    };
     fetchTasks();
     const interval = setInterval(fetchTasks, 60000);
     return () => clearInterval(interval);
@@ -98,6 +104,25 @@ export default function DashboardPage() {
     }
   }
 
+  const handleGlobalVerify = async (item) => {
+    if (confirm(`Sahkan setoran Rp ${item.nominal?.toLocaleString('id-ID')} dari ${item.namaSales}?`)) {
+      try {
+        await verifikasiSetoranAdmin(item.id, item.teamId, item.nominal);
+        toast.success("Berhasil disahkan!");
+        
+        // Update local state without refetching immediately for snappier UI
+        setPendingList(prev => {
+          const newList = prev.filter(p => p.id !== item.id);
+          if (newList.length === 0) setIsVerificationQueueOpen(false);
+          return newList;
+        });
+        setPendingCount(prev => prev - 1);
+      } catch (error) {
+        toast.error("Gagal memverifikasi: " + error.message);
+      }
+    }
+  };
+
   function renderContent() {
     switch (activeSection) {
       case "dashboard":
@@ -105,7 +130,7 @@ export default function DashboardPage() {
           <div className="space-y-6 animate-fadeIn">
             {/* Notification Card */}
             <div 
-              onClick={() => setActiveSection('sales')}
+              onClick={() => { if(pendingCount > 0) setIsVerificationQueueOpen(true); }}
               className={`cursor-pointer p-5 rounded-2xl border transition-all ${
                 pendingCount > 0 
                 ? 'bg-amber-500/10 border-amber-500 shadow-lg shadow-amber-900/20 animate-pulse' 
