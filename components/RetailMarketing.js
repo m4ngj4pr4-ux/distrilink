@@ -183,7 +183,10 @@ export default function RetailMarketing() {
                 <p className="text-[11px] text-slate-400 flex items-center gap-1.5 mb-1">
                   <HiOutlineUser size={12} className="text-slate-500" /> {store.pemilik}
                 </p>
-                <p className="text-[11px] text-slate-500 truncate">{store.alamat}</p>
+                <p className="text-[11px] text-slate-500 truncate mb-1.5">{store.alamat}</p>
+                <span className="inline-flex items-center gap-1 text-[9px] bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded-md border border-emerald-500/20 font-medium">
+                  📋 Pembina: {store.diinputOleh || "Admin"}
+                </span>
               </div>
             ))}
             {filteredStores.length === 0 && (
