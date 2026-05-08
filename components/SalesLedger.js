@@ -41,6 +41,7 @@ export default function SalesLedger({ teams, products, purchases, allDistributio
   
   const [newTeamName, setNewTeamName] = useState("");
   const [newTeamPin, setNewTeamPin] = useState("");
+  const [newTeamRole, setNewTeamRole] = useState("sales");
   const [processing, setProcessing] = useState(false);
   const [distributions, setDistributions] = useState([]);
   const [depositHistory, setDepositHistory] = useState([]);
@@ -271,11 +272,12 @@ export default function SalesLedger({ teams, products, purchases, allDistributio
     if (!newTeamPin || newTeamPin.length < 6) return toast.error("PIN harus 6 angka");
     setProcessing(true);
     try {
-      await updateSalesTeam(editTeamModal.id, { name: newTeamName.trim(), pin: newTeamPin });
+      await updateSalesTeam(editTeamModal.id, { name: newTeamName.trim(), pin: newTeamPin, role: newTeamRole });
       toast.success("Tim berhasil diperbarui");
       setEditTeamModal(null);
       setNewTeamName("");
       setNewTeamPin("");
+      setNewTeamRole("sales");
     } catch (err) {
       toast.error("Gagal: " + err.message);
     } finally {
@@ -340,7 +342,10 @@ export default function SalesLedger({ teams, products, purchases, allDistributio
                         {team.name?.charAt(0) || "T"}
                       </div>
                       <span className="font-medium text-white">{team.name}</span>
-                      <button onClick={() => { setEditTeamModal(team); setNewTeamName(team.name); setNewTeamPin(team.pin || ""); }} className="opacity-0 group-hover:opacity-100 p-1 text-slate-500 hover:text-blue-400 transition-all">
+                      {team.role === 'captain' && (
+                        <span className="text-[8px] bg-amber-500/15 text-amber-400 px-1.5 py-0.5 rounded border border-amber-500/20 font-bold uppercase">Captain</span>
+                      )}
+                      <button onClick={() => { setEditTeamModal(team); setNewTeamName(team.name); setNewTeamPin(team.pin || ""); setNewTeamRole(team.role || "sales"); }} className="opacity-0 group-hover:opacity-100 p-1 text-slate-500 hover:text-blue-400 transition-all">
                         <HiOutlinePencilAlt size={14} />
                       </button>
                     </div>
@@ -667,6 +672,20 @@ export default function SalesLedger({ teams, products, purchases, allDistributio
                 required
               />
               <p className="text-[10px] text-slate-500 mt-1">Ubah PIN jika sales lupa atau ganti device.</p>
+            </div>
+            <div className="mb-6">
+              <label className="flex items-center gap-3 cursor-pointer group">
+                <input 
+                  type="checkbox" 
+                  checked={newTeamRole === 'captain'}
+                  onChange={(e) => setNewTeamRole(e.target.checked ? 'captain' : 'sales')}
+                  className="w-4 h-4 rounded border-slate-600 bg-dark-700 text-amber-500 focus:ring-amber-500 focus:ring-offset-0 cursor-pointer"
+                />
+                <div>
+                  <span className="text-xs font-bold text-white group-hover:text-amber-400 transition-colors">Jadikan Captain</span>
+                  <p className="text-[9px] text-slate-500">Memiliki akses Distribusi ke Tim & Verifikasi Setoran</p>
+                </div>
+              </label>
             </div>
             <div className="flex items-center gap-3">
               <button onClick={() => setEditTeamModal(null)} className="btn-ghost flex-1">Batal</button>
