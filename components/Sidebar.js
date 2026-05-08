@@ -12,7 +12,8 @@ import {
   HiOutlineClipboardList,
   HiOutlineReply,
   HiOutlineTrendingUp,
-  HiOutlineLocationMarker
+  HiOutlineLocationMarker,
+  HiOutlineCash
 } from "react-icons/hi";
 
 const navItems = [
@@ -21,6 +22,7 @@ const navItems = [
   { icon: HiOutlineClipboardList, label: "Riwayat PO", id: "po-history" },
   { icon: HiOutlineCube, label: "Stok Barang", id: "stock" },
   { icon: HiOutlineTrendingUp, label: "Laba Rugi", id: "laba-rugi" },
+  { icon: HiOutlineCash, label: "Keuangan", id: "keuangan" },
   { icon: HiOutlineUserGroup, label: "Buku Penjualan", id: "sales" },
   { icon: HiOutlineLocationMarker, label: "Pemasaran Retail", id: "retail" },
   { icon: HiOutlineReply, label: "Retur Barang", id: "returns" },

@@ -9,6 +9,7 @@ import SalesLedger from "@/components/SalesLedger";
 import ReturnsForm from "@/components/ReturnsForm";
 import ProfitLossReport from "@/components/ProfitLossReport";
 import RetailMarketing from "@/components/RetailMarketing";
+import FinanceModule from "@/components/FinanceModule";
 import EditProductModal from "@/components/EditProductModal";
 import DashboardWidgets from "@/components/DashboardWidgets";
 import Settings from "@/components/Settings";
@@ -299,6 +300,12 @@ export default function DashboardPage() {
           <div className="space-y-8 animate-fadeIn">
             <SummaryCards summary={summary} products={products} />
             <ProfitLossReport products={products} purchases={purchases} />
+          </div>
+        );
+      case "keuangan":
+        return (
+          <div className="space-y-8 animate-fadeIn">
+            <FinanceModule />
           </div>
         );
       case "sales":
