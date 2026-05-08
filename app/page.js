@@ -305,7 +305,7 @@ export default function DashboardPage() {
       case "keuangan":
         return (
           <div className="space-y-8 animate-fadeIn">
-            <FinanceModule />
+            <FinanceModule products={products} purchases={purchases} />
           </div>
         );
       case "sales":

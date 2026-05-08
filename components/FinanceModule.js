@@ -12,7 +12,7 @@ import {
 import {
   subscribeInvestors, addInvestor, updateInvestor, deleteInvestor,
   subscribeFinanceLedger, addFinanceEntry, deleteFinanceEntry,
-  calcFinanceSummary,
+  calcFinanceSummary, subscribeAllDistributions,
 } from "@/lib/firestore";
 import { formatRupiah } from "@/lib/utils";
 import toast from "react-hot-toast";
@@ -29,9 +29,10 @@ const TIPE_BUKU_OPTIONS = [
 const TIPE_MAP = {};
 TIPE_BUKU_OPTIONS.forEach(t => { TIPE_MAP[t.value] = t; });
 
-export default function FinanceModule() {
+export default function FinanceModule({ products = [], purchases = [] }) {
   const [investors, setInvestors] = useState([]);
   const [ledger, setLedger] = useState([]);
+  const [distributions, setDistributions] = useState([]);
 
   // Modals
   const [showInvestorModal, setShowInvestorModal] = useState(false);
@@ -41,13 +42,35 @@ export default function FinanceModule() {
   const [showTxModal, setShowTxModal] = useState(false);
   const [txForm, setTxForm] = useState({ tipeBuku: "", nominal: "", keterangan: "", relasiId: "" });
 
+  // Bagi Hasil Modal
+  const [showBagiHasilModal, setShowBagiHasilModal] = useState(false);
+  const [profitInput, setProfitInput] = useState("");
+
   const [processing, setProcessing] = useState(false);
 
   useEffect(() => {
     const unsubInv = subscribeInvestors(setInvestors);
     const unsubLedger = subscribeFinanceLedger(setLedger);
-    return () => { unsubInv(); unsubLedger(); };
+    const unsubDist = subscribeAllDistributions(setDistributions);
+    return () => { unsubInv(); unsubLedger(); unsubDist(); };
   }, []);
+
+  // Hitung Laba Kotor (sinkron dengan modul Laba Rugi)
+  const grossProfit = useMemo(() => {
+    const batchProfit = purchases.map(po => {
+      const poDist = distributions.filter(d => d.poId === po.id);
+      const revenue = poDist.reduce((s, d) => s + (d.amount || 0), 0);
+      const cogs = poDist.reduce((s, d) => s + ((d.totalPacksDistributed || 0) * (d.hppSnapshot || po.hpp || 0)), 0);
+      return revenue - cogs;
+    }).reduce((s, v) => s + v, 0);
+    const legacyDist = distributions.filter(d => !d.poId);
+    const legRev = legacyDist.reduce((s, d) => s + (d.amount || 0), 0);
+    const legCogs = legacyDist.reduce((s, d) => {
+      const p = products.find(pr => pr.id === d.productId);
+      return s + ((d.totalPacksDistributed || 0) * (d.hppSnapshot || p?.lastHPP || 0));
+    }, 0);
+    return batchProfit + (legRev - legCogs);
+  }, [purchases, distributions, products]);
 
   const summary = useMemo(() => calcFinanceSummary(ledger), [ledger]);
 
@@ -104,26 +127,37 @@ export default function FinanceModule() {
     }
   };
 
-  // ── Bagi Hasil ──
-  const handleBagiHasil = async (inv) => {
-    const profitStr = prompt(`Masukkan total laba bersih periode ini (Rp) untuk menghitung ${inv.persentaseBagiHasil}% bagi hasil ${inv.nama}:`);
-    if (!profitStr) return;
-    const profit = parseInt(profitStr.replace(/\D/g, ""));
-    if (!profit || profit <= 0) return toast.error("Nominal laba tidak valid");
+  // ── Bagi Hasil (Unified) ──
+  const openBagiHasil = () => {
+    setProfitInput(grossProfit > 0 ? grossProfit.toLocaleString("id-ID").replace(/\./g, ".") : "");
+    setShowBagiHasilModal(true);
+  };
 
-    const payout = Math.round(profit * (inv.persentaseBagiHasil / 100));
+  const syncedProfit = parseInt((profitInput || "0").replace(/\D/g, "")) || 0;
+  const bagiHasilPreview = investors.map(inv => ({
+    ...inv,
+    payout: Math.round(syncedProfit * ((inv.persentaseBagiHasil || 0) / 100))
+  }));
+  const totalPayout = bagiHasilPreview.reduce((s, i) => s + i.payout, 0);
 
-    if (!confirm(`Bagikan Rp ${payout.toLocaleString("id-ID")} (${inv.persentaseBagiHasil}% dari Rp ${profit.toLocaleString("id-ID")}) ke ${inv.nama}?`)) return;
+  const handleSubmitBagiHasil = async () => {
+    if (syncedProfit <= 0) return toast.error("Masukkan nominal keuntungan!");
+    if (investors.length === 0) return toast.error("Belum ada investor!");
+    if (!confirm(`Distribusikan total ${fmtRp(totalPayout)} ke ${investors.length} investor?`)) return;
 
     setProcessing(true);
     try {
-      await addFinanceEntry({
-        tipeBuku: "bagi_hasil",
-        nominal: payout,
-        keterangan: `Bagi hasil ${inv.persentaseBagiHasil}% ke ${inv.nama} (Laba: Rp ${profit.toLocaleString("id-ID")})`,
-        relasiId: inv.id
-      });
-      toast.success(`Bagi hasil Rp ${payout.toLocaleString("id-ID")} ke ${inv.nama} tercatat!`);
+      for (const inv of bagiHasilPreview) {
+        if (inv.payout <= 0) continue;
+        await addFinanceEntry({
+          tipeBuku: "bagi_hasil",
+          nominal: inv.payout,
+          keterangan: `Bagi hasil ${inv.persentaseBagiHasil}% ke ${inv.nama} (Laba: ${fmtRp(syncedProfit)})`,
+          relasiId: inv.id
+        });
+      }
+      toast.success(`Bagi hasil ke ${investors.length} investor berhasil dicatat!`);
+      setShowBagiHasilModal(false);
     } catch (err) {
       toast.error("Gagal: " + err.message);
     } finally {
@@ -216,9 +250,16 @@ export default function FinanceModule() {
               <p className="text-xs text-slate-400">Kelola pemilik modal dan distribusi keuntungan</p>
             </div>
           </div>
-          <button onClick={openAddInvestor} className="btn-primary text-sm flex items-center gap-1.5 px-4 py-2">
-            <HiOutlinePlus size={16} /> Investor
-          </button>
+          <div className="flex items-center gap-2">
+            {investors.length > 0 && (
+              <button onClick={openBagiHasil} className="text-sm flex items-center gap-1.5 px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold transition-colors">
+                💰 Bagikan Keuntungan
+              </button>
+            )}
+            <button onClick={openAddInvestor} className="btn-primary text-sm flex items-center gap-1.5 px-4 py-2">
+              <HiOutlinePlus size={16} /> Investor
+            </button>
+          </div>
         </div>
 
         {investors.length > 0 ? (
@@ -249,9 +290,6 @@ export default function FinanceModule() {
                     <td className="py-3 px-4 text-right font-medium text-slate-300 text-sm">{fmtRp(investorDividends[inv.id] || 0)}</td>
                     <td className="py-3 px-4 text-center">
                       <div className="flex items-center justify-center gap-1">
-                        <button onClick={() => handleBagiHasil(inv)} disabled={processing} className="text-[10px] bg-purple-500/10 text-purple-400 border border-purple-500/20 px-2.5 py-1.5 rounded-lg font-bold hover:bg-purple-500/20 transition-colors disabled:opacity-50">
-                          💰 Bagikan
-                        </button>
                         <button onClick={() => openEditInvestor(inv)} className="opacity-0 group-hover:opacity-100 p-1.5 text-slate-500 hover:text-blue-400 transition-all">
                           <HiOutlinePencilAlt size={14} />
                         </button>
@@ -401,6 +439,54 @@ export default function FinanceModule() {
             <div className="flex items-center gap-3 mt-6">
               <button onClick={() => setShowTxModal(false)} className="btn-ghost flex-1">Batal</button>
               <button onClick={handleSaveTx} disabled={processing} className="btn-primary flex-1">{processing ? "Menyimpan..." : "Simpan"}</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Modal: Bagikan Keuntungan (Bagi Hasil Sekaligus) ── */}
+      {showBagiHasilModal && (
+        <div className="modal-overlay" onClick={() => setShowBagiHasilModal(false)}>
+          <div className="modal-content max-w-lg" onClick={e => e.stopPropagation()}>
+            <h3 className="text-base font-bold text-white mb-1">💰 Bagikan Keuntungan</h3>
+            <p className="text-[10px] text-slate-400 mb-5">Distribusikan laba ke semua investor sesuai persentase masing-masing</p>
+
+            <div className="mb-4">
+              <label className="block text-xs font-medium text-slate-400 mb-1.5">Total Keuntungan yang Dibagi (Rp)</label>
+              <input type="text" inputMode="numeric" value={profitInput} onChange={e => setProfitInput(fmtInput(e.target.value))} className="input-field w-full text-xl font-black text-center" placeholder="0" />
+              {grossProfit > 0 && (
+                <button onClick={() => setProfitInput(grossProfit.toString().replace(/\B(?=(\d{3})+(?!\d))/g, "."))} className="mt-2 w-full text-[10px] text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 rounded-lg py-2 font-bold hover:bg-emerald-500/20 transition-colors">
+                  📊 Sinkron dari Laba Rugi: {fmtRp(grossProfit)}
+                </button>
+              )}
+            </div>
+
+            {syncedProfit > 0 && investors.length > 0 && (
+              <div className="bg-dark-800 rounded-xl border border-slate-700 overflow-hidden mb-5">
+                <div className="px-4 py-2.5 bg-dark-700/50 border-b border-slate-700">
+                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Rincian Pembagian</p>
+                </div>
+                <div className="divide-y divide-slate-700/50">
+                  {bagiHasilPreview.map(inv => (
+                    <div key={inv.id} className="flex justify-between items-center px-4 py-3">
+                      <div>
+                        <p className="text-sm font-bold text-white">{inv.nama}</p>
+                        <p className="text-[10px] text-slate-500">{inv.persentaseBagiHasil}% dari {fmtRp(syncedProfit)}</p>
+                      </div>
+                      <p className="text-sm font-black text-purple-400">{fmtRp(inv.payout)}</p>
+                    </div>
+                  ))}
+                </div>
+                <div className="flex justify-between items-center px-4 py-3 bg-purple-500/5 border-t border-purple-500/20">
+                  <span className="text-xs font-bold text-slate-300">Total Distribusi</span>
+                  <span className="text-base font-black text-purple-400">{fmtRp(totalPayout)}</span>
+                </div>
+              </div>
+            )}
+
+            <div className="flex items-center gap-3">
+              <button onClick={() => setShowBagiHasilModal(false)} className="btn-ghost flex-1">Batal</button>
+              <button onClick={handleSubmitBagiHasil} disabled={processing || syncedProfit <= 0} className="btn-primary flex-1 bg-purple-600 hover:bg-purple-500 disabled:opacity-50">{processing ? "Memproses..." : "Konfirmasi & Catat Semua"}</button>
             </div>
           </div>
         </div>
