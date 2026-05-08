@@ -8,6 +8,7 @@ export default function SalesTokoPage() {
   const router = useRouter();
   const [stores, setStores] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
+  const [activeTab, setActiveTab] = useState("saya");
   const [user, setUser] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -24,10 +25,17 @@ export default function SalesTokoPage() {
     getRetailStoresList().then(setStores);
   }, [router]);
 
-  const filteredStores = stores.filter(store => 
-    store.namaToko?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    store.alamat?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const myStoresCount = stores.filter(s => s.diinputOleh === user?.name).length;
+
+  const displayedStores = stores.filter(store => {
+    const matchesSearch = 
+      store.namaToko?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      store.alamat?.toLowerCase().includes(searchTerm.toLowerCase());
+    if (activeTab === "saya") {
+      return matchesSearch && store.diinputOleh === user?.name;
+    }
+    return matchesSearch;
+  });
 
   const handleGetLocation = (e) => {
     e.preventDefault();
@@ -118,35 +126,64 @@ export default function SalesTokoPage() {
         </button>
       </div>
 
+      {/* Tabs */}
+      <div className="flex bg-dark-800 p-1 rounded-xl mb-4 border border-slate-700">
+        <button 
+          onClick={() => setActiveTab("saya")}
+          className={`flex-1 py-2.5 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 ${activeTab === "saya" ? 'bg-emerald-600 text-white shadow-md' : 'text-slate-400 hover:text-slate-200'}`}
+        >
+          Toko Saya
+          <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-black ${activeTab === "saya" ? 'bg-emerald-700 text-emerald-100' : 'bg-slate-700 text-slate-400'}`}>{myStoresCount}</span>
+        </button>
+        <button 
+          onClick={() => setActiveTab("semua")}
+          className={`flex-1 py-2.5 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 ${activeTab === "semua" ? 'bg-emerald-600 text-white shadow-md' : 'text-slate-400 hover:text-slate-200'}`}
+        >
+          Semua Toko
+          <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-black ${activeTab === "semua" ? 'bg-emerald-700 text-emerald-100' : 'bg-slate-700 text-slate-400'}`}>{stores.length}</span>
+        </button>
+      </div>
+
       {/* Store List */}
       <div className="flex flex-col gap-3">
-        {filteredStores.map(store => (
-          <div key={store.id} className="bg-dark-800 border border-slate-700 p-4 rounded-xl flex justify-between items-center shadow-sm">
-            <div className="flex-1 overflow-hidden pr-2">
-              <h3 className="font-bold text-sm text-emerald-400 truncate">{store.namaToko}</h3>
-              <p className="text-[10px] text-slate-400 mt-1 line-clamp-1">{store.alamat}</p>
-              {store.diinputOleh && (
-                <p className="text-[9px] text-slate-600 mt-0.5">Didaftarkan oleh: {store.diinputOleh}</p>
+        {displayedStores.map(store => {
+          const isMine = store.diinputOleh === user?.name;
+          return (
+            <div key={store.id} className={`bg-dark-800 border p-4 rounded-xl flex justify-between items-center shadow-sm ${isMine ? 'border-slate-700' : 'border-slate-700/50'}`}>
+              <div className="flex-1 overflow-hidden pr-2">
+                <h3 className="font-bold text-sm text-emerald-400 truncate">{store.namaToko}</h3>
+                <p className="text-[10px] text-slate-400 mt-1 line-clamp-1">{store.alamat}</p>
+                {!isMine && (
+                  <span className="inline-block mt-1.5 text-[9px] bg-slate-700/80 text-slate-300 px-2 py-0.5 rounded-md">
+                    Binaan: {store.diinputOleh || "Admin"}
+                  </span>
+                )}
+              </div>
+              {isMine ? (
+                <button 
+                  onClick={(e) => openEditModal(e, store)}
+                  className="p-2.5 bg-slate-700/50 rounded-xl border border-slate-600 active:scale-90 transition-all text-xs shrink-0"
+                >
+                  ✏️
+                </button>
+              ) : (
+                <div className="text-[10px] text-slate-500 italic shrink-0">Hanya Lihat</div>
               )}
             </div>
-            <button 
-              onClick={(e) => openEditModal(e, store)}
-              className="p-2.5 bg-slate-700/50 rounded-xl border border-slate-600 active:scale-90 transition-all text-xs shrink-0"
-            >
-              ✏️
-            </button>
-          </div>
-        ))}
-        {filteredStores.length === 0 && (
+          );
+        })}
+        {displayedStores.length === 0 && (
           <div className="text-center py-10 opacity-50">
-            <span className="text-4xl mb-3 block">🏪</span>
-            <p className="text-xs text-slate-500 italic">Toko tidak ditemukan.</p>
+            <span className="text-4xl mb-3 block">{activeTab === "saya" ? "📭" : "🏪"}</span>
+            <p className="text-xs text-slate-500 italic">
+              {activeTab === "saya" ? "Anda belum mendaftarkan toko." : "Toko tidak ditemukan."}
+            </p>
           </div>
         )}
       </div>
 
       <p className="text-center text-[10px] text-slate-600 mt-6">
-        Total: {stores.length} toko terdaftar
+        Menampilkan {displayedStores.length} dari {stores.length} toko
       </p>
 
       {/* ── MODAL ADD / EDIT TOKO ── */}
