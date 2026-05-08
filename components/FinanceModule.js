@@ -128,35 +128,66 @@ export default function FinanceModule({ products = [], purchases = [] }) {
   };
 
   // ── Bagi Hasil (Unified) ──
+  const [bagiMode, setBagiMode] = useState("auto"); // "auto" | "manual"
+  const [customPayouts, setCustomPayouts] = useState({});
+
   const openBagiHasil = () => {
-    setProfitInput(grossProfit > 0 ? grossProfit.toLocaleString("id-ID").replace(/\./g, ".") : "");
+    setProfitInput(grossProfit > 0 ? grossProfit.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".") : "");
+    setBagiMode("auto");
+    setCustomPayouts({});
     setShowBagiHasilModal(true);
   };
 
   const syncedProfit = parseInt((profitInput || "0").replace(/\D/g, "")) || 0;
-  const bagiHasilPreview = investors.map(inv => ({
-    ...inv,
-    payout: Math.round(syncedProfit * ((inv.persentaseBagiHasil || 0) / 100))
-  }));
+
+  const bagiHasilPreview = investors.map(inv => {
+    const autoPayout = Math.round(syncedProfit * ((inv.persentaseBagiHasil || 0) / 100));
+    const payout = bagiMode === "manual" && customPayouts[inv.id] !== undefined
+      ? (parseInt((customPayouts[inv.id] || "0").toString().replace(/\D/g, "")) || 0)
+      : autoPayout;
+    return { ...inv, payout, autoPayout };
+  });
   const totalPayout = bagiHasilPreview.reduce((s, i) => s + i.payout, 0);
+  const sisaLaba = syncedProfit - totalPayout;
+  const isOverBudget = totalPayout > syncedProfit;
+
+  const handleCustomPayoutChange = (invId, val) => {
+    const clean = val.replace(/\D/g, "");
+    const formatted = clean.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+    setCustomPayouts(prev => ({ ...prev, [invId]: formatted }));
+  };
+
+  const handleModeSwitch = (mode) => {
+    setBagiMode(mode);
+    if (mode === "manual") {
+      // Pre-fill custom payouts with auto values
+      const map = {};
+      investors.forEach(inv => {
+        map[inv.id] = Math.round(syncedProfit * ((inv.persentaseBagiHasil || 0) / 100)).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+      });
+      setCustomPayouts(map);
+    }
+  };
 
   const handleSubmitBagiHasil = async () => {
     if (syncedProfit <= 0) return toast.error("Masukkan nominal keuntungan!");
     if (investors.length === 0) return toast.error("Belum ada investor!");
-    if (!confirm(`Distribusikan total ${fmtRp(totalPayout)} ke ${investors.length} investor?`)) return;
+    if (isOverBudget) return toast.error("Total melebihi keuntungan!");
+    const activePayouts = bagiHasilPreview.filter(i => i.payout > 0);
+    if (activePayouts.length === 0) return toast.error("Tidak ada nominal untuk dibagikan!");
+    if (!confirm(`Distribusikan total ${fmtRp(totalPayout)} ke ${activePayouts.length} investor?\nSisa laba yang tidak dibagi: ${fmtRp(sisaLaba)}`)) return;
 
     setProcessing(true);
     try {
-      for (const inv of bagiHasilPreview) {
-        if (inv.payout <= 0) continue;
+      for (const inv of activePayouts) {
         await addFinanceEntry({
           tipeBuku: "bagi_hasil",
           nominal: inv.payout,
-          keterangan: `Bagi hasil ${inv.persentaseBagiHasil}% ke ${inv.nama} (Laba: ${fmtRp(syncedProfit)})`,
+          keterangan: `Bagi hasil ${bagiMode === 'auto' ? inv.persentaseBagiHasil + '%' : 'manual'} ke ${inv.nama} (Laba: ${fmtRp(syncedProfit)})`,
           relasiId: inv.id
         });
       }
-      toast.success(`Bagi hasil ke ${investors.length} investor berhasil dicatat!`);
+      toast.success(`Bagi hasil ke ${activePayouts.length} investor berhasil dicatat!`);
       setShowBagiHasilModal(false);
     } catch (err) {
       toast.error("Gagal: " + err.message);
@@ -449,44 +480,81 @@ export default function FinanceModule({ products = [], purchases = [] }) {
         <div className="modal-overlay" onClick={() => setShowBagiHasilModal(false)}>
           <div className="modal-content max-w-lg" onClick={e => e.stopPropagation()}>
             <h3 className="text-base font-bold text-white mb-1">💰 Bagikan Keuntungan</h3>
-            <p className="text-[10px] text-slate-400 mb-5">Distribusikan laba ke semua investor sesuai persentase masing-masing</p>
+            <p className="text-[10px] text-slate-400 mb-5">Distribusikan laba ke investor — otomatis atau atur manual</p>
 
             <div className="mb-4">
-              <label className="block text-xs font-medium text-slate-400 mb-1.5">Total Keuntungan yang Dibagi (Rp)</label>
-              <input type="text" inputMode="numeric" value={profitInput} onChange={e => setProfitInput(fmtInput(e.target.value))} className="input-field w-full text-xl font-black text-center" placeholder="0" />
+              <label className="block text-xs font-medium text-slate-400 mb-1.5">Total Keuntungan Periode Ini (Rp)</label>
+              <input type="text" inputMode="numeric" value={profitInput} onChange={e => { setProfitInput(fmtInput(e.target.value)); if (bagiMode === 'manual') setCustomPayouts({}); setBagiMode('auto'); }} className="input-field w-full text-xl font-black text-center" placeholder="0" />
               {grossProfit > 0 && (
-                <button onClick={() => setProfitInput(grossProfit.toString().replace(/\B(?=(\d{3})+(?!\d))/g, "."))} className="mt-2 w-full text-[10px] text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 rounded-lg py-2 font-bold hover:bg-emerald-500/20 transition-colors">
+                <button onClick={() => { setProfitInput(grossProfit.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")); setBagiMode('auto'); setCustomPayouts({}); }} className="mt-2 w-full text-[10px] text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 rounded-lg py-2 font-bold hover:bg-emerald-500/20 transition-colors">
                   📊 Sinkron dari Laba Rugi: {fmtRp(grossProfit)}
                 </button>
               )}
             </div>
 
             {syncedProfit > 0 && investors.length > 0 && (
-              <div className="bg-dark-800 rounded-xl border border-slate-700 overflow-hidden mb-5">
-                <div className="px-4 py-2.5 bg-dark-700/50 border-b border-slate-700">
-                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Rincian Pembagian</p>
+              <>
+                {/* Mode Toggle */}
+                <div className="flex bg-dark-800 p-1 rounded-xl mb-4 border border-slate-700">
+                  <button onClick={() => handleModeSwitch('auto')} className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${bagiMode === 'auto' ? 'bg-purple-600 text-white shadow-md' : 'text-slate-400 hover:text-slate-200'}`}>
+                    ✨ Otomatis (Sesuai %)
+                  </button>
+                  <button onClick={() => handleModeSwitch('manual')} className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${bagiMode === 'manual' ? 'bg-purple-600 text-white shadow-md' : 'text-slate-400 hover:text-slate-200'}`}>
+                    ✏️ Manual (Edit Bebas)
+                  </button>
                 </div>
-                <div className="divide-y divide-slate-700/50">
-                  {bagiHasilPreview.map(inv => (
-                    <div key={inv.id} className="flex justify-between items-center px-4 py-3">
-                      <div>
-                        <p className="text-sm font-bold text-white">{inv.nama}</p>
-                        <p className="text-[10px] text-slate-500">{inv.persentaseBagiHasil}% dari {fmtRp(syncedProfit)}</p>
+
+                {/* Preview Table */}
+                <div className={`bg-dark-800 rounded-xl border overflow-hidden mb-4 ${isOverBudget ? 'border-rose-500' : 'border-slate-700'}`}>
+                  <div className="px-4 py-2.5 bg-dark-700/50 border-b border-slate-700">
+                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Rincian Pembagian</p>
+                  </div>
+                  <div className="divide-y divide-slate-700/50">
+                    {bagiHasilPreview.map(inv => (
+                      <div key={inv.id} className="flex justify-between items-center px-4 py-3 gap-3">
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-bold text-white truncate">{inv.nama}</p>
+                          <p className="text-[10px] text-slate-500">{inv.persentaseBagiHasil}%{bagiMode === 'auto' ? ` = ${fmtRp(inv.autoPayout)}` : ''}</p>
+                        </div>
+                        {bagiMode === 'manual' ? (
+                          <div className="w-36">
+                            <input
+                              type="text" inputMode="numeric"
+                              value={customPayouts[inv.id] || ''}
+                              onChange={e => handleCustomPayoutChange(inv.id, e.target.value)}
+                              className="input-field w-full text-right text-sm font-black text-purple-400 py-2 px-3"
+                              placeholder="0"
+                            />
+                          </div>
+                        ) : (
+                          <p className="text-sm font-black text-purple-400">{fmtRp(inv.payout)}</p>
+                        )}
                       </div>
-                      <p className="text-sm font-black text-purple-400">{fmtRp(inv.payout)}</p>
+                    ))}
+                  </div>
+
+                  {/* Footer: Total + Sisa */}
+                  <div className="border-t border-slate-700">
+                    <div className="flex justify-between items-center px-4 py-2.5 bg-purple-500/5">
+                      <span className="text-xs font-bold text-slate-300">Total Dibagikan</span>
+                      <span className={`text-base font-black ${isOverBudget ? 'text-rose-400' : 'text-purple-400'}`}>{fmtRp(totalPayout)}</span>
                     </div>
-                  ))}
+                    <div className="flex justify-between items-center px-4 py-2.5 bg-emerald-500/5 border-t border-slate-700/50">
+                      <span className="text-xs font-bold text-slate-400">Sisa Laba (Tidak Dibagi)</span>
+                      <span className={`text-base font-black ${sisaLaba < 0 ? 'text-rose-400' : 'text-emerald-400'}`}>{fmtRp(sisaLaba)}</span>
+                    </div>
+                  </div>
                 </div>
-                <div className="flex justify-between items-center px-4 py-3 bg-purple-500/5 border-t border-purple-500/20">
-                  <span className="text-xs font-bold text-slate-300">Total Distribusi</span>
-                  <span className="text-base font-black text-purple-400">{fmtRp(totalPayout)}</span>
-                </div>
-              </div>
+
+                {isOverBudget && (
+                  <p className="text-[10px] text-rose-400 font-bold mb-3 text-center">⚠️ Total melebihi keuntungan! Kurangi nominal agar tidak melebihi {fmtRp(syncedProfit)}</p>
+                )}
+              </>
             )}
 
             <div className="flex items-center gap-3">
               <button onClick={() => setShowBagiHasilModal(false)} className="btn-ghost flex-1">Batal</button>
-              <button onClick={handleSubmitBagiHasil} disabled={processing || syncedProfit <= 0} className="btn-primary flex-1 bg-purple-600 hover:bg-purple-500 disabled:opacity-50">{processing ? "Memproses..." : "Konfirmasi & Catat Semua"}</button>
+              <button onClick={handleSubmitBagiHasil} disabled={processing || syncedProfit <= 0 || isOverBudget} className="btn-primary flex-1 bg-purple-600 hover:bg-purple-500 disabled:opacity-50">{processing ? "Memproses..." : "Konfirmasi & Catat Semua"}</button>
             </div>
           </div>
         </div>
