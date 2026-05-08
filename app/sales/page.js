@@ -43,7 +43,14 @@ export default function SalesDashboard() {
       <header className="mb-6 mt-4 flex justify-between items-center">
         <div>
           <h1 className="text-2xl font-bold text-white tracking-tight">Halo, {user.name}! 👋</h1>
-          <p className="text-xs text-slate-400 mt-1">Siap mendistribusikan barang hari ini?</p>
+          <div className="flex items-center gap-2 mt-1">
+            <p className="text-xs text-slate-400">
+              {user.role === 'captain' ? 'Kelola tim & distribusikan barang' : 'Siap mendistribusikan barang hari ini?'}
+            </p>
+            {user.role === 'captain' && (
+              <span className="text-[9px] bg-amber-500/15 text-amber-400 px-2 py-0.5 rounded-md border border-amber-500/20 font-bold uppercase tracking-wider">Captain</span>
+            )}
+          </div>
         </div>
         <img 
           src="/icon.png" 
@@ -72,7 +79,7 @@ export default function SalesDashboard() {
       </div>
       
       {/* Quick Actions */}
-      <div className="grid grid-cols-2 gap-3 mt-6">
+      <div className={`grid gap-3 mt-6 ${user.role === 'captain' ? 'grid-cols-2' : 'grid-cols-2'}`}>
         <button 
           onClick={() => router.push('/sales/transaksi')}
           className="bg-blue-600 hover:bg-blue-500 transition-colors p-4 rounded-xl flex flex-col items-center justify-center gap-2 shadow-lg active:scale-95"
@@ -88,6 +95,26 @@ export default function SalesDashboard() {
           <span className="text-xs font-bold text-slate-300">Setoran</span>
         </button>
       </div>
+
+      {/* Captain-Only Actions */}
+      {user.role === 'captain' && (
+        <div className="grid grid-cols-2 gap-3 mt-3">
+          <button 
+            onClick={() => router.push('/sales/distribusi')}
+            className="bg-amber-600 hover:bg-amber-500 transition-colors p-4 rounded-xl flex flex-col items-center justify-center gap-2 shadow-lg active:scale-95 border border-amber-500/30"
+          >
+            <span className="text-2xl">🔄</span>
+            <span className="text-xs font-bold text-white">Distribusi Tim</span>
+          </button>
+          <button 
+            onClick={() => router.push('/sales/verifikasi')}
+            className="bg-purple-600 hover:bg-purple-500 transition-colors p-4 rounded-xl flex flex-col items-center justify-center gap-2 shadow-lg active:scale-95 border border-purple-500/30"
+          >
+            <span className="text-2xl">✅</span>
+            <span className="text-xs font-bold text-white">Verifikasi Setoran</span>
+          </button>
+        </div>
+      )}
 
       {/* Stock Breakdown Modal */}
       {isModalOpen && (
