@@ -131,8 +131,11 @@ export default function FinanceModule({ products = [], purchases = [] }) {
   const [bagiMode, setBagiMode] = useState("auto"); // "auto" | "manual"
   const [customPayouts, setCustomPayouts] = useState({});
 
+  // Laba tersedia = Laba Kotor dikurangi Bagi Hasil yang sudah dibayarkan
+  const availableProfit = grossProfit - summary.totalBagiHasil;
+
   const openBagiHasil = () => {
-    setProfitInput(grossProfit > 0 ? grossProfit.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".") : "");
+    setProfitInput(availableProfit > 0 ? availableProfit.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".") : "");
     setBagiMode("auto");
     setCustomPayouts({});
     setShowBagiHasilModal(true);
@@ -483,12 +486,18 @@ export default function FinanceModule({ products = [], purchases = [] }) {
             <p className="text-[10px] text-slate-400 mb-5">Distribusikan laba ke investor — otomatis atau atur manual</p>
 
             <div className="mb-4">
-              <label className="block text-xs font-medium text-slate-400 mb-1.5">Total Keuntungan Periode Ini (Rp)</label>
+              <label className="block text-xs font-medium text-slate-400 mb-1.5">Laba yang Akan Dibagikan (Rp)</label>
               <input type="text" inputMode="numeric" value={profitInput} onChange={e => { setProfitInput(fmtInput(e.target.value)); if (bagiMode === 'manual') setCustomPayouts({}); setBagiMode('auto'); }} className="input-field w-full text-xl font-black text-center" placeholder="0" />
               {grossProfit > 0 && (
-                <button onClick={() => { setProfitInput(grossProfit.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")); setBagiMode('auto'); setCustomPayouts({}); }} className="mt-2 w-full text-[10px] text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 rounded-lg py-2 font-bold hover:bg-emerald-500/20 transition-colors">
-                  📊 Sinkron dari Laba Rugi: {fmtRp(grossProfit)}
-                </button>
+                <div className="mt-2 space-y-1.5">
+                  <button onClick={() => { setProfitInput(availableProfit > 0 ? availableProfit.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".") : "0"); setBagiMode('auto'); setCustomPayouts({}); }} className="w-full text-[10px] text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 rounded-lg py-2 font-bold hover:bg-emerald-500/20 transition-colors">
+                    📊 Sinkron Sisa Laba: {fmtRp(availableProfit)}
+                  </button>
+                  <div className="flex justify-between text-[9px] text-slate-500 px-1">
+                    <span>Laba Kotor: {fmtRp(grossProfit)}</span>
+                    <span>Sudah Dibagi: {fmtRp(summary.totalBagiHasil)}</span>
+                  </div>
+                </div>
               )}
             </div>
 
