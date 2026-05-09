@@ -1,12 +1,13 @@
 "use client";
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { getSisaStokSales, getSalesStockBreakdown } from '@/lib/firestore';
+import { getSisaStokSales, getSalesStockBreakdown, getTeamPendingSetoran } from '@/lib/firestore';
 
 export default function SalesDashboard() {
   const [user, setUser] = useState(null);
   const [stokBawaan, setStokBawaan] = useState(0);
   const [stockBreakdown, setStockBreakdown] = useState([]);
+  const [pendingVerifCount, setPendingVerifCount] = useState(0);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isLoadingBreakdown, setIsLoadingBreakdown] = useState(false);
   
@@ -22,7 +23,16 @@ export default function SalesDashboard() {
         const stok = await getSisaStokSales(parsedUser.id);
         setStokBawaan(stok);
       };
+
+      const fetchPending = async () => {
+        if (parsedUser.role === 'captain') {
+          const list = await getTeamPendingSetoran();
+          setPendingVerifCount(list.length);
+        }
+      };
+
       fetchStok();
+      fetchPending();
     }
   }, []);
 
@@ -108,10 +118,19 @@ export default function SalesDashboard() {
           </button>
           <button 
             onClick={() => router.push('/sales/verifikasi')}
-            className="bg-purple-600 hover:bg-purple-500 transition-colors p-4 rounded-xl flex flex-col items-center justify-center gap-2 shadow-lg active:scale-95 border border-purple-500/30"
+            className="bg-purple-600 hover:bg-purple-500 transition-colors p-4 rounded-xl flex flex-col items-center justify-center gap-2 shadow-lg active:scale-95 border border-purple-500/30 relative"
           >
             <span className="text-2xl">✅</span>
             <span className="text-xs font-bold text-white">Verifikasi Setoran</span>
+            
+            {pendingVerifCount > 0 && (
+              <span className="absolute -top-1 -right-1 flex h-5 w-5">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-5 w-5 bg-rose-500 text-[10px] font-black text-white items-center justify-center shadow-lg border border-white/20">
+                  {pendingVerifCount}
+                </span>
+              </span>
+            )}
           </button>
         </div>
       )}
