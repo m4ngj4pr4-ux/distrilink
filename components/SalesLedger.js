@@ -455,6 +455,7 @@ export default function SalesLedger({ teams, products, purchases, allDistributio
                   <thead>
                     <tr className="text-[10px] uppercase tracking-wider text-slate-500 border-b border-slate-400/10">
                       <th className="py-2 font-semibold">Tanggal</th>
+                      <th className="py-2 font-semibold">Metode</th>
                       <th className="py-2 font-semibold text-right text-emerald-400">Nominal Setoran</th>
                       <th className="py-2 font-semibold text-right">Aksi</th>
                     </tr>
@@ -471,11 +472,18 @@ export default function SalesLedger({ teams, products, purchases, allDistributio
                              minute: "2-digit" 
                            }) : dep.createdAt?.toDate().toLocaleDateString("id-ID")}
                          </td>
+                         <td className="py-2">
+                           <span className={`text-[9px] px-1.5 py-0.5 rounded font-bold uppercase ${
+                             dep.metode === "Tunai ke Captain" ? "bg-amber-500/10 text-amber-500" : "bg-blue-500/10 text-blue-400"
+                           }`}>
+                             {dep.metode || "Transfer"}
+                           </span>
+                         </td>
                          <td className="py-2 text-right font-bold text-emerald-400">
                            {formatRupiah(dep.nominal || dep.amount)}
                          </td>
                          <td className="py-2 text-right">
-                           {dep.status === "Menunggu Verifikasi" ? (
+                           {(dep.status === "Menunggu Verifikasi" || dep.status === "Menunggu Verifikasi Admin") ? (
                              <button 
                                onClick={() => handleVerifikasi(dep)}
                                className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[10px] px-2 py-1 rounded transition-colors shadow-sm"
@@ -486,7 +494,7 @@ export default function SalesLedger({ teams, products, purchases, allDistributio
                              <span className={`text-[10px] px-2 py-0.5 rounded font-bold uppercase tracking-tighter ${
                                dep.status === "Diverifikasi Admin" || dep.status === "Selesai (Sistem Lama)" ? "bg-emerald-500/10 text-emerald-500" : "bg-slate-800 text-slate-500"
                              }`}>
-                               {dep.status === "Diverifikasi Admin" ? "Selesai" : dep.status}
+                               {dep.status === "Diverifikasi Admin" ? "Selesai" : (dep.status === "Kas di Captain" ? "Di Captain" : dep.status)}
                              </span>
                            )}
                          </td>

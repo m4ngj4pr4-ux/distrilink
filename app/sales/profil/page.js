@@ -12,6 +12,7 @@ export default function ProfilPage() {
   // Setoran States
   const [isSetorModalOpen, setIsSetorModalOpen] = useState(false);
   const [nominalSetor, setNominalSetor] = useState("");
+  const [metodeSetor, setMetodeSetor] = useState("Transfer Bank");
   const [catatanSetor, setCatatanSetor] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [riwayatSetoran, setRiwayatSetoran] = useState([]);
@@ -43,18 +44,22 @@ export default function ProfilPage() {
 
     setIsSubmitting(true);
     try {
-      await addSetoranDana({
-        teamId: user.id,
-        namaSales: user.name,
-        nominal: nominal,
-        catatan: catatanSetor || "Setoran Mandiri via HP",
-        diinputOleh: "Sales",
-        status: "Menunggu Verifikasi"
-      });
+      await addSetoranDana(
+        user.id,
+        user.name,
+        nominal,
+        metodeSetor,
+        catatanSetor
+      );
       
-      toast.success("Setoran berhasil dikirim ke Admin!");
+      const msg = metodeSetor === "Tunai ke Captain" 
+        ? "Laporan terkirim! Serahkan uang tunai ke Captain."
+        : "Setoran berhasil dikirim ke Admin!";
+      
+      toast.success(msg);
       setIsSetorModalOpen(false);
       setNominalSetor("");
+      setMetodeSetor("Transfer Bank");
       setCatatanSetor("");
       
       // Refresh history
@@ -191,6 +196,18 @@ export default function ProfilPage() {
                 </div>
               </div>
               
+              <div className="mb-5">
+                <label className="block text-[10px] uppercase tracking-wider font-bold text-slate-500 mb-2">Metode Pembayaran</label>
+                <select 
+                  value={metodeSetor}
+                  onChange={(e) => setMetodeSetor(e.target.value)}
+                  className="w-full bg-dark-800 border border-slate-700 rounded-xl px-4 py-3.5 text-sm text-white focus:border-emerald-500 outline-none h-[54px]"
+                >
+                  <option value="Transfer Bank">Transfer Bank (Langsung ke Pusat)</option>
+                  <option value="Tunai ke Captain">Tunai ke Captain (Titip Fisik)</option>
+                </select>
+              </div>
+
               <div className="mb-8">
                 <label className="block text-[10px] uppercase tracking-wider font-bold text-slate-500 mb-2">Catatan / Bukti (Opsional)</label>
                 <input 
@@ -198,7 +215,7 @@ export default function ProfilPage() {
                   value={catatanSetor}
                   onChange={(e) => setCatatanSetor(e.target.value)}
                   className="w-full bg-dark-800 border border-slate-700 rounded-xl px-4 py-3.5 text-sm text-white focus:border-emerald-500 outline-none"
-                  placeholder="Contoh: Titip di loket BCA / Cash"
+                  placeholder={metodeSetor === "Transfer Bank" ? "Contoh: Transfer via BCA" : "Contoh: Serah terima di kantor"}
                 />
               </div>
 
