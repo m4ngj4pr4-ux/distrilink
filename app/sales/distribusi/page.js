@@ -15,6 +15,7 @@ export default function CaptainDistribusiPage() {
   const [selectedMember, setSelectedMember] = useState("");
   const [selectedBrand, setSelectedBrand] = useState("");
   const [qty, setQty] = useState("");
+  const [unit, setUnit] = useState("Pk");
   const [pricePerPack, setPricePerPack] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -43,19 +44,40 @@ export default function CaptainDistribusiPage() {
     setIsLoading(false);
   };
 
+  // Auto-fill price when brand changes
+  useEffect(() => {
+    if (selectedBrand && carriedBrands[selectedBrand]) {
+      const price = carriedBrands[selectedBrand].sellingPrice || 0;
+      setPricePerPack(price > 0 ? price.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".") : "");
+    } else {
+      setPricePerPack("");
+    }
+  }, [selectedBrand, carriedBrands]);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const packs = parseInt(qty);
-    const price = parseInt(pricePerPack.replace(/\D/g, "")) || 0;
-    
-    if (!selectedMember) return toast.error("Pilih anggota tim!");
-    if (!selectedBrand) return toast.error("Pilih merek barang!");
-    if (!packs || packs <= 0) return toast.error("Masukkan jumlah yang valid!");
-    if (!price || price <= 0) return toast.error("Masukkan harga per pack!");
     
     const brandData = carriedBrands[selectedBrand];
-    if (!brandData) return toast.error("Merek tidak ditemukan!");
-    if (packs > brandData.sisa) return toast.error(`Stok ${selectedBrand} Anda hanya ${brandData.sisa} Pk!`);
+    if (!brandData) return toast.error("Pilih merek barang!");
+
+    const rawQty = parseFloat(qty) || 0;
+    const price = parseInt(pricePerPack.replace(/\D/g, "")) || 0;
+    
+    // Konversi ke pack
+    let totalPacks = rawQty;
+    if (unit === "Ct") totalPacks = rawQty * (brandData.packsPerCt || 800);
+    if (unit === "Bal") totalPacks = rawQty * (brandData.packsPerBal || 100);
+    if (unit === "Slop") totalPacks = rawQty * (brandData.packsPerSlop || 10);
+    
+    totalPacks = Math.round(totalPacks);
+
+    if (!selectedMember) return toast.error("Pilih anggota tim!");
+    if (!totalPacks || totalPacks <= 0) return toast.error("Masukkan jumlah yang valid!");
+    if (!price || price <= 0) return toast.error("Masukkan harga per pack!");
+    
+    if (totalPacks > brandData.sisa) {
+      return toast.error(`Stok ${selectedBrand} Anda hanya ${brandData.sisa} Pk! (Input: ${totalPacks} Pk)`);
+    }
 
     const member = teamMembers.find(m => m.id === selectedMember);
     if (!member) return toast.error("Anggota tim tidak valid!");
@@ -69,14 +91,17 @@ export default function CaptainDistribusiPage() {
         targetTeamName: member.name,
         productId: brandData.productId,
         productName: selectedBrand,
-        totalPacks: packs,
-        pricePerPack: price
+        totalPacks: totalPacks,
+        pricePerPack: price,
+        qtyOriginal: rawQty,
+        unit: unit
       });
       
-      toast.success(`${packs} Pk ${selectedBrand} berhasil didistribusikan ke ${member.name}!`);
+      toast.success(`${rawQty} ${unit} ${selectedBrand} (${totalPacks} Pk) berhasil didistribusikan ke ${member.name}!`);
       setSelectedMember("");
       setSelectedBrand("");
       setQty("");
+      setUnit("Pk");
       setPricePerPack("");
       
       // Refresh brands
@@ -91,7 +116,7 @@ export default function CaptainDistribusiPage() {
   };
 
   const formatRupiah = (val) => {
-    const num = val.replace(/\D/g, "");
+    const num = val.toString().replace(/\D/g, "");
     return num.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
   };
 
@@ -157,37 +182,63 @@ export default function CaptainDistribusiPage() {
                 >
                   <option value="">-- Pilih Merek --</option>
                   {Object.entries(carriedBrands).map(([name, data]) => (
-                    <option key={name} value={name}>{name} (Tersisa: {data.sisa} Pk)</option>
+                    <option key={name} value={name}>{name} (Sisa: {data.sisa} Pk)</option>
                   ))}
                 </select>
               </div>
 
-              <div className="grid grid-cols-2 gap-3 mb-3">
-                <div>
-                  <label className="block text-[10px] font-medium text-slate-400 mb-1.5 uppercase tracking-wider">Jumlah (Pack)</label>
-                  <input 
-                    type="number" inputMode="numeric" value={qty}
-                    onChange={(e) => setQty(e.target.value)}
-                    className="w-full bg-dark-800 border border-slate-700 rounded-xl px-4 py-3 text-lg font-black text-amber-400 focus:border-amber-500 outline-none text-center"
-                    placeholder="0" required
-                  />
+              <div className="mb-3">
+                <div className="flex gap-2">
+                  <div className="flex-1">
+                    <label className="block text-[10px] font-medium text-slate-400 mb-1.5 uppercase tracking-wider">Jumlah</label>
+                    <input 
+                      type="number" step="any" inputMode="decimal" value={qty}
+                      onChange={(e) => setQty(e.target.value)}
+                      className="w-full bg-dark-800 border border-slate-700 rounded-xl px-4 py-3 text-lg font-black text-amber-400 focus:border-amber-500 outline-none text-center"
+                      placeholder="0" required
+                    />
+                  </div>
+                  <div className="w-24">
+                    <label className="block text-[10px] font-medium text-slate-400 mb-1.5 uppercase tracking-wider">Satuan</label>
+                    <select 
+                      value={unit} onChange={(e) => setUnit(e.target.value)}
+                      className="w-full bg-dark-800 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white outline-none focus:border-amber-500 h-[54px]"
+                      required
+                    >
+                      <option value="Ct">Ct</option>
+                      <option value="Bal">Bal</option>
+                      <option value="Slop">Slop</option>
+                      <option value="Pk">Pk</option>
+                    </select>
+                  </div>
                 </div>
-                <div>
-                  <label className="block text-[10px] font-medium text-slate-400 mb-1.5 uppercase tracking-wider">Harga/Pack (Rp)</label>
-                  <input 
-                    type="text" inputMode="numeric" value={pricePerPack}
-                    onChange={(e) => setPricePerPack(formatRupiah(e.target.value))}
-                    className="w-full bg-dark-800 border border-slate-700 rounded-xl px-4 py-3 text-lg font-black text-white focus:border-amber-500 outline-none text-center"
-                    placeholder="0" required
-                  />
-                </div>
+              </div>
+
+              <div className="mb-3">
+                <label className="block text-[10px] font-medium text-slate-400 mb-1.5 uppercase tracking-wider">Harga/Pack (Rp)</label>
+                <input 
+                  type="text" inputMode="numeric" value={pricePerPack}
+                  onChange={(e) => setPricePerPack(formatRupiah(e.target.value))}
+                  className="w-full bg-dark-800 border border-slate-700 rounded-xl px-4 py-3 text-lg font-black text-white focus:border-amber-500 outline-none text-center"
+                  placeholder="0" required
+                />
               </div>
 
               {selectedBrand && qty && pricePerPack && (
                 <div className="bg-dark-900 rounded-lg p-3 border border-slate-700/50 mb-3">
+                  <div className="flex justify-between items-center mb-1">
+                    <p className="text-[9px] text-slate-500 uppercase tracking-wider font-bold">Total Pack</p>
+                    <p className="text-[10px] font-bold text-amber-400">
+                      {unit !== "Pk" ? `${qty} ${unit} = ` : "" }
+                      {Math.round(parseFloat(qty) * (unit === "Ct" ? carriedBrands[selectedBrand]?.packsPerCt : unit === "Bal" ? carriedBrands[selectedBrand]?.packsPerBal : unit === "Slop" ? carriedBrands[selectedBrand]?.packsPerSlop : 1))} Pk
+                    </p>
+                  </div>
                   <p className="text-[9px] text-slate-500 uppercase tracking-wider font-bold">Total Nilai Distribusi</p>
                   <p className="text-xl font-black text-white">
-                    Rp {((parseInt(qty) || 0) * (parseInt(pricePerPack.replace(/\D/g, "")) || 0)).toLocaleString('id-ID')}
+                    Rp {(
+                      Math.round(parseFloat(qty) * (unit === "Ct" ? carriedBrands[selectedBrand]?.packsPerCt : unit === "Bal" ? carriedBrands[selectedBrand]?.packsPerBal : unit === "Slop" ? carriedBrands[selectedBrand]?.packsPerSlop : 1)) * 
+                      (parseInt(pricePerPack.replace(/\D/g, "")) || 0)
+                    ).toLocaleString('id-ID')}
                   </p>
                 </div>
               )}
