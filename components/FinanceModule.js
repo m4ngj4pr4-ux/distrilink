@@ -58,12 +58,14 @@ export default function FinanceModule({ products = [], purchases = [] }) {
   // Hitung Laba Kotor (sinkron dengan modul Laba Rugi)
   const grossProfit = useMemo(() => {
     const batchProfit = purchases.map(po => {
-      const poDist = distributions.filter(d => d.poId === po.id);
+      // Filter out internal captain-to-sales distributions to prevent double counting
+      const poDist = distributions.filter(d => d.poId === po.id && d.source !== "captain");
       const revenue = poDist.reduce((s, d) => s + (d.amount || 0), 0);
       const cogs = poDist.reduce((s, d) => s + ((d.totalPacksDistributed || 0) * (d.hppSnapshot || po.hpp || 0)), 0);
       return revenue - cogs;
     }).reduce((s, v) => s + v, 0);
-    const legacyDist = distributions.filter(d => !d.poId);
+    
+    const legacyDist = distributions.filter(d => !d.poId && d.source !== "captain");
     const legRev = legacyDist.reduce((s, d) => s + (d.amount || 0), 0);
     const legCogs = legacyDist.reduce((s, d) => {
       const p = products.find(pr => pr.id === d.productId);

@@ -15,7 +15,8 @@ export default function ProfitLossReport({ products, purchases }) {
 
   // HITUNG DATA PER BATCH PO
   const batchData = purchases.map(po => {
-    const poDist = distributions.filter(d => d.poId === po.id);
+    // Filter out internal captain-to-sales distributions to prevent double counting in P&L
+    const poDist = distributions.filter(d => d.poId === po.id && d.source !== "captain");
     const qtyPacks = poDist.reduce((sum, d) => sum + (d.totalPacksDistributed || 0), 0);
     const revenue = poDist.reduce((sum, d) => sum + (d.amount || 0), 0);
     const cogs = poDist.reduce((sum, d) => sum + ((d.totalPacksDistributed || 0) * (d.hppSnapshot || po.hpp || 0)), 0);
@@ -30,7 +31,7 @@ export default function ProfitLossReport({ products, purchases }) {
   }).filter(item => item.qtyPacks > 0);
 
   // HITUNG DATA LAMA (Tanpa poId)
-  const legacyDist = distributions.filter(d => !d.poId);
+  const legacyDist = distributions.filter(d => !d.poId && d.source !== "captain");
   const legacyData = [];
   if (legacyDist.length > 0) {
     const qtyPacks = legacyDist.reduce((sum, d) => sum + (d.totalPacksDistributed || 0), 0);
