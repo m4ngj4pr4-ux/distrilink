@@ -16,22 +16,30 @@ import {
   HiOutlineCash
 } from "react-icons/hi";
 
-const navItems = [
-  { icon: HiOutlineHome, label: "Dashboard", id: "dashboard" },
-  { icon: HiOutlineDocumentText, label: "PO Pabrik", id: "po" },
-  { icon: HiOutlineClipboardList, label: "Riwayat PO", id: "po-history" },
-  { icon: HiOutlineCube, label: "Stok Barang", id: "stock" },
-  { icon: HiOutlineTrendingUp, label: "Laba Rugi", id: "laba-rugi" },
-  { icon: HiOutlineCash, label: "Keuangan", id: "keuangan" },
-  { icon: HiOutlineUserGroup, label: "Buku Penjualan", id: "sales" },
-  { icon: HiOutlineLocationMarker, label: "Pemasaran Retail", id: "retail" },
-  { icon: HiOutlineReply, label: "Retur Barang", id: "returns" },
-  { icon: HiOutlineCog, label: "Pengaturan", id: "settings" },
+import { useAdminAuth } from "@/lib/AdminAuthContext";
+import { HiOutlineLogout } from "react-icons/hi";
+
+const ALL_NAV_ITEMS = [
+  { icon: HiOutlineHome, label: "Dashboard", id: "dashboard", roles: ["owner", "admin", "investor"] },
+  { icon: HiOutlineDocumentText, label: "PO Pabrik", id: "po", roles: ["owner"] },
+  { icon: HiOutlineClipboardList, label: "Riwayat PO", id: "po-history", roles: ["owner"] },
+  { icon: HiOutlineCube, label: "Stok Barang", id: "stock", roles: ["owner", "admin"] },
+  { icon: HiOutlineTrendingUp, label: "Laba Rugi", id: "laba-rugi", roles: ["owner"] },
+  { icon: HiOutlineCash, label: "Keuangan", id: "keuangan", roles: ["owner", "investor"] },
+  { icon: HiOutlineUserGroup, label: "Buku Penjualan", id: "sales", roles: ["owner", "admin"] },
+  { icon: HiOutlineLocationMarker, label: "Pemasaran Retail", id: "retail", roles: ["owner", "admin"] },
+  { icon: HiOutlineReply, label: "Retur Barang", id: "returns", roles: ["owner"] },
+  { icon: HiOutlineCog, label: "Pengaturan", id: "settings", roles: ["owner"] },
 ];
 
 export default function Sidebar({ activeSection, onNavigate, pendingCount = 0 }) {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const { adminUser, logout } = useAdminAuth();
+
+  const navItems = ALL_NAV_ITEMS.filter(item => 
+    item.roles.includes(adminUser?.role)
+  );
 
   return (
     <>
@@ -51,8 +59,6 @@ export default function Sidebar({ activeSection, onNavigate, pendingCount = 0 })
           onClick={() => setMobileOpen(false)}
         />
       )}
-
-      {/* Sidebar logic below */}
       <aside
         className={`
           fixed top-0 left-0 h-full z-50 flex flex-col
@@ -78,7 +84,7 @@ export default function Sidebar({ activeSection, onNavigate, pendingCount = 0 })
                   DistriLink
                 </h1>
                 <p className="text-[10px] text-slate-400 uppercase tracking-wider">
-                  Distribusi Rokok
+                  {adminUser?.role === 'owner' ? 'Owner Central' : adminUser?.role === 'admin' ? 'Admin Ops' : 'Investor Portal'}
                 </p>
               </div>
             </div>
@@ -154,7 +160,35 @@ export default function Sidebar({ activeSection, onNavigate, pendingCount = 0 })
             );
           })}
         </nav>
+
+        {/* User Info & Logout */}
+        <div className="p-4 border-t border-slate-400/8">
+          {!collapsed ? (
+            <div className="flex items-center gap-3 mb-4 px-2">
+              <div className="w-8 h-8 rounded-full bg-blue-500/10 flex items-center justify-center text-blue-400 font-bold text-xs">
+                {adminUser?.nama?.[0] || 'A'}
+              </div>
+              <div className="flex-1 overflow-hidden">
+                <p className="text-xs font-bold text-white truncate">{adminUser?.nama}</p>
+                <p className="text-[9px] text-slate-500 truncate capitalize">{adminUser?.role}</p>
+              </div>
+            </div>
+          ) : (
+             <div className="w-8 h-8 rounded-full bg-blue-500/10 flex items-center justify-center text-blue-400 font-bold text-[10px] mx-auto mb-4 border border-blue-500/20">
+               {adminUser?.nama?.[0] || 'A'}
+             </div>
+          )}
+          
+          <button
+            onClick={logout}
+            className="w-full flex items-center gap-3 p-2 rounded-lg text-slate-400 hover:bg-rose-500/10 hover:text-rose-400 transition-colors"
+          >
+            <HiOutlineLogout size={20} className="flex-shrink-0" />
+            {!collapsed && <span className="text-sm font-medium">Log Out</span>}
+          </button>
+        </div>
       </aside>
     </>
   );
 }
+

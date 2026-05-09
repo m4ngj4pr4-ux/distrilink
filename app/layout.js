@@ -27,6 +27,8 @@ export const metadata = {
   themeColor: "#000000",
 };
 
+import { AdminAuthProvider } from "@/lib/AdminAuthContext";
+
 export default function RootLayout({ children }) {
   return (
     <html
@@ -35,7 +37,9 @@ export default function RootLayout({ children }) {
     >
       <body className="min-h-full flex flex-col bg-dark-900 text-foreground">
         <Toaster position="top-right" containerStyle={{ zIndex: 999999 }} />
-        {children}
+        <AdminAuthProvider>
+          {children}
+        </AdminAuthProvider>
       </body>
     </html>
   );

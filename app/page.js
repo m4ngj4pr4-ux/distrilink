@@ -31,8 +31,10 @@ import {
   verifikasiSetoranAdmin
 } from "@/lib/firestore";
 import toast from "react-hot-toast";
+import { useAdminAuth } from "@/lib/AdminAuthContext";
 
 export default function DashboardPage() {
+  const { adminUser } = useAdminAuth();
   const [activeSection, setActiveSection] = useState("dashboard");
   const [isRecalculating, setIsRecalculating] = useState(false);
   const [products, setProducts] = useState([]);
@@ -53,6 +55,12 @@ export default function DashboardPage() {
   const [pendingCount, setPendingCount] = useState(0);
   const [pendingList, setPendingList] = useState([]);
   const [isVerificationQueueOpen, setIsVerificationQueueOpen] = useState(false);
+
+  useEffect(() => {
+    if (adminUser?.role === 'investor' && !['dashboard', 'keuangan'].includes(activeSection)) {
+      setActiveSection('dashboard');
+    }
+  }, [adminUser, activeSection]);
 
   useEffect(() => {
     const unsubProducts = subscribeProducts((data) => {
@@ -128,39 +136,29 @@ export default function DashboardPage() {
     switch (activeSection) {
       case "dashboard":
         return (
-          <div className="space-y-6 animate-fadeIn">
-            {/* Notification Card */}
-            <div 
-              onClick={() => { if(pendingCount > 0) setIsVerificationQueueOpen(true); }}
-              className={`cursor-pointer p-5 rounded-2xl border transition-all ${
-                pendingCount > 0 
-                ? 'bg-amber-500/10 border-amber-500 shadow-lg shadow-amber-900/20 animate-pulse' 
-                : 'bg-dark-800 border-slate-800 opacity-60 hover:opacity-100'
-              }`}
-            >
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs font-medium text-slate-400 mb-1">Tugas Perlu Verifikasi</p>
-                  <h3 className="text-2xl font-black text-white">
-                    {pendingCount} <span className="text-sm font-normal text-slate-500">Setoran</span>
-                  </h3>
-                </div>
-                <div className={`p-3 rounded-xl ${pendingCount > 0 ? 'bg-amber-500' : 'bg-slate-700'}`}>
-                  <span className="text-xl">🔔</span>
-                </div>
-              </div>
-              {pendingCount > 0 && (
-                <p className="text-[10px] text-amber-500 mt-3 font-bold">
-                  ⚠️ Klik untuk segera proses verifikasi di Buku Penjualan
-                </p>
-              )}
-            </div>
-
+          <div className="space-y-8 animate-fadeIn">
             <SummaryCards summary={summary} products={products} />
             <DashboardWidgets products={products} teams={teams} />
+            {adminUser?.role !== 'investor' && pendingCount > 0 && (
+              <div className="glass-card p-4 border border-amber-500/20 bg-amber-500/5 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <span className="text-xl">⚠️</span>
+                  <p className="text-xs text-amber-400 font-bold">
+                    Ada {pendingCount} setoran yang menunggu verifikasi.
+                  </p>
+                </div>
+                <button 
+                  onClick={() => setIsVerificationQueueOpen(true)}
+                  className="px-4 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-dark-900 text-[10px] font-black uppercase tracking-wider transition-all"
+                >
+                  Proses Sekarang
+                </button>
+              </div>
+            )}
           </div>
         );
       case "po":
+        if (adminUser?.role !== 'owner') return null;
         return (
           <div className="space-y-8 animate-fadeIn">
             <SummaryCards summary={summary} products={products} />
@@ -168,6 +166,7 @@ export default function DashboardPage() {
           </div>
         );
       case "po-history":
+        if (adminUser?.role !== 'owner') return null;
         return (
           <div className="space-y-8 animate-fadeIn">
             <SummaryCards summary={summary} products={products} />
@@ -175,6 +174,7 @@ export default function DashboardPage() {
           </div>
         );
       case "stock":
+        if (!['owner', 'admin'].includes(adminUser?.role)) return null;
         return (
           <div className="space-y-8 animate-fadeIn">
             <SummaryCards summary={summary} products={products} />
@@ -256,13 +256,6 @@ export default function DashboardPage() {
                         </tr>
                       );
                     })}
-                    {products.length === 0 && (
-                      <tr>
-                        <td colSpan="4" className="text-center py-8 text-slate-500 italic text-sm">
-                          Belum ada produk di master data.
-                        </td>
-                      </tr>
-                    )}
                   </tbody>
                 </table>
               </div>
@@ -296,6 +289,7 @@ export default function DashboardPage() {
           </div>
         );
       case "laba-rugi":
+        if (adminUser?.role !== 'owner') return null;
         return (
           <div className="space-y-8 animate-fadeIn">
             <SummaryCards summary={summary} products={products} />
@@ -303,12 +297,14 @@ export default function DashboardPage() {
           </div>
         );
       case "keuangan":
+        if (!['owner', 'investor'].includes(adminUser?.role)) return null;
         return (
           <div className="space-y-8 animate-fadeIn">
             <FinanceModule products={products} purchases={purchases} />
           </div>
         );
       case "sales":
+        if (!['owner', 'admin'].includes(adminUser?.role)) return null;
         return (
           <div className="space-y-8 animate-fadeIn">
             <SummaryCards summary={summary} products={products} />
@@ -316,6 +312,7 @@ export default function DashboardPage() {
           </div>
         );
       case "retail":
+        if (!['owner', 'admin'].includes(adminUser?.role)) return null;
         return (
           <div className="space-y-8 animate-fadeIn">
             <SummaryCards summary={summary} products={products} />
@@ -323,6 +320,7 @@ export default function DashboardPage() {
           </div>
         );
       case "returns":
+        if (adminUser?.role !== 'owner') return null;
         return (
           <div className="space-y-8 animate-fadeIn">
             <SummaryCards summary={summary} products={products} />
@@ -330,6 +328,7 @@ export default function DashboardPage() {
           </div>
         );
       case "settings":
+        if (adminUser?.role !== 'owner') return null;
         return <Settings onRecalculate={handleRecalculate} isRecalculating={isRecalculating} />;
       default:
         return null;
@@ -344,11 +343,11 @@ export default function DashboardPage() {
         pendingCount={pendingCount}
       />
       
-      <main className="flex-1 overflow-y-auto custom-scrollbar relative">
+      <main className="flex-1 overflow-y-auto custom-scrollbar relative p-8">
         <header className="mb-8 flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold text-white capitalize">{activeSection.replace("-", " ")}</h1>
-            <p className="text-slate-400">{new Date().toLocaleDateString("id-ID", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}</p>
+            <p className="text-slate-400 text-xs mt-1">{new Date().toLocaleDateString("id-ID", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}</p>
           </div>
           
           <div className="flex items-center gap-6">
@@ -357,14 +356,14 @@ export default function DashboardPage() {
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span> Sinkron Aktif
             </div>
 
-            {/* Profil Pemilik - Pindahan dari Sidebar */}
+            {/* Profil User */}
             <div className="flex items-center gap-3 pl-6 border-l border-slate-400/10">
-              <div className="text-center hidden sm:block">
-                <p className="text-sm font-bold text-slate-200 leading-tight">Owner</p>
-                <p className="text-[10px] text-slate-500 font-medium uppercase tracking-tight">Admin</p>
+              <div className="text-right hidden sm:block">
+                <p className="text-sm font-bold text-slate-200 leading-tight">{adminUser?.nama}</p>
+                <p className="text-[10px] text-slate-500 font-medium uppercase tracking-tight">{adminUser?.role}</p>
               </div>
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center text-white text-sm font-bold shadow-lg shadow-emerald-500/20">
-                O
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white text-sm font-bold shadow-lg shadow-blue-500/20 uppercase">
+                {adminUser?.nama?.[0] || 'A'}
               </div>
             </div>
           </div>

@@ -1,18 +1,30 @@
-"use client";
-
-import { useState } from "react";
-import { HiOutlineShieldCheck, HiOutlineRefresh, HiDatabase, HiOutlineExclamation, HiOutlineX } from "react-icons/hi";
-import { factoryResetDatabase } from "@/lib/firestore";
+import { useEffect, useState } from "react";
+import { HiOutlineShieldCheck, HiOutlineRefresh, HiDatabase, HiOutlineExclamation, HiOutlineX, HiOutlineUserAdd, HiOutlineTrash, HiOutlinePencilAlt } from "react-icons/hi";
+import { factoryResetDatabase, subscribeAdminUsers, addAdminUser, updateAdminUser, deleteAdminUser } from "@/lib/firestore";
+import { useAdminAuth } from "@/lib/AdminAuthContext";
 import toast from "react-hot-toast";
 
 export default function Settings({ onRecalculate, isRecalculating }) {
   const [isResetting, setIsResetting] = useState(false);
   const [showResetModal, setShowResetModal] = useState(false);
   const [confirmText, setConfirmText] = useState("");
+  
+  const { adminUser } = useAdminAuth();
+  const [users, setUsers] = useState([]);
+  const [showUserModal, setShowUserModal] = useState(false);
+  const [editingUser, setEditingUser] = useState(null);
+  const [userForm, setUserForm] = useState({ email: "", password: "", nama: "", role: "admin" });
+  const [isSavingUser, setIsSavingUser] = useState(false);
+
+  useEffect(() => {
+    if (adminUser?.role === "owner") {
+      const unsub = subscribeAdminUsers(setUsers);
+      return () => unsub();
+    }
+  }, [adminUser]);
 
   async function handleFactoryReset() {
     if (confirmText !== "HAPUS") return;
-    
     setIsResetting(true);
     try {
       await factoryResetDatabase();
@@ -27,8 +39,110 @@ export default function Settings({ onRecalculate, isRecalculating }) {
     }
   }
 
+  const openAddUser = () => {
+    setEditingUser(null);
+    setUserForm({ email: "", password: "", nama: "", role: "admin" });
+    setShowUserModal(true);
+  };
+
+  const openEditUser = (user) => {
+    setEditingUser(user);
+    setUserForm({ email: user.email, password: user.password, nama: user.nama, role: user.role });
+    setShowUserModal(true);
+  };
+
+  const handleSaveUser = async (e) => {
+    e.preventDefault();
+    setIsSavingUser(true);
+    try {
+      if (editingUser) {
+        await updateAdminUser(editingUser.id, userForm);
+        toast.success("User berhasil diperbarui!");
+      } else {
+        await addAdminUser(userForm);
+        toast.success("User baru berhasil ditambahkan!");
+      }
+      setShowUserModal(false);
+    } catch (error) {
+      toast.error("Gagal menyimpan user.");
+    } finally {
+      setIsSavingUser(false);
+    }
+  };
+
+  const handleDeleteUser = async (userId) => {
+    if (confirm("Hapus user ini?")) {
+      try {
+        await deleteAdminUser(userId);
+        toast.success("User berhasil dihapus.");
+      } catch (error) {
+        toast.error("Gagal menghapus user.");
+      }
+    }
+  };
+
   return (
     <div className="max-w-4xl mx-auto space-y-6 animate-fadeIn">
+      {/* CARD 0: USER MANAGEMENT (Owner Only) */}
+      {adminUser?.role === "owner" && (
+        <div className="glass-card p-6">
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-400">
+                <HiOutlineUserAdd size={24} />
+              </div>
+              <div>
+                <h2 className="text-lg font-bold text-white">Manajemen User Admin</h2>
+                <p className="text-xs text-slate-400">Kelola hak akses Owner, Admin, dan Investor</p>
+              </div>
+            </div>
+            <button 
+              onClick={openAddUser}
+              className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold transition-all shadow-lg shadow-blue-500/20"
+            >
+              + Tambah User
+            </button>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="text-[10px] uppercase tracking-wider text-slate-500 border-b border-slate-400/5">
+                  <th className="py-3 px-2 font-semibold">Nama</th>
+                  <th className="py-3 px-2 font-semibold">Email</th>
+                  <th className="py-3 px-2 font-semibold">Role</th>
+                  <th className="py-3 px-2 font-semibold text-right">Aksi</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-400/5">
+                {users.map((user) => (
+                  <tr key={user.id} className="text-xs hover:bg-white/5 transition-colors group">
+                    <td className="py-3 px-2 text-white font-medium">{user.nama}</td>
+                    <td className="py-3 px-2 text-slate-400">{user.email}</td>
+                    <td className="py-3 px-2">
+                      <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider ${
+                        user.role === 'owner' ? 'bg-amber-500/10 text-amber-500' : 
+                        user.role === 'admin' ? 'bg-blue-500/10 text-blue-400' : 'bg-emerald-500/10 text-emerald-400'
+                      }`}>
+                        {user.role}
+                      </span>
+                    </td>
+                    <td className="py-3 px-2 text-right">
+                      <div className="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button onClick={() => openEditUser(user)} className="p-1.5 rounded hover:bg-blue-500/10 text-blue-400"><HiOutlinePencilAlt size={16} /></button>
+                        {user.role !== 'owner' && (
+                          <button onClick={() => handleDeleteUser(user.id)} className="p-1.5 rounded hover:bg-rose-500/10 text-rose-400"><HiOutlineTrash size={16} /></button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
       {/* CARD 1: REKONSILIASI */}
       <div className="glass-card p-6">
         <div className="flex items-center gap-3 mb-6">
@@ -89,6 +203,48 @@ export default function Settings({ onRecalculate, isRecalculating }) {
         </div>
       </div>
 
+      {/* MODAL USER (Add/Edit) */}
+      {showUserModal && (
+        <div className="modal-overlay z-[9999]" onClick={() => setShowUserModal(false)}>
+          <div className="modal-content max-w-md" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-lg font-bold text-white">{editingUser ? "Edit User" : "Tambah User Baru"}</h3>
+              <button onClick={() => setShowUserModal(false)} className="text-slate-500 hover:text-white"><HiOutlineX size={20}/></button>
+            </div>
+
+            <form onSubmit={handleSaveUser} className="space-y-4">
+              <div>
+                <label className="block text-[10px] uppercase font-bold text-slate-500 mb-1">Nama Lengkap</label>
+                <input type="text" required value={userForm.nama} onChange={(e) => setUserForm({...userForm, nama: e.target.value})} className="input-field w-full" placeholder="Contoh: Budi Santoso" />
+              </div>
+              <div>
+                <label className="block text-[10px] uppercase font-bold text-slate-500 mb-1">Email Address</label>
+                <input type="email" required value={userForm.email} onChange={(e) => setUserForm({...userForm, email: e.target.value})} className="input-field w-full" placeholder="email@distrilink.com" />
+              </div>
+              <div>
+                <label className="block text-[10px] uppercase font-bold text-slate-500 mb-1">Password</label>
+                <input type="password" required={!editingUser} value={userForm.password} onChange={(e) => setUserForm({...userForm, password: e.target.value})} className="input-field w-full" placeholder="••••••••" />
+              </div>
+              <div>
+                <label className="block text-[10px] uppercase font-bold text-slate-500 mb-1">Role Akses</label>
+                <select value={userForm.role} onChange={(e) => setUserForm({...userForm, role: e.target.value})} className="input-field w-full">
+                  <option value="admin">Admin Operasional</option>
+                  <option value="investor">Investor (Read-only Finance)</option>
+                  {editingUser?.role === 'owner' && <option value="owner">Owner</option>}
+                </select>
+              </div>
+
+              <div className="flex gap-3 pt-4">
+                <button type="button" onClick={() => setShowUserModal(false)} className="flex-1 py-3 text-slate-400 font-bold">Batal</button>
+                <button type="submit" disabled={isSavingUser} className="flex-1 py-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold shadow-lg shadow-blue-500/20 disabled:opacity-50">
+                  {isSavingUser ? "Menyimpan..." : "Simpan User"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       {/* MODAL KONFIRMASI RESET */}
       {showResetModal && (
         <div className="modal-overlay z-[9999]" onClick={() => setShowResetModal(false)}>
@@ -143,3 +299,4 @@ export default function Settings({ onRecalculate, isRecalculating }) {
     </div>
   );
 }
+
