@@ -29,7 +29,7 @@ const navItems = [
   { icon: HiOutlineCog, label: "Pengaturan", id: "settings" },
 ];
 
-export default function Sidebar({ activeSection, onNavigate }) {
+export default function Sidebar({ activeSection, onNavigate, pendingCount = 0 }) {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -52,7 +52,7 @@ export default function Sidebar({ activeSection, onNavigate }) {
         />
       )}
 
-      {/* Sidebar */}
+      {/* Sidebar logic below */}
       <aside
         className={`
           fixed top-0 left-0 h-full z-50 flex flex-col
@@ -120,25 +120,40 @@ export default function Sidebar({ activeSection, onNavigate }) {
         </div>
 
         {/* Navigasi */}
-        <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
-          {navItems.map((item) => (
-            <button
-              key={item.id}
-              onClick={() => {
-                onNavigate(item.id);
-                setMobileOpen(false);
-              }}
-              className={`sidebar-link w-full ${
-                activeSection === item.id ? "active" : ""
-              }`}
-              title={item.label}
-            >
-              <item.icon size={20} className="flex-shrink-0" />
-              {!collapsed && <span>{item.label}</span>}
-            </button>
-          ))}
-        </nav>
+        <nav className="flex-1 p-3 space-y-1 overflow-y-auto custom-scrollbar">
+          {navItems.map((item) => {
+            const isSales = item.id === "sales";
+            const showBadge = isSales && pendingCount > 0;
 
+            return (
+              <button
+                key={item.id}
+                onClick={() => {
+                  onNavigate(item.id);
+                  setMobileOpen(false);
+                }}
+                className={`sidebar-link w-full relative ${
+                  activeSection === item.id ? "active" : ""
+                }`}
+                title={item.label}
+              >
+                <item.icon size={20} className="flex-shrink-0" />
+                {!collapsed && <span>{item.label}</span>}
+                
+                {showBadge && (
+                  <span className={`
+                    bg-rose-500 text-white font-black rounded-full flex items-center justify-center animate-pulse shadow-lg
+                    ${collapsed 
+                      ? "absolute top-1 right-1 w-4 h-4 text-[8px]" 
+                      : "ml-auto w-5 h-5 text-[10px]"}
+                  `}>
+                    {pendingCount}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </nav>
       </aside>
     </>
   );

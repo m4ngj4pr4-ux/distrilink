@@ -337,9 +337,14 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="flex min-h-screen bg-dark-900">
-      <Sidebar activeSection={activeSection} onNavigate={setActiveSection} />
-      <main className="flex-1 p-8 overflow-y-auto">
+    <div className="flex h-screen bg-dark-900 text-slate-200 overflow-hidden font-sans">
+      <Sidebar 
+        activeSection={activeSection} 
+        onNavigate={setActiveSection} 
+        pendingCount={pendingCount}
+      />
+      
+      <main className="flex-1 overflow-y-auto custom-scrollbar relative">
         <header className="mb-8 flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold text-white capitalize">{activeSection.replace("-", " ")}</h1>
