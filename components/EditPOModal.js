@@ -8,6 +8,7 @@ import toast from "react-hot-toast";
 
 export default function EditPOModal({ po, onClose, distributions }) {
   const [form, setForm] = useState({
+    tanggal: "", // Tambah field tanggal
     jumlahKarton: "",
     hargaBeliPerPack: "",
     targetHargaJual: "",
@@ -21,7 +22,12 @@ export default function EditPOModal({ po, onClose, distributions }) {
 
   useEffect(() => {
     if (po) {
+      // Format tanggal untuk input type="date" (YYYY-MM-DD)
+      const dateObj = po.createdAt?.toDate ? po.createdAt.toDate() : new Date();
+      const dateStr = dateObj.toISOString().split('T')[0];
+
       setForm({
+        tanggal: dateStr,
         jumlahKarton: po.jumlahKarton || "",
         hargaBeliPerPack: po.hargaBeliPerPack || "",
         targetHargaJual: po.targetHargaJual || "",
@@ -32,7 +38,7 @@ export default function EditPOModal({ po, onClose, distributions }) {
   }, [po]);
 
   if (!po) return null;
-
+  
   // LOGIKA HITUNG ULANG (Mirip FactoryPOForm)
   const karton = parseFloat(form.jumlahKarton) || 0;
   const hargaPack = parseFloat(form.hargaBeliPerPack) || 0;
@@ -53,7 +59,13 @@ export default function EditPOModal({ po, onClose, distributions }) {
     
     setSaving(true);
     try {
+      // Konversi string tanggal kembali ke Date object
+      const newDate = new Date(form.tanggal);
+      // Tambahkan jam sekarang agar tidak mentok di jam 00:00 jika perlu, 
+      // tapi biasanya tanggal saja cukup untuk urutan harian.
+      
       await updatePO(po.id, {
+        createdAt: newDate, // Update tanggal transaksi
         jumlahKarton: karton,
         hargaBeliPerPack: hargaPack,
         targetHargaJual: parseFloat(form.targetHargaJual) || 0,
@@ -76,6 +88,7 @@ export default function EditPOModal({ po, onClose, distributions }) {
     }
   }
 
+
   return (
     <div className="modal-overlay z-[150]" onClick={onClose}>
       <div className="modal-content max-w-lg animate-zoomIn" onClick={e => e.stopPropagation()}>
@@ -95,6 +108,16 @@ export default function EditPOModal({ po, onClose, distributions }) {
         </div>
 
         <div className="space-y-4">
+          <div>
+            <label className="block text-xs font-medium text-slate-400 mb-1.5">Tanggal Transaksi</label>
+            <input 
+              type="date" 
+              value={form.tanggal} 
+              onChange={e => setForm({...form, tanggal: e.target.value})} 
+              className="input-field" 
+            />
+          </div>
+
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-medium text-slate-400 mb-1.5">Jumlah Karton</label>
