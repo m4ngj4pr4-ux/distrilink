@@ -1,14 +1,18 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { HiOutlineSearch, HiOutlineTrash, HiOutlineDocumentText, HiTrendingUp, HiOutlineEye, HiOutlineX, HiOutlinePencil } from "react-icons/hi";
+import { HiOutlineSearch, HiOutlineTrash, HiOutlineDocumentText, HiTrendingUp, HiOutlineEye, HiOutlineX, HiOutlinePencil, HiOutlineDownload, HiOutlineCalendar } from "react-icons/hi";
 import { formatRupiah, parseInputNumber, formatInputNumber } from "@/lib/utils";
 import { deletePurchase, payFactoryDebt, subscribeFactoryPayments } from "@/lib/firestore";
 import EditPOModal from "./EditPOModal";
 import toast from "react-hot-toast";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 
 export default function POHistory({ purchases, distributions }) {
   const [searchTerm, setSearchTerm] = useState("");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
   const [payModal, setPayModal] = useState(null);
   const [detailModal, setDetailModal] = useState(null);
   const [payAmount, setPayAmount] = useState("");
@@ -58,13 +62,69 @@ export default function POHistory({ purchases, distributions }) {
     }
   }
 
-  const filteredPurchases = purchases?.filter(p => 
-    p.productName?.toLowerCase().includes(searchTerm.toLowerCase())
-  ) || [];
+  const exportToPDF = () => {
+    const doc = new jsPDF();
+    const dateStr = new Date().toLocaleDateString("id-ID", { day: '2-digit', month: 'long', year: 'numeric' });
+    
+    // Header
+    doc.setFontSize(18);
+    doc.text("Laporan Riwayat PO Pabrik", 14, 20);
+    doc.setFontSize(10);
+    doc.text(`DistriLink - Laporan per tanggal: ${dateStr}`, 14, 28);
+    if (startDate || endDate) {
+      doc.text(`Filter Periode: ${startDate || "Awal"} s/d ${endDate || "Sekarang"}`, 14, 34);
+    }
+
+    const tableData = filteredPurchases.map((p) => [
+      p.createdAt?.toDate().toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "2-digit" }),
+      p.productName,
+      `${(p.totalPack || 0).toLocaleString("id-ID")} Pk`,
+      formatRupiah(p.hargaBeliPerPack),
+      formatRupiah(p.biayaPengiriman),
+      formatRupiah(p.hpp),
+      formatRupiah(p.sisaHutang)
+    ]);
+
+    autoTable(doc, {
+      startY: 40,
+      head: [["Tanggal", "Produk", "Qty", "Harga Beli", "Ongkir", "HPP/Pk", "Sisa Hutang"]],
+      body: tableData,
+      theme: 'grid',
+      headStyles: { fillColor: [51, 65, 85] },
+      styles: { fontSize: 8 },
+    });
+
+    doc.save(`Riwayat_PO_${new Date().getTime()}.pdf`);
+    toast.success("Laporan PDF berhasil diunduh!");
+  };
+
+  const filteredPurchases = (purchases || []).filter(p => {
+    const matchesSearch = p.productName?.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    // Filter Tanggal
+    if (!p.createdAt) return matchesSearch;
+    const poDate = p.createdAt.toDate();
+    poDate.setHours(0, 0, 0, 0);
+
+    let matchesDate = true;
+    if (startDate) {
+      const sDate = new Date(startDate);
+      sDate.setHours(0, 0, 0, 0);
+      if (poDate < sDate) matchesDate = false;
+    }
+    if (endDate) {
+      const eDate = new Date(endDate);
+      eDate.setHours(23, 59, 59, 999);
+      if (poDate > eDate) matchesDate = false;
+    }
+
+    return matchesSearch && matchesDate;
+  });
 
   return (
     <div className="glass-card p-6">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+      {/* Header & Filter */}
+      <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-6 mb-8">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center">
             <HiOutlineDocumentText className="text-amber-400" size={22} />
@@ -74,16 +134,48 @@ export default function POHistory({ purchases, distributions }) {
             <p className="text-xs text-slate-400">Daftar masuk barang dan rincian HPP per transaksi</p>
           </div>
         </div>
-        
-        <div className="relative">
-          <HiOutlineSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={16} />
-          <input 
-            type="text" 
-            placeholder="Cari produk..." 
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="input-field pl-9 py-2 text-sm w-full md:w-64"
-          />
+
+        <div className="flex flex-wrap items-center gap-3">
+          {/* Filter Tanggal */}
+          <div className="flex items-center gap-2 bg-dark-800/50 border border-slate-700/50 rounded-xl px-3 py-1.5">
+            <HiOutlineCalendar className="text-slate-500" size={16} />
+            <input 
+              type="date" 
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+              className="bg-transparent text-xs text-white outline-none focus:text-blue-400"
+              title="Mulai Tanggal"
+            />
+            <span className="text-slate-600 text-xs">-</span>
+            <input 
+              type="date" 
+              value={endDate}
+              onChange={(e) => setEndDate(e.target.value)}
+              className="bg-transparent text-xs text-white outline-none focus:text-blue-400"
+              title="Sampai Tanggal"
+            />
+          </div>
+
+          {/* Search */}
+          <div className="relative flex-1 min-w-[200px]">
+            <HiOutlineSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={16} />
+            <input 
+              type="text" 
+              placeholder="Cari produk..." 
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="input-field pl-9 py-2 text-sm w-full"
+            />
+          </div>
+
+          {/* PDF Button */}
+          <button 
+            onClick={exportToPDF}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-dark-700 hover:bg-dark-600 border border-slate-600/50 text-white text-xs font-bold transition-all shadow-lg active:scale-95"
+          >
+            <HiOutlineDownload size={16} className="text-blue-400" />
+            Cetak PDF
+          </button>
         </div>
       </div>
 
