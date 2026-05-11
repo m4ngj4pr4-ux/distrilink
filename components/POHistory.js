@@ -82,12 +82,13 @@ export default function POHistory({ purchases, distributions }) {
       formatRupiah(p.hargaBeliPerPack),
       formatRupiah(p.biayaPengiriman),
       formatRupiah(p.hpp),
+      formatRupiah(p.uangMuka), // Tambah DP
       formatRupiah(p.sisaHutang)
     ]);
 
     autoTable(doc, {
       startY: 40,
-      head: [["Tanggal", "Produk", "Qty", "Harga Beli", "Ongkir", "HPP/Pk", "Sisa Hutang"]],
+      head: [["Tanggal", "Produk", "Qty", "Harga Beli", "Ongkir", "HPP/Pk", "DP", "Sisa Hutang"]],
       body: tableData,
       theme: 'grid',
       headStyles: { fillColor: [51, 65, 85] },
