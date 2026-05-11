@@ -78,7 +78,7 @@ export default function POHistory({ purchases, distributions }) {
     const tableData = filteredPurchases.map((p) => [
       p.createdAt?.toDate().toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "2-digit" }),
       p.productName,
-      `${(p.totalPack || 0).toLocaleString("id-ID")} Pk`,
+      `${p.jumlahKarton || 0} Ct / ${p.totalBall || 0} Bal / ${(p.totalPack || 0).toLocaleString("id-ID")} Pk`,
       formatRupiah(p.hargaBeliPerPack),
       formatRupiah(p.biayaPengiriman),
       formatRupiah(p.hpp),
@@ -88,11 +88,11 @@ export default function POHistory({ purchases, distributions }) {
 
     autoTable(doc, {
       startY: 40,
-      head: [["Tanggal", "Produk", "Qty", "Harga Beli", "Ongkir", "HPP/Pk", "DP", "Sisa Hutang"]],
+      head: [["Tanggal", "Produk", "Qty (Ct/Bal/Pk)", "Harga Beli", "Ongkir", "HPP/Pk", "DP", "Sisa Hutang"]],
       body: tableData,
       theme: 'grid',
       headStyles: { fillColor: [51, 65, 85] },
-      styles: { fontSize: 8 },
+      styles: { fontSize: 7 }, // Ukuran font diperkecil sedikit agar muat kolom banyak
     });
 
     doc.save(`Riwayat_PO_${new Date().getTime()}.pdf`);
@@ -186,7 +186,7 @@ export default function POHistory({ purchases, distributions }) {
             <tr className="text-[10px] uppercase tracking-wider text-slate-500">
               <th>Tanggal</th>
               <th>Produk</th>
-              <th>Qty</th>
+              <th>Qty (Ct/Bal/Pk)</th>
               <th>Harga Beli / PK</th>
               <th>Ongkir</th>
               <th className="text-emerald-400">HPP / Pack</th>
@@ -207,6 +207,7 @@ export default function POHistory({ purchases, distributions }) {
               filteredPurchases.map((p) => {
                 const totalPacks = p.totalPack || 0;
                 const totalSlops = p.totalSlop || 0;
+                const totalBalls = p.totalBall || 0;
                 const ongkirPerCt = p.jumlahKarton > 0 ? (p.biayaPengiriman || 0) / p.jumlahKarton : 0;
 
                 return (
@@ -216,8 +217,12 @@ export default function POHistory({ purchases, distributions }) {
                     </td>
                     <td className="font-bold text-white text-sm">{p.productName}</td>
                     <td>
-                      <div className="text-sm font-bold text-emerald-400">{totalPacks.toLocaleString("id-ID")} Pack</div>
-                      <div className="text-[10px] text-slate-500 mt-0.5">{p.jumlahKarton} Ct / {totalSlops.toLocaleString("id-ID")} Slop</div>
+                      <div className="text-sm font-bold text-emerald-400">
+                        {p.jumlahKarton} Ct / {totalBalls} Bal
+                      </div>
+                      <div className="text-[10px] text-slate-500 mt-0.5">
+                        {totalPacks.toLocaleString("id-ID")} Pack
+                      </div>
                     </td>
                     <td className="text-sm text-slate-300 font-mono">{formatRupiah(p.hargaBeliPerPack)}</td>
                     <td>
