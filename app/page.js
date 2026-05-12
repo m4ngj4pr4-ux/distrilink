@@ -137,8 +137,6 @@ export default function DashboardPage() {
       case "dashboard":
         return (
           <div className="space-y-8 animate-fadeIn">
-            <SummaryCards summary={summary} products={products} />
-            <DashboardWidgets products={products} teams={teams} />
             {adminUser?.role !== 'investor' && pendingCount > 0 && (
               <div className="glass-card p-4 border border-amber-500/20 bg-amber-500/5 flex items-center justify-between">
                 <div className="flex items-center gap-3">
@@ -155,6 +153,8 @@ export default function DashboardPage() {
                 </button>
               </div>
             )}
+            <SummaryCards summary={summary} products={products} />
+            <DashboardWidgets products={products} teams={teams} />
           </div>
         );
       case "po":
