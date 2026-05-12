@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { HiOutlineSearch, HiOutlineTrash, HiOutlineDocumentText, HiTrendingUp, HiOutlineEye, HiOutlineX, HiOutlinePencil, HiOutlineDownload, HiOutlineCalendar } from "react-icons/hi";
 import { formatRupiah, parseInputNumber, formatInputNumber } from "@/lib/utils";
-import { deletePurchase, payFactoryDebt, subscribeFactoryPayments } from "@/lib/firestore";
+import { deletePurchase, payFactoryDebt, subscribeFactoryPayments, getLastFactoryPayment } from "@/lib/firestore";
 import EditPOModal from "./EditPOModal";
 import toast from "react-hot-toast";
 import jsPDF from "jspdf";
@@ -62,7 +62,8 @@ export default function POHistory({ purchases, distributions }) {
     }
   }
 
-  const exportToPDF = () => {
+  const exportToPDF = async () => {
+    toast.loading("Menyiapkan laporan, mohon tunggu...", { id: 'pdf' });
     const doc = new jsPDF();
     const dateStr = new Date().toLocaleDateString("id-ID", { day: '2-digit', month: 'long', year: 'numeric' });
     
@@ -75,29 +76,34 @@ export default function POHistory({ purchases, distributions }) {
       doc.text(`Filter Periode: ${startDate || "Awal"} s/d ${endDate || "Sekarang"}`, 14, 34);
     }
 
-    const tableData = filteredPurchases.map((p) => [
-      p.createdAt?.toDate().toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "2-digit" }),
-      p.productName,
-      `${p.jumlahKarton || 0} Ct / ${p.totalBall || 0} Bal / ${(p.totalPack || 0).toLocaleString("id-ID")} Pk`,
-      formatRupiah(p.hargaBeliPerPack),
-      formatRupiah(p.totalHarga || ((p.totalPack || 0) * (p.hargaBeliPerPack || 0))),
-      formatRupiah(p.biayaPengiriman),
-      formatRupiah(p.hpp),
-      formatRupiah(p.uangMuka), // Tambah DP
-      p.sisaHutang <= 0 ? "Selesai" : formatRupiah(p.sisaHutang)
-    ]);
+    const tableData = [];
+    for (const p of filteredPurchases) {
+      const lastPayment = await getLastFactoryPayment(p.id);
+      tableData.push([
+        p.createdAt?.toDate().toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "2-digit" }),
+        p.productName,
+        `${p.jumlahKarton || 0} Ct / ${p.totalBall || 0} Bal / ${(p.totalPack || 0).toLocaleString("id-ID")} Pk`,
+        formatRupiah(p.hargaBeliPerPack),
+        formatRupiah(p.totalHarga || ((p.totalPack || 0) * (p.hargaBeliPerPack || 0))),
+        formatRupiah(p.biayaPengiriman),
+        formatRupiah(p.hpp),
+        formatRupiah(p.uangMuka), // Tambah DP
+        lastPayment > 0 ? formatRupiah(lastPayment) : "-",
+        p.sisaHutang <= 0 ? "Selesai" : formatRupiah(p.sisaHutang)
+      ]);
+    }
 
     autoTable(doc, {
       startY: 40,
-      head: [["Tanggal", "Produk", "Qty (Ct/Bal/Pk)", "Harga Beli", "Nilai Produk", "Ongkir", "HPP/Pk", "DP", "Sisa Hutang"]],
+      head: [["Tanggal", "Produk", "Qty (Ct/Bal/Pk)", "Harga Beli", "Nilai Produk", "Ongkir", "HPP/Pk", "DP", "Setor Terakhir", "Sisa Hutang"]],
       body: tableData,
       theme: 'grid',
       headStyles: { fillColor: [51, 65, 85] },
-      styles: { fontSize: 7 }, // Ukuran font diperkecil sedikit agar muat kolom banyak
+      styles: { fontSize: 6.5 }, // Diperkecil agar muat 10 kolom
     });
 
     doc.save(`Riwayat_PO_${new Date().getTime()}.pdf`);
-    toast.success("Laporan PDF berhasil diunduh!");
+    toast.success("Laporan PDF berhasil diunduh!", { id: 'pdf' });
   };
 
   const filteredPurchases = (purchases || []).filter(p => {
