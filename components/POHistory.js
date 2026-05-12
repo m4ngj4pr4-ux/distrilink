@@ -80,6 +80,7 @@ export default function POHistory({ purchases, distributions }) {
       p.productName,
       `${p.jumlahKarton || 0} Ct / ${p.totalBall || 0} Bal / ${(p.totalPack || 0).toLocaleString("id-ID")} Pk`,
       formatRupiah(p.hargaBeliPerPack),
+      formatRupiah(p.totalHarga || ((p.totalPack || 0) * (p.hargaBeliPerPack || 0))),
       formatRupiah(p.biayaPengiriman),
       formatRupiah(p.hpp),
       formatRupiah(p.uangMuka), // Tambah DP
@@ -88,7 +89,7 @@ export default function POHistory({ purchases, distributions }) {
 
     autoTable(doc, {
       startY: 40,
-      head: [["Tanggal", "Produk", "Qty (Ct/Bal/Pk)", "Harga Beli", "Ongkir", "HPP/Pk", "DP", "Sisa Hutang"]],
+      head: [["Tanggal", "Produk", "Qty (Ct/Bal/Pk)", "Harga Beli", "Nilai Produk", "Ongkir", "HPP/Pk", "DP", "Sisa Hutang"]],
       body: tableData,
       theme: 'grid',
       headStyles: { fillColor: [51, 65, 85] },
@@ -188,6 +189,7 @@ export default function POHistory({ purchases, distributions }) {
               <th>Produk</th>
               <th>Qty (Ct/Bal/Pk)</th>
               <th>Harga Beli / PK</th>
+              <th className="text-purple-400">Nilai Produk</th>
               <th>Ongkir</th>
               <th className="text-emerald-400">HPP / Pack</th>
               <th className="text-blue-400">Target Jual / PK</th>
@@ -199,7 +201,7 @@ export default function POHistory({ purchases, distributions }) {
           <tbody className="divide-y divide-slate-400/5">
             {filteredPurchases.length === 0 ? (
               <tr>
-                <td colSpan="10" className="text-center py-8 text-slate-500 text-sm italic">
+                <td colSpan="11" className="text-center py-8 text-slate-500 text-sm italic">
                   Belum ada riwayat PO yang ditemukan.
                 </td>
               </tr>
@@ -225,6 +227,7 @@ export default function POHistory({ purchases, distributions }) {
                       </div>
                     </td>
                     <td className="text-sm text-slate-300 font-mono">{formatRupiah(p.hargaBeliPerPack)}</td>
+                    <td className="text-sm text-purple-400 font-bold font-mono">{formatRupiah(p.totalHarga || (totalPacks * p.hargaBeliPerPack))}</td>
                     <td>
                       <div className="text-sm text-slate-300 font-mono">{formatRupiah(p.biayaPengiriman)}</div>
                       <div className="text-[10px] text-slate-500 mt-0.5">{formatRupiah(ongkirPerCt)} /Ct</div>
