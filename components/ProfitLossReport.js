@@ -14,6 +14,8 @@ export default function ProfitLossReport({ products, purchases }) {
   }, []);
 
   // HITUNG DATA PER BATCH PO
+  console.log("Raw POs from DB:", purchases);
+  
   const batchData = purchases.map(po => {
     // Filter out internal captain-to-sales distributions to prevent double counting in P&L
     const poDist = distributions.filter(d => d.poId === po.id && d.source !== "captain");
@@ -21,14 +23,19 @@ export default function ProfitLossReport({ products, purchases }) {
     const revenue = poDist.reduce((sum, d) => sum + (d.amount || 0), 0);
     const cogs = poDist.reduce((sum, d) => sum + ((d.totalPacksDistributed || 0) * (d.hppSnapshot || po.hpp || 0)), 0);
     const profit = revenue - cogs;
-    const tgl = po.createdAt?.toDate().toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "2-digit" });
+    
+    // Safely format the date, fallback if timestamp is missing or pending
+    const tgl = po.createdAt && typeof po.createdAt.toDate === 'function' 
+      ? po.createdAt.toDate().toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "2-digit" }) 
+      : "-";
+
     return { 
       id: po.id, 
-      name: `${tgl} — ${po.productName}`, 
+      name: `${tgl} — ${po.productName || "Produk Tidak Diketahui"}`, 
       qtyPacks, revenue, cogs, profit,
       margin: revenue > 0 ? (profit / revenue) * 100 : 0
     };
-  }).filter(item => item.qtyPacks > 0);
+  }); // Removed .filter(item => item.qtyPacks > 0) to ensure ALL POs show up
 
   // HITUNG DATA LAMA (Tanpa poId)
   const legacyDist = distributions.filter(d => !d.poId && d.source !== "captain");
@@ -50,6 +57,8 @@ export default function ProfitLossReport({ products, purchases }) {
   }
 
   const reportData = [...batchData, ...legacyData];
+  
+  console.log("Processed P&L Data:", reportData);
 
   const totalRevenue = reportData.reduce((sum, item) => sum + item.revenue, 0);
   const totalCOGS = reportData.reduce((sum, item) => sum + item.cogs, 0);
@@ -106,8 +115,14 @@ export default function ProfitLossReport({ products, purchases }) {
                   <tr key={item.id} className="hover:bg-white/5 transition-colors">
                     <td className="py-3 px-4 font-bold text-white text-sm">{item.name}</td>
                     <td className="py-3 px-4 text-center">
-                      <span className="font-mono text-emerald-400 font-bold">{item.qtyPacks.toLocaleString("id-ID")}</span> 
-                      <span className="text-[10px] text-slate-500 ml-1">Pk</span>
+                      {item.qtyPacks > 0 ? (
+                        <>
+                          <span className="font-mono text-emerald-400 font-bold">{item.qtyPacks.toLocaleString("id-ID")}</span> 
+                          <span className="text-[10px] text-slate-500 ml-1">Pk</span>
+                        </>
+                      ) : (
+                        <span className="text-[10px] text-slate-500 italic bg-dark-700 px-2 py-1 rounded">Belum Ada Penjualan</span>
+                      )}
                     </td>
                     <td className="py-3 px-4 text-right font-mono text-slate-300">{formatRupiah(item.revenue)}</td>
                     <td className="py-3 px-4 text-right font-mono text-rose-400/80">{formatRupiah(item.cogs)}</td>

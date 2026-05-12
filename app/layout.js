@@ -27,6 +27,8 @@ export const metadata = {
   themeColor: "#000000",
 };
 
+export const dynamic = "force-dynamic";
+
 import { AdminAuthProvider } from "@/lib/AdminAuthContext";
 
 export default function RootLayout({ children }) {

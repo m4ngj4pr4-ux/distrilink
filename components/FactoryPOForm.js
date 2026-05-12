@@ -15,13 +15,9 @@ import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { storage } from "@/lib/firebase";
 import { formatRupiah, formatNumber, formatInputNumber, parseInputNumber } from "@/lib/utils";
 import {
-  addPurchase,
-  updateInventoryStock,
-  incrementSummaryField,
+  addPurchaseAtomic,
   addProduct,
   deleteProduct,
-  updateProduct,
-  updateProductPackStock,
 } from "@/lib/firestore";
 import toast from "react-hot-toast";
 
@@ -152,14 +148,19 @@ export default function FactoryPOForm({ products }) {
     }
     setSaving(true);
     try {
-      // 1. Simpan data pembelian
-      await addPurchase({
-        productId: selectedProductId, // Sangat penting untuk fitur hitung ulang stok
+      // 1. Simpan data pembelian (Atomik: update Stok, Product, Summary, dan Finance Ledger otomatis)
+      const packsPerSlop = selectedProduct?.packsPerSlop || 10;
+      const slopsPerKarton = (selectedProduct?.slopsPerBall || 20) * (selectedProduct?.ballsPerKarton || 5);
+      const totalPacksPurchased = result.jumlahKarton * slopsPerKarton * packsPerSlop;
+
+      await addPurchaseAtomic({
+        productId: selectedProductId,
         productName: result.productName,
         jumlahKarton: result.jumlahKarton,
         totalBall: result.totalBall,
         totalSlop: result.totalSlop,
         totalPack: result.totalPack,
+        totalPackPurchased: totalPacksPurchased, // Required by addPurchaseAtomic
         hargaBeliPerPack: result.hargaBeliPerPack,
         targetHargaJual: result.targetHargaJual,
         biayaPengiriman: result.biayaPengiriman,
@@ -170,28 +171,7 @@ export default function FactoryPOForm({ products }) {
         conversion: result.conversion,
       });
 
-      // 1.5 Update Harga Jual & HPP Terakhir di Master Produk
-      await updateProduct(selectedProductId, {
-        currentSellingPrice: result.targetHargaJual,
-        lastHPP: result.hpp,
-      });
-
-      // 2. Tambah stok gudang (global & per produk pack)
-      await updateInventoryStock(result.jumlahKarton);
-      
-      const packsPerSlop = selectedProduct?.packsPerSlop || 10;
-      const slopsPerKarton = (selectedProduct?.slopsPerBall || 20) * (selectedProduct?.ballsPerKarton || 5);
-      const totalPacksPurchased = result.jumlahKarton * slopsPerKarton * packsPerSlop;
-      
-      await updateProductPackStock(selectedProductId, totalPacksPurchased);
-
-      // 3. Tambah hutang pabrik
-      await incrementSummaryField("factoryDebt", result.sisaHutang);
-
-      // 4. Tambah total aset
-      await incrementSummaryField("totalAssets", result.totalFaktur);
-
-      toast.success("PO berhasil disimpan ke database!");
+      toast.success("PO berhasil disimpan secara atomik!");
 
       // Reset
       setForm({
