@@ -84,7 +84,7 @@ export default function POHistory({ purchases, distributions }) {
       formatRupiah(p.biayaPengiriman),
       formatRupiah(p.hpp),
       formatRupiah(p.uangMuka), // Tambah DP
-      formatRupiah(p.sisaHutang)
+      p.sisaHutang <= 0 ? "Selesai" : formatRupiah(p.sisaHutang)
     ]);
 
     autoTable(doc, {
