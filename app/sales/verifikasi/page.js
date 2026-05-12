@@ -1,13 +1,13 @@
 "use client";
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { getTeamPendingSetoran, captainVerifikasiSetoran, acceptCashDeposit, captainDepositToAdmin } from '@/lib/firestore';
+import { getTeamPendingSetoran, acceptCashDeposit, captainDepositToAdmin } from '@/lib/firestore';
 import toast from 'react-hot-toast';
 
 export default function CaptainVerifikasiPage() {
   const router = useRouter();
   const [user, setUser] = useState(null);
-  const [activeTab, setActiveTab] = useState("terima"); // terima, setor, transfer
+  const [activeTab, setActiveTab] = useState("terima"); // terima, setor
   const [pendingList, setPendingList] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [processingId, setProcessingId] = useState(null);
@@ -65,25 +65,9 @@ export default function CaptainVerifikasiPage() {
     }
   };
 
-  const handleVerifikasi = async (item) => {
-    if (!confirm(`Verifikasi transfer Rp ${item.nominal?.toLocaleString('id-ID')} dari ${item.namaSales}?`)) return;
-    
-    setProcessingId(item.id);
-    try {
-      await captainVerifikasiSetoran(item.id, item.teamId, item.nominal);
-      toast.success(`Setoran ${item.namaSales} berhasil diverifikasi!`);
-      await loadData();
-    } catch (error) {
-      toast.error("Gagal memverifikasi.");
-    } finally {
-      setProcessingId(null);
-    }
-  };
-
   const filteredList = pendingList.filter(item => {
     if (activeTab === "terima") return item.status === "Menunggu Diterima Captain";
     if (activeTab === "setor") return item.status === "Kas di Captain";
-    if (activeTab === "transfer") return item.status === "Menunggu Verifikasi" || item.metode === "Transfer Bank";
     return false;
   });
 
@@ -109,9 +93,6 @@ export default function CaptainVerifikasiPage() {
         <button onClick={() => setActiveTab("setor")} className={`flex-1 py-2 text-[10px] font-bold rounded-lg transition-all relative ${activeTab === "setor" ? 'bg-purple-600 text-white shadow-md' : 'text-slate-400'}`}>
           Setor Kas
           {totalKasDiCaptain > 0 && <span className="absolute top-1 right-1 w-2 h-2 bg-rose-500 rounded-full animate-pulse"></span>}
-        </button>
-        <button onClick={() => setActiveTab("transfer")} className={`flex-1 py-2 text-[10px] font-bold rounded-lg transition-all ${activeTab === "transfer" ? 'bg-purple-600 text-white shadow-md' : 'text-slate-400'}`}>
-          Transfer
         </button>
       </div>
 
@@ -176,15 +157,6 @@ export default function CaptainVerifikasiPage() {
                   </button>
                 )}
 
-                {activeTab === "transfer" && (
-                  <button 
-                    onClick={() => handleVerifikasi(item)}
-                    disabled={processingId === item.id}
-                    className="w-full py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold active:scale-[0.98] transition-all shadow-lg shadow-purple-900/20 disabled:opacity-50"
-                  >
-                    ✅ Verifikasi Transfer
-                  </button>
-                )}
 
                 {activeTab === "setor" && (
                   <div className="text-[10px] text-center text-slate-500 font-medium py-1">
