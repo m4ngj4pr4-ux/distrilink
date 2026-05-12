@@ -15,7 +15,7 @@ export default function SalesTokoPage() {
   // Add/Edit Store State
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingStoreId, setEditingStoreId] = useState(null);
-  const [formData, setFormData] = useState({ namaToko: "", alamat: "", latitude: "", longitude: "" });
+  const [formData, setFormData] = useState({ namaToko: "", alamat: "", koordinat: "" });
   const [isLocating, setIsLocating] = useState(false);
 
   useEffect(() => {
@@ -44,7 +44,7 @@ export default function SalesTokoPage() {
     toast.loading("Mengunci lokasi...", { id: 'gps' });
     navigator.geolocation.getCurrentPosition(
       (pos) => {
-        setFormData(prev => ({ ...prev, latitude: pos.coords.latitude, longitude: pos.coords.longitude }));
+        setFormData(prev => ({ ...prev, koordinat: `${pos.coords.latitude}, ${pos.coords.longitude}` }));
         setIsLocating(false);
         toast.success("Lokasi berhasil dikunci!", { id: 'gps' });
       },
@@ -56,11 +56,15 @@ export default function SalesTokoPage() {
     e.preventDefault();
     setIsSubmitting(true);
     try {
+      const koorArr = formData.koordinat.split(",");
+      const lat = parseFloat(koorArr[0]?.trim()) || 0;
+      const lng = parseFloat(koorArr[1]?.trim()) || 0;
+
       const data = {
         namaToko: formData.namaToko,
         alamat: formData.alamat,
-        latitude: parseFloat(formData.latitude) || 0,
-        longitude: parseFloat(formData.longitude) || 0,
+        latitude: lat,
+        longitude: lng,
         diinputOleh: user.name,
         teamId: user.id
       };
@@ -82,21 +86,25 @@ export default function SalesTokoPage() {
 
   const openAddModal = () => {
     setEditingStoreId(null);
-    setFormData({ namaToko: "", alamat: "", latitude: "", longitude: "" });
+    setFormData({ namaToko: "", alamat: "", koordinat: "" });
     setIsModalOpen(true);
   };
 
   const openEditModal = (e, store) => {
     e.stopPropagation();
     setEditingStoreId(store.id);
-    setFormData({ namaToko: store.namaToko, alamat: store.alamat, latitude: store.latitude, longitude: store.longitude });
+    setFormData({ 
+      namaToko: store.namaToko, 
+      alamat: store.alamat, 
+      koordinat: (store.latitude && store.longitude) ? `${store.latitude}, ${store.longitude}` : "" 
+    });
     setIsModalOpen(true);
   };
 
   const closeModal = () => {
     setIsModalOpen(false);
     setEditingStoreId(null);
-    setFormData({ namaToko: "", alamat: "", latitude: "", longitude: "" });
+    setFormData({ namaToko: "", alamat: "", koordinat: "" });
   };
 
   return (
@@ -227,11 +235,14 @@ export default function SalesTokoPage() {
                     {isLocating ? 'Mencari...' : '📍 Ambil GPS Saya'}
                   </button>
                 </div>
-                <div className="flex gap-2">
-                  <input type="text" readOnly value={formData.latitude} placeholder="Latitude"
-                    className="w-1/2 bg-dark-900 border border-slate-700/50 rounded-lg px-3 py-2 text-xs text-slate-400 outline-none opacity-70" />
-                  <input type="text" readOnly value={formData.longitude} placeholder="Longitude"
-                    className="w-1/2 bg-dark-900 border border-slate-700/50 rounded-lg px-3 py-2 text-xs text-slate-400 outline-none opacity-70" />
+                <div className="flex flex-col gap-1">
+                  <input type="text" 
+                    value={formData.koordinat} 
+                    onChange={(e) => setFormData({...formData, koordinat: e.target.value})}
+                    placeholder="Contoh: -3.154722, 114.573095"
+                    className="w-full bg-dark-900 border border-slate-700/50 rounded-lg px-3 py-2 text-xs text-slate-200 outline-none focus:border-blue-500 transition-colors" 
+                  />
+                  <p className="text-[9px] text-slate-500 px-1">Otomatis dari tombol atau paste manual (Latitude, Longitude)</p>
                 </div>
               </div>
 
