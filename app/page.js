@@ -393,7 +393,7 @@ export default function DashboardPage() {
                 {pendingList.map(item => (
                   <div key={item.id} className="bg-dark-800 border border-slate-700 p-4 rounded-xl flex items-center justify-between hover:border-emerald-500/50 transition-colors">
                     <div>
-                      <h3 className="font-bold text-emerald-400">{item.namaSales}</h3>
+                      <h3 className="font-bold text-emerald-400">{item.teamName || item.namaSales || "Sales"}</h3>
                       <p className="text-[11px] font-medium text-slate-400 mb-1">
                         {item.waktu ? new Date(item.waktu.toDate()).toLocaleString('id-ID', {
                           day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
