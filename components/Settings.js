@@ -129,7 +129,7 @@ export default function Settings({ onRecalculate, isRecalculating }) {
                       </span>
                     </td>
                     <td className="py-3 px-2 text-right">
-                      <div className="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <div className="flex justify-end gap-1 transition-opacity">
                         <button onClick={() => openEditUser(user)} className="p-1.5 rounded hover:bg-blue-500/10 text-blue-400"><HiOutlinePencilAlt size={16} /></button>
                         {user.role !== 'owner' && (
                           <button onClick={() => handleDeleteUser(user.id)} className="p-1.5 rounded hover:bg-rose-500/10 text-rose-400"><HiOutlineTrash size={16} /></button>
