@@ -165,7 +165,6 @@ export default function DashboardPage() {
         if (adminUser?.role === 'admin') return null; // Admin can't see PO, but Investor can
         return (
           <div className="space-y-8 animate-fadeIn">
-            <SummaryCards summary={summary} products={products} />
             <FactoryPOForm products={products} />
           </div>
         );
@@ -173,14 +172,12 @@ export default function DashboardPage() {
         if (adminUser?.role === 'admin') return null;
         return (
           <div className="space-y-8 animate-fadeIn">
-            <SummaryCards summary={summary} products={products} />
             <POHistory purchases={purchases} distributions={allDistributions} />
           </div>
         );
       case "stock":
         return (
           <div className="space-y-8 animate-fadeIn">
-            <SummaryCards summary={summary} products={products} />
             <div className="glass-card p-6">
               <div className="flex items-center gap-3 mb-6">
                 <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center">
@@ -299,7 +296,6 @@ export default function DashboardPage() {
         if (adminUser?.role === 'admin') return null;
         return (
           <div className="space-y-8 animate-fadeIn">
-            <SummaryCards summary={summary} products={products} />
             <ProfitLossReport products={products} purchases={purchases} />
           </div>
         );
@@ -313,14 +309,12 @@ export default function DashboardPage() {
       case "sales":
         return (
           <div className="space-y-8 animate-fadeIn">
-            <SummaryCards summary={summary} products={products} />
             <SalesLedger teams={teams} products={products} purchases={purchases} allDistributions={allDistributions} />
           </div>
         );
       case "retail":
         return (
           <div className="space-y-8 animate-fadeIn">
-            <SummaryCards summary={summary} products={products} />
             <RetailMarketing />
           </div>
         );
@@ -328,7 +322,6 @@ export default function DashboardPage() {
         if (adminUser?.role === 'admin') return null;
         return (
           <div className="space-y-8 animate-fadeIn">
-            <SummaryCards summary={summary} products={products} />
             <ReturnsForm products={products} teams={teams} returns={returns} factoryReturns={factoryReturns} />
           </div>
         );

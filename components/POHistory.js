@@ -149,41 +149,46 @@ export default function POHistory({ purchases, distributions }) {
 
         <div className="flex flex-wrap items-center gap-3">
           {/* Filter Tanggal */}
-          <div className="flex items-center gap-2 bg-dark-800/50 border border-slate-700/50 rounded-xl px-3 py-1.5">
-            <HiOutlineCalendar className="text-slate-500" size={16} />
-            <input 
-              type="date" 
-              value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
-              className="bg-transparent text-xs text-white outline-none focus:text-blue-400"
-              title="Mulai Tanggal"
-            />
-            <span className="text-slate-600 text-xs">-</span>
-            <input 
-              type="date" 
-              value={endDate}
-              onChange={(e) => setEndDate(e.target.value)}
-              className="bg-transparent text-xs text-white outline-none focus:text-blue-400"
-              title="Sampai Tanggal"
-            />
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
+            <div className="flex items-center gap-2 bg-dark-800/50 border border-slate-700/50 rounded-xl px-3 py-2 flex-1 sm:flex-none">
+              <HiOutlineCalendar className="text-slate-500" size={14} />
+              <input 
+                type="date" 
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                className="bg-transparent text-[11px] text-white outline-none focus:text-blue-400 w-full"
+                title="Mulai Tanggal"
+              />
+            </div>
+            <span className="hidden sm:inline text-slate-600 text-xs">-</span>
+            <div className="flex items-center gap-2 bg-dark-800/50 border border-slate-700/50 rounded-xl px-3 py-2 flex-1 sm:flex-none">
+              <HiOutlineCalendar className="text-slate-500" size={14} />
+              <input 
+                type="date" 
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                className="bg-transparent text-[11px] text-white outline-none focus:text-blue-400 w-full"
+                title="Sampai Tanggal"
+              />
+            </div>
           </div>
 
           {/* Search */}
-          <div className="relative flex-1 min-w-[200px]">
+          <div className="relative w-full sm:flex-1 sm:min-w-[200px]">
             <HiOutlineSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={16} />
             <input 
               type="text" 
               placeholder="Cari produk..." 
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="input-field pl-9 py-2 text-sm w-full"
+              className="input-field pl-9 py-2.5 text-sm w-full"
             />
           </div>
 
           {/* PDF Button */}
           <button 
             onClick={exportToPDF}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-dark-700 hover:bg-dark-600 border border-slate-600/50 text-white text-xs font-bold transition-all shadow-lg active:scale-95"
+            className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-dark-700 hover:bg-dark-600 border border-slate-600/50 text-white text-xs font-bold transition-all shadow-lg active:scale-95 w-full sm:w-auto"
           >
             <HiOutlineDownload size={16} className="text-blue-400" />
             Cetak PDF

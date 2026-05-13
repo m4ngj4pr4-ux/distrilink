@@ -151,23 +151,23 @@ export default function SupplyChainRadar() {
           </div>
         </div>
         
-        <div className="flex items-center gap-3">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
           <button 
             onClick={handleCleanup}
             disabled={isCleaning}
-            className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-dark-700 hover:bg-rose-500/20 text-slate-400 hover:text-rose-400 transition-all border border-slate-700 text-[10px] font-bold uppercase tracking-wider disabled:opacity-50"
+            className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-dark-700 hover:bg-rose-500/10 text-slate-400 hover:text-rose-400 transition-all border border-slate-700 text-[10px] font-bold uppercase tracking-wider disabled:opacity-50"
           >
             <HiOutlineRefresh className={isCleaning ? "animate-spin" : ""} />
-            Bersihkan Data Hantu
+            <span>Bersihkan Data Hantu</span>
           </button>
 
-          <div className="h-8 w-px bg-slate-700 mx-1"></div>
+          <div className="hidden sm:block h-8 w-px bg-slate-700 mx-1"></div>
 
-          <div className="flex gap-2">
+          <div className="flex gap-2 w-full sm:w-auto">
             <select 
               value={selectedMonth} 
               onChange={e => setSelectedMonth(parseInt(e.target.value))}
-              className="bg-dark-700 border border-slate-600 rounded-lg px-3 py-1.5 text-[11px] text-white outline-none focus:border-emerald-500 font-bold"
+              className="bg-dark-700 border border-slate-600 rounded-xl px-4 py-2.5 text-[11px] text-white outline-none focus:border-emerald-500 font-bold flex-1 sm:flex-none"
             >
               {["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"].map((m, i) => (
                 <option key={i} value={i}>{m}</option>
@@ -176,7 +176,7 @@ export default function SupplyChainRadar() {
             <select 
               value={selectedYear} 
               onChange={e => setSelectedYear(parseInt(e.target.value))}
-              className="bg-dark-700 border border-slate-600 rounded-lg px-3 py-1.5 text-[11px] text-white outline-none focus:border-emerald-500 font-bold"
+              className="bg-dark-700 border border-slate-600 rounded-xl px-4 py-2.5 text-[11px] text-white outline-none focus:border-emerald-500 font-bold flex-1 sm:flex-none"
             >
               {[2024, 2025, 2026].map(y => (
                 <option key={y} value={y}>{y}</option>

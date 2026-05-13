@@ -69,11 +69,11 @@ export default function SummaryCards({ summary, products }) {
   ];
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5">
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5">
       {cards.map((card) => (
         <div
           key={card.key}
-          className={`glass-card ${card.glow} p-5 relative overflow-hidden group`}
+          className={`glass-card ${card.glow} p-3 sm:p-5 relative overflow-hidden group`}
         >
           <div
             className={`absolute -top-8 -right-8 w-24 h-24 rounded-full bg-gradient-to-br ${card.accent} opacity-[0.07] group-hover:opacity-[0.12] transition-opacity duration-500`}
@@ -81,24 +81,24 @@ export default function SummaryCards({ summary, products }) {
 
           <div className="flex items-start justify-between relative z-10">
             <div className="flex-1">
-              <p className="text-xs font-medium text-slate-400 uppercase tracking-wider mb-2">
+              <p className="text-[10px] sm:text-xs font-medium text-slate-400 uppercase tracking-wider mb-1 sm:mb-2">
                 {card.label}
               </p>
-              <p className="text-2xl font-bold tracking-tight text-white">
+              <p className="text-sm sm:text-2xl font-bold tracking-tight text-white truncate">
                 {card.format === "rupiah"
                   ? formatRupiah(card.value)
                   : card.value}
               </p>
               {card.suffix && (
-                <p className="text-[10px] mt-1 text-slate-500">
+                <p className="text-[8px] sm:text-[10px] mt-0.5 sm:mt-1 text-slate-500 hidden sm:block">
                   {card.suffix}
                 </p>
               )}
             </div>
             <div
-              className={`w-11 h-11 rounded-xl ${card.iconBg} flex items-center justify-center`}
+              className={`w-8 h-8 sm:w-11 sm:h-11 rounded-lg sm:rounded-xl ${card.iconBg} flex items-center justify-center shrink-0`}
             >
-              <card.icon className={card.iconColor} size={22} />
+              <card.icon className={card.iconColor} size={18} />
             </div>
           </div>
         </div>

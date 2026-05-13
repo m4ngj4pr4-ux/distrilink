@@ -125,20 +125,20 @@ export default function RetailMarketing() {
   return (
     <div className="flex flex-col gap-6">
       {/* Tab Switcher */}
-      <div className="flex items-center gap-1 bg-dark-800 p-1 rounded-xl w-fit border border-slate-700 shadow-xl">
+      <div className="flex items-center gap-1 bg-dark-800 p-1 rounded-xl w-full sm:w-fit border border-slate-700 shadow-xl">
         <button 
           onClick={() => setActiveTab("map")}
-          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all ${activeTab === "map" ? "bg-blue-600 text-white shadow-lg" : "text-slate-400 hover:text-slate-200"}`}
+          className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all ${activeTab === "map" ? "bg-blue-600 text-white shadow-lg" : "text-slate-400 hover:text-slate-200"}`}
         >
           <HiOutlineLocationMarker size={16} />
-          Peta Lokasi Retail
+          <span>Peta Lokasi</span>
         </button>
         <button 
           onClick={() => setActiveTab("radar")}
-          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all ${activeTab === "radar" ? "bg-emerald-600 text-white shadow-lg" : "text-slate-400 hover:text-slate-200"}`}
+          className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all ${activeTab === "radar" ? "bg-emerald-600 text-white shadow-lg" : "text-slate-400 hover:text-slate-200"}`}
         >
           <HiOutlineChartPie size={16} />
-          Supply Chain Radar
+          <span>Supply Chain</span>
         </button>
       </div>
 

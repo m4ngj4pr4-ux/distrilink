@@ -280,7 +280,7 @@ export default function FinanceModule({ products = [], purchases = [] }) {
 
       {/* ── Section A: Investor & Bagi Hasil ── */}
       <div className="glass-card p-6">
-        <div className="flex items-center justify-between mb-5">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-purple-500/10 flex items-center justify-center">
               <HiOutlineUserGroup className="text-purple-400" size={22} />
@@ -290,13 +290,13 @@ export default function FinanceModule({ products = [], purchases = [] }) {
               <p className="text-xs text-slate-400">Kelola pemilik modal dan distribusi keuntungan</p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 w-full sm:w-auto">
             {investors.length > 0 && (
-              <button onClick={openBagiHasil} className="text-sm flex items-center gap-1.5 px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold transition-colors">
+              <button onClick={openBagiHasil} className="text-[11px] sm:text-sm flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold transition-colors shadow-lg shadow-purple-500/20">
                 💰 Bagikan Keuntungan
               </button>
             )}
-            <button onClick={openAddInvestor} className="btn-primary text-sm flex items-center gap-1.5 px-4 py-2">
+            <button onClick={openAddInvestor} className="btn-primary text-[11px] sm:text-sm flex-1 sm:flex-none py-2.5 px-3">
               <HiOutlinePlus size={16} /> Investor
             </button>
           </div>
