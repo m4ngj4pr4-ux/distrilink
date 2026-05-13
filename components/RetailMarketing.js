@@ -288,9 +288,10 @@ export default function RetailMarketing() {
           </div>
         )}
       </div>
-      ) : (
-        <SupplyChainRadar />
-      )}
     </div>
+    ) : (
+      <SupplyChainRadar />
+    )}
+  </div>
   );
 }
