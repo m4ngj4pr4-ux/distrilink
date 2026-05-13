@@ -40,7 +40,7 @@ export default function DashboardWidgets({ products, teams }) {
                       index === 0 ? 'bg-amber-500 text-dark-900 shadow-[0_0_10px_rgba(245,158,11,0.3)]' : 
                       index === 1 ? 'bg-slate-300 text-dark-900' : 
                       index === 2 ? 'bg-orange-700 text-white' : 
-                      'bg-dark-700 text-slate-400 border border-slate-600'
+                      'bg-violet-500/20 text-violet-400 border border-violet-500/30'
                     }`}>
                       {index + 1}
                     </div>
