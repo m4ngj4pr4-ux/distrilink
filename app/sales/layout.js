@@ -1,3 +1,5 @@
+import SalesLayoutClient from './SalesLayoutClient';
+
 export const metadata = {
   title: "DistriLink Field — Sales Tracker",
   description: "Field application for sales team to track distributions and deposits.",
@@ -11,9 +13,5 @@ export const metadata = {
 };
 
 export default function SalesLayout({ children }) {
-  return (
-    <div className="min-h-screen bg-dark-950 text-slate-100">
-      {children}
-    </div>
-  );
+  return <SalesLayoutClient>{children}</SalesLayoutClient>;
 }
