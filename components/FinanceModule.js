@@ -126,7 +126,7 @@ export default function FinanceModule({ products = [], purchases = [] }) {
   const availableProfit = globalSummary?.sisaLabaBelumDibagikan || 0;
 
   const openBagiHasil = () => {
-    setProfitInput(availableProfit > 0 ? availableProfit.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".") : "");
+    setProfitInput(availableProfit > 0 ? Math.round(availableProfit).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".") : "");
     setBagiMode("auto");
     setCustomPayouts({});
     setShowBagiHasilModal(true);
