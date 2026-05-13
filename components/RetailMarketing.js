@@ -145,7 +145,7 @@ export default function RetailMarketing() {
       </div>
 
       {activeTab === "map" ? (
-        <div className="flex flex-col lg:flex-row min-h-[800px] lg:h-[calc(100vh-230px)] gap-6 animate-fadeIn">
+        <div className="flex flex-col lg:flex-row h-auto lg:h-[calc(100vh-230px)] gap-6 animate-fadeIn">
           {/* Sidebar List */}
           <div className="w-full lg:w-96 flex flex-col gap-4 h-[350px] lg:h-full shrink-0">
         <div className="glass-card p-4 flex flex-col h-full overflow-hidden">
@@ -222,7 +222,7 @@ export default function RetailMarketing() {
       </div>
 
       {/* Map Area */}
-      <div className="flex-1 relative min-h-[400px]">
+      <div className="h-[450px] lg:h-full lg:flex-1 relative border border-slate-400/5 rounded-2xl overflow-hidden shadow-2xl">
         <RetailMap 
           stores={stores} 
           center={mapCenter} 
