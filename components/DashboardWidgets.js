@@ -9,15 +9,8 @@ export default function DashboardWidgets({ products, teams }) {
     .sort((a, b) => (b.goodsDropped || 0) - (a.goodsDropped || 0))
     .slice(0, 5);
 
-  // Ambil produk dengan stok di bawah 15 Bal (1 Bal = 10 Slop = 100 Pack)
-  // 15 Bal = 1500 Pack
-  const lowStockProducts = (products || [])
-    .filter(p => {
-      const packsPerSlop = p.packsPerSlop || 10;
-      const totalSlops = Math.floor((p.totalPacks || 0) / packsPerSlop);
-      const fullBals = Math.floor(totalSlops / 10);
-      return fullBals < 15; // Ambang batas dinaikkan menjadi 15 Bal agar lebih sensitif
-    })
+  // Monitor Stok Terkini: Tampilkan semua produk, urutkan dari stok terendah
+  const monitorProducts = [...(products || [])]
     .sort((a, b) => (a.totalPacks || 0) - (b.totalPacks || 0));
 
   return (
@@ -61,57 +54,79 @@ export default function DashboardWidgets({ products, teams }) {
         </div>
       </div>
 
-      {/* Widget 2: Low Stock Alert */}
-      <div className="glass-card p-6 border-t-4 border-rose-500 flex flex-col max-h-[400px]">
-        <div className="flex items-center gap-3 mb-6 shrink-0">
-          <div className="w-10 h-10 rounded-xl bg-rose-500/10 flex items-center justify-center">
-            <HiOutlineExclamationCircle className="text-rose-400" size={22} />
+      {/* Widget 2: Live Stock Monitor */}
+      <div className="glass-card p-6 border-t-4 border-emerald-500 flex flex-col max-h-[400px]">
+        <div className="flex items-center justify-between mb-6 shrink-0">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center">
+              <HiOutlineExclamationCircle className="text-emerald-400" size={22} />
+            </div>
+            <div>
+              <h3 className="text-base font-bold text-white">Monitor Stok Terkini</h3>
+              <p className="text-xs text-slate-400">Ketersediaan barang di gudang utama</p>
+            </div>
           </div>
-          <div>
-            <h3 className="text-base font-bold text-white">Radar Peringatan Stok</h3>
-            <p className="text-xs text-slate-400">Produk menipis (Di bawah 15 Bal)</p>
-          </div>
+          <span className="bg-emerald-500/20 text-emerald-400 text-[10px] px-2 py-1 rounded-md font-bold uppercase tracking-wider animate-pulse">Live</span>
         </div>
 
         <div className="flex-1 overflow-y-auto pr-1 custom-scrollbar">
-          {lowStockProducts.length === 0 ? (
-            <div className="p-6 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-center flex flex-col items-center justify-center h-full">
-              <span className="text-3xl mb-2">🛡️</span>
-              <p className="text-emerald-400 text-sm font-bold">Semua stok aman terkendali!</p>
-            </div>
+          {monitorProducts.length === 0 ? (
+            <p className="text-center py-10 text-slate-500 italic text-sm">Tidak ada produk aktif.</p>
           ) : (
-            <div className="flex flex-col gap-3 pb-2">
-              {lowStockProducts.map((p) => {
+            <div className="flex flex-col gap-2.5 pb-2">
+              {monitorProducts.map((p) => {
                 const packsPerSlop = p.packsPerSlop || 10;
                 const totalSlops = Math.floor((p.totalPacks || 0) / packsPerSlop);
                 const fullBals = Math.floor(totalSlops / 10);
                 const remainingSlops = totalSlops % 10;
+                const isLow = fullBals < 15;
                 
                 return (
-                  <div key={p.id} className="flex items-center gap-4 p-3 bg-dark-900/50 hover:bg-dark-900 border border-slate-700/50 hover:border-rose-500/50 rounded-xl transition-all shadow-sm">
+                  <div 
+                    key={p.id} 
+                    className={`flex items-center gap-4 p-3 rounded-xl transition-all border ${
+                      isLow 
+                        ? "bg-rose-500/5 border-rose-500/20 hover:border-rose-500/50 shadow-[inset_0_0_15px_rgba(244,63,94,0.05)]" 
+                        : "bg-dark-800/50 border-slate-400/5 hover:border-emerald-500/30"
+                    }`}
+                  >
                     {/* Product Image */}
-                    <div className="w-14 h-14 rounded-lg bg-slate-800 border border-slate-700 overflow-hidden shrink-0 flex items-center justify-center shadow-inner">
+                    <div className="w-12 h-12 rounded-lg bg-slate-800 border border-slate-700/50 overflow-hidden shrink-0 flex items-center justify-center relative shadow-inner">
                       {p.imageUrl ? (
                         <img src={p.imageUrl} alt={p.name} className="w-full h-full object-cover" />
                       ) : (
-                        <span className="text-2xl opacity-50">🚬</span>
+                        <div className="text-xl opacity-30 select-none">📦</div>
+                      )}
+                      {isLow && (
+                        <div className="absolute top-0 right-0 p-0.5 bg-rose-500 rounded-bl-lg">
+                          <HiOutlineExclamationCircle className="text-white" size={10} />
+                        </div>
                       )}
                     </div>
                     
                     {/* Product Details */}
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-bold text-white truncate">{p.name}</p>
-                      {p.brand && (
-                        <p className="text-[10px] text-slate-500 uppercase font-bold tracking-widest mt-0.5">{p.brand}</p>
-                      )}
-                      <div className="flex items-center gap-2 mt-1.5">
-                        <span className="text-[9px] bg-rose-500/10 text-rose-500 border border-rose-500/20 px-1.5 py-0.5 rounded font-bold uppercase tracking-wider">
-                          Kritis
+                      <div className="flex justify-between items-start">
+                        <h4 className="text-sm font-bold text-white truncate leading-none">{p.name}</h4>
+                        <span className={`text-[10px] font-black font-mono ${isLow ? "text-rose-400" : "text-emerald-400"}`}>
+                          {formatRupiah(p.currentSellingPrice)}
                         </span>
-                        <p className="text-xs font-black text-rose-500 flex items-baseline gap-1">
-                          {fullBals} <span className="text-[9px] font-bold text-slate-400 uppercase">Bal</span> 
-                          {remainingSlops} <span className="text-[9px] font-bold text-slate-400 uppercase">Slop</span>
-                        </p>
+                      </div>
+                      
+                      <div className="flex items-center justify-between mt-2">
+                        <div className="flex items-center gap-1.5">
+                          {isLow ? (
+                            <span className="text-[8px] bg-rose-500 text-white px-1.5 py-0.5 rounded font-black uppercase tracking-tighter shadow-sm">Kritis</span>
+                          ) : (
+                            <span className="text-[8px] bg-emerald-500/20 text-emerald-400 px-1.5 py-0.5 rounded font-black uppercase tracking-tighter">Stabil</span>
+                          )}
+                        </div>
+                        <div className="text-right">
+                          <p className={`text-xs font-black ${isLow ? "text-rose-500" : "text-white"} flex items-baseline gap-1`}>
+                            {fullBals} <span className="text-[9px] font-bold text-slate-500 uppercase">Bal</span> 
+                            {remainingSlops} <span className="text-[9px] font-bold text-slate-500 uppercase">Slop</span>
+                          </p>
+                        </div>
                       </div>
                     </div>
                   </div>
