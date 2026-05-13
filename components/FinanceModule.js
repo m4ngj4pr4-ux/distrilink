@@ -18,12 +18,13 @@ import { formatRupiah } from "@/lib/utils";
 import toast from "react-hot-toast";
 
 const TIPE_BUKU_OPTIONS = [
-  { value: "modal_masuk", label: "Modal Masuk", color: "text-emerald-400", sign: "+" },
-  { value: "bagi_hasil", label: "Bagi Hasil", color: "text-purple-400", sign: "-" },
-  { value: "hutang_masuk", label: "Hutang Masuk (Pinjaman)", color: "text-blue-400", sign: "+" },
-  { value: "bayar_hutang", label: "Bayar Hutang", color: "text-cyan-400", sign: "-" },
-  { value: "piutang_keluar", label: "Piutang Keluar", color: "text-amber-400", sign: "-" },
-  { value: "terima_piutang", label: "Terima Piutang", color: "text-yellow-400", sign: "+" },
+  { value: "modal_masuk", label: "Modal Masuk (Investment)", color: "text-emerald-400", sign: "+" },
+  { value: "bagi_hasil", label: "Bagi Hasil (Dividend)", color: "text-purple-400", sign: "-" },
+  { value: "hutang_masuk", label: "Terima Pinjaman (Hutang)", color: "text-blue-400", sign: "+" },
+  { value: "bayar_hutang", label: "Bayar Pinjaman (Lunas Hutang)", color: "text-cyan-400", sign: "-" },
+  { value: "piutang_keluar", label: "Beri Pinjaman (Piutang)", color: "text-amber-400", sign: "-" },
+  { value: "terima_piutang", label: "Terima Bayaran (Lunas Piutang)", color: "text-yellow-400", sign: "+" },
+  { value: "biaya_operasional", label: "Biaya Operasional (Ops)", color: "text-rose-500", sign: "-" },
 ];
 
 const TIPE_MAP = {};
@@ -242,29 +243,29 @@ export default function FinanceModule({ products = [], purchases = [] }) {
   return (
     <div className="space-y-6">
       {/* ── Header Cards ── */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="glass-card p-5 relative overflow-hidden">
           <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500/10 rounded-full -mr-8 -mt-8 blur-xl"></div>
           <p className="text-[10px] text-slate-500 uppercase tracking-wider font-bold mb-1">Total Modal Aktif</p>
           <p className="text-2xl font-black text-emerald-400">{fmtRp(summary.totalModal)}</p>
         </div>
         <div className="glass-card p-5 relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-24 h-24 bg-rose-500/10 rounded-full -mr-8 -mt-8 blur-xl"></div>
+          <div className="absolute top-0 right-0 w-24 h-24 bg-blue-500/10 rounded-full -mr-8 -mt-8 blur-xl"></div>
           <p className="text-[10px] text-slate-500 uppercase tracking-wider font-bold mb-1">Total Hutang</p>
-          <p className={`text-2xl font-black ${summary.sisaHutang > 0 ? 'text-rose-400' : 'text-slate-500'}`}>{fmtRp(summary.sisaHutang)}</p>
+          <p className={`text-2xl font-black ${summary.sisaHutang > 0 ? 'text-blue-400' : 'text-slate-500'}`}>{fmtRp(summary.sisaHutang)}</p>
         </div>
         <div className="glass-card p-5 relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-24 h-24 bg-amber-500/10 rounded-full -mr-8 -mt-8 blur-xl"></div>
-          <p className="text-[10px] text-slate-500 uppercase tracking-wider font-bold mb-1">Total Piutang</p>
-          <p className={`text-2xl font-black ${summary.sisaPiutang > 0 ? 'text-amber-400' : 'text-slate-500'}`}>{fmtRp(summary.sisaPiutang)}</p>
+          <div className="absolute top-0 right-0 w-24 h-24 bg-rose-500/10 rounded-full -mr-8 -mt-8 blur-xl"></div>
+          <p className="text-[10px] text-slate-500 uppercase tracking-wider font-bold mb-1">Total Biaya Operasional</p>
+          <p className={`text-2xl font-black ${summary.totalBiayaOperasional > 0 ? 'text-rose-500' : 'text-slate-500'}`}>{fmtRp(summary.totalBiayaOperasional)}</p>
         </div>
-        <div className="glass-card p-5 relative overflow-hidden md:col-span-3 lg:col-span-1">
+        <div className="glass-card p-5 relative overflow-hidden">
           <div className="absolute top-0 right-0 w-24 h-24 bg-purple-500/10 rounded-full -mr-8 -mt-8 blur-xl"></div>
           <p className="text-[10px] text-slate-500 uppercase tracking-wider font-bold mb-1">Sisa Laba Belum Dibagikan</p>
           <p className={`text-2xl font-black ${(globalSummary?.sisaLabaBelumDibagikan || 0) > 0 ? 'text-purple-400' : 'text-slate-500'}`}>
             {fmtRp(globalSummary?.sisaLabaBelumDibagikan || 0)}
           </p>
-          <p className="text-[10px] text-slate-400 mt-1">Dari Total Laba: {fmtRp(globalSummary?.totalLabaKotor || 0)}</p>
+          <p className="text-[10px] text-slate-400 mt-1">Laba: {fmtRp(globalSummary?.totalLabaKotor || 0)} - Ops: {fmtRp(globalSummary?.totalBiayaOperasional || 0)}</p>
         </div>
       </div>
 
