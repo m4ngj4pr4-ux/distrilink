@@ -489,7 +489,7 @@ export default function FinanceModule({ products = [], purchases = [] }) {
               <input type="text" inputMode="numeric" value={profitInput} onChange={e => { setProfitInput(fmtInput(e.target.value)); if (bagiMode === 'manual') setCustomPayouts({}); setBagiMode('auto'); }} className="input-field w-full text-xl font-black text-center" placeholder="0" />
               {grossProfit > 0 && (
                 <div className="mt-2 space-y-1.5">
-                  <button onClick={() => { setProfitInput(availableProfit > 0 ? availableProfit.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".") : "0"); setBagiMode('auto'); setCustomPayouts({}); }} className="w-full text-[10px] text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 rounded-lg py-2 font-bold hover:bg-emerald-500/20 transition-colors">
+                  <button onClick={() => { setProfitInput(availableProfit > 0 ? Math.round(availableProfit).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".") : "0"); setBagiMode('auto'); setCustomPayouts({}); }} className="w-full text-[10px] text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 rounded-lg py-2 font-bold hover:bg-emerald-500/20 transition-colors">
                     📊 Sinkron Sisa Laba: {fmtRp(availableProfit)}
                   </button>
                   <div className="flex justify-between text-[9px] text-slate-500 px-1">
