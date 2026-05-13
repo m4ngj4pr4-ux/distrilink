@@ -283,7 +283,7 @@ export default function SupplyChainRadar() {
           </div>
           <span className="text-[10px] bg-rose-500/20 text-rose-400 px-2 py-1 rounded font-bold uppercase">Critical Area</span>
         </div>
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto custom-scrollbar">
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-dark-900/40">

@@ -191,7 +191,7 @@ export default function DashboardPage() {
                   <p className="text-xs text-slate-400">Rincian sisa stok (akumulasi) dan patokan harga distribusi</p>
                 </div>
               </div>
-              <div className="overflow-x-auto">
+              <div className="overflow-x-auto custom-scrollbar">
                 <table className="w-full text-left border-collapse min-w-[700px]">
                   <thead>
                     <tr className="text-[10px] uppercase tracking-wider text-slate-500 border-b border-slate-400/10 bg-dark-800/30">
@@ -348,7 +348,7 @@ export default function DashboardPage() {
         pendingCount={pendingCount}
       />
       
-      <main className="flex-1 overflow-y-auto custom-scrollbar relative p-8">
+      <main className="flex-1 overflow-y-auto custom-scrollbar relative p-4 md:p-8 pt-[80px] md:pt-8">
         <header className="mb-8 flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold text-white capitalize">{activeSection.replace("-", " ")}</h1>

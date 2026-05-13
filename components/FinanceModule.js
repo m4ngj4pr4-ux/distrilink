@@ -303,7 +303,7 @@ export default function FinanceModule({ products = [], purchases = [] }) {
         </div>
 
         {investors.length > 0 ? (
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto custom-scrollbar">
             <table className="w-full text-left border-collapse min-w-[600px]">
               <thead>
                 <tr className="text-[10px] uppercase tracking-wider text-slate-500 border-b border-slate-400/10 bg-dark-800/30">
@@ -368,7 +368,7 @@ export default function FinanceModule({ products = [], purchases = [] }) {
         </div>
 
         {ledger.length > 0 ? (
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto custom-scrollbar">
             <table className="w-full text-left border-collapse min-w-[650px]">
               <thead>
                 <tr className="text-[10px] uppercase tracking-wider text-slate-500 border-b border-slate-400/10 bg-dark-800/30">
@@ -455,7 +455,7 @@ export default function FinanceModule({ products = [], purchases = [] }) {
       {/* ── Modal: Catat Transaksi Keuangan ── */}
       {showTxModal && (
         <div className="modal-overlay" onClick={() => setShowTxModal(false)}>
-          <div className="modal-content max-w-md" onClick={e => e.stopPropagation()}>
+          <div className="modal-content" onClick={e => e.stopPropagation()}>
             <h3 className="text-base font-bold text-white mb-5">Catat Transaksi Keuangan</h3>
             <div className="space-y-4">
               <div>
@@ -487,7 +487,7 @@ export default function FinanceModule({ products = [], purchases = [] }) {
       {/* ── Modal: Bagikan Keuntungan (Bagi Hasil Sekaligus) ── */}
       {showBagiHasilModal && (
         <div className="modal-overlay" onClick={() => setShowBagiHasilModal(false)}>
-          <div className="modal-content max-w-lg" onClick={e => e.stopPropagation()}>
+          <div className="modal-content" onClick={e => e.stopPropagation()}>
             <h3 className="text-base font-bold text-white mb-1">💰 Bagikan Keuntungan</h3>
             <p className="text-[10px] text-slate-400 mb-5">Distribusikan laba ke investor — otomatis atau atur manual</p>
 

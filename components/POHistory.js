@@ -191,7 +191,7 @@ export default function POHistory({ purchases, distributions }) {
         </div>
       </div>
 
-      <div className="overflow-x-auto -mx-6 px-6">
+      <div className="overflow-x-auto custom-scrollbar -mx-6 px-6">
         <table className="data-table whitespace-nowrap">
           <thead>
             <tr className="text-[10px] uppercase tracking-wider text-slate-500">
@@ -286,7 +286,7 @@ export default function POHistory({ purchases, distributions }) {
 
       {payModal && (
         <div className="modal-overlay" onClick={() => setPayModal(null)}>
-          <div className="modal-content max-w-md" onClick={(e) => e.stopPropagation()}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <h3 className="text-base font-bold text-white mb-2">Bayar Hutang Pabrik</h3>
             <p className="text-xs text-amber-400 font-mono mb-5">
               Sisa Hutang: {formatRupiah(payModal.sisaHutang)}
@@ -308,7 +308,7 @@ export default function POHistory({ purchases, distributions }) {
 
       {detailModal && (
         <div className="modal-overlay" onClick={() => setDetailModal(null)}>
-          <div className="modal-content max-w-lg" onClick={(e) => e.stopPropagation()}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center">

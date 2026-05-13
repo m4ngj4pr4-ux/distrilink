@@ -43,14 +43,20 @@ export default function Sidebar({ activeSection, onNavigate, pendingCount = 0 })
 
   return (
     <>
-      {/* Tombol toggle mobile */}
-      <button
-        onClick={() => setMobileOpen(true)}
-        className="fixed top-4 left-4 z-50 p-2 rounded-lg bg-dark-700 border border-slate-400/10 text-slate-300 md:hidden"
-        aria-label="Buka menu"
-      >
-        <HiOutlineMenuAlt2 size={22} />
-      </button>
+      {/* Header Mobile - Hamburger */}
+      <div className="md:hidden fixed top-0 left-0 right-0 h-[60px] bg-dark-800 border-b border-slate-400/10 z-[45] flex items-center px-4 justify-between">
+        <div className="flex items-center gap-3">
+          <img src="/icon.png" alt="Logo" className="w-8 h-8 rounded-lg" />
+          <span className="font-bold text-white text-sm">DistriLink</span>
+        </div>
+        <button
+          onClick={() => setMobileOpen(true)}
+          className="p-2 rounded-lg bg-dark-700 border border-slate-400/10 text-slate-300"
+          aria-label="Buka menu"
+        >
+          <HiOutlineMenuAlt2 size={22} />
+        </button>
+      </div>
 
       {/* Overlay mobile */}
       {mobileOpen && (

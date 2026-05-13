@@ -176,7 +176,7 @@ export default function ReturnsForm({ products, teams, returns, factoryReturns }
           <HiOutlineClipboardCheck className={activeTab === "sales" ? "text-amber-400" : "text-blue-400"}/> 
           Riwayat {activeTab === "sales" ? "Retur dari Sales" : "Retur ke Pabrik"}
         </h3>
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto custom-scrollbar">
           <table className="w-full text-left border-collapse min-w-[600px]">
             <thead>
               <tr className="text-[10px] uppercase tracking-wider text-slate-500 border-b border-slate-400/10 bg-dark-800/30">

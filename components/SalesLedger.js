@@ -327,7 +327,7 @@ export default function SalesLedger({ teams, products, purchases, allDistributio
         </button>
       </div>
 
-      <div className="overflow-x-auto -mx-6 px-6">
+      <div className="overflow-x-auto custom-scrollbar">
         <table className="data-table">
           <thead>
             <tr>
@@ -394,7 +394,7 @@ export default function SalesLedger({ teams, products, purchases, allDistributio
       {/* ── MODAL DETAIL DISTRIBUSI ── */}
       {detailModal && (
         <div className="modal-overlay" onClick={() => setDetailModal(null)}>
-          <div className="modal-content w-[95vw] max-w-6xl" onClick={(e) => e.stopPropagation()}>
+          <div className="modal-content w-[95%] md:w-[95%] max-w-6xl" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-violet-500/10 flex items-center justify-center">
@@ -409,7 +409,7 @@ export default function SalesLedger({ teams, products, purchases, allDistributio
                 <HiOutlineX size={18} />
               </button>
             </div>
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto custom-scrollbar">
               {distributions.length === 0 ? (
                 <p className="text-center py-10 text-slate-500 text-sm italic">Belum ada riwayat distribusi.</p>
               ) : (

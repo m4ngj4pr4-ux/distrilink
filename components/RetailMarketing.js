@@ -231,7 +231,7 @@ export default function RetailMarketing() {
 
         {/* Floating Add Form */}
         {showAddForm && (
-          <div className="absolute top-4 right-4 z-[1000] w-80 glass-card p-5 border-t-4 border-blue-500 shadow-2xl animate-slideIn">
+          <div className="absolute top-4 right-4 z-[1000] w-[90%] sm:w-80 left-1/2 -translate-x-1/2 sm:left-auto sm:translate-x-0 glass-card p-5 border-t-4 border-blue-500 shadow-2xl animate-slideIn">
             <h3 className="font-bold text-white mb-1 flex items-center justify-between">
               {editingStoreId ? "Edit Toko" : "Registrasi Toko Baru"}
             </h3>
