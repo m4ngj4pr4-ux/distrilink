@@ -352,9 +352,17 @@ export default function DashboardPage() {
           
           <div className="flex items-center gap-6">
             {/* Status Sinkron */}
-            <div className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[10px] font-bold uppercase tracking-wider">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span> Sinkron Aktif
-            </div>
+            <button 
+              onClick={handleRecalculate} 
+              disabled={isRecalculating} 
+              className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/20 active:scale-95 transition-all text-[10px] font-bold uppercase tracking-wider disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isRecalculating ? (
+                <>⏳ Menyinkronkan...</>
+              ) : (
+                <><span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span> Sinkronisasi</>
+              )}
+            </button>
 
             {/* Profil User */}
             <div className="flex items-center gap-3 pl-6 border-l border-slate-400/10">
