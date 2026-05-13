@@ -16,6 +16,7 @@ import {
 } from "@/lib/firestore";
 import { formatRupiah } from "@/lib/utils";
 import toast from "react-hot-toast";
+import { usePermissions } from "@/hooks/usePermissions";
 
 const ALL_TYPES = [
   { value: "modal_masuk", label: "Modal Masuk (Investment)", color: "text-emerald-400", sign: "+" },
@@ -33,6 +34,7 @@ const TIPE_MAP = {};
 ALL_TYPES.forEach(t => { TIPE_MAP[t.value] = t; });
 
 export default function FinanceModule({ products = [], purchases = [] }) {
+  const { checkWritePermission } = usePermissions();
   const [investors, setInvestors] = useState([]);
   const [ledger, setLedger] = useState([]);
   const [distributions, setDistributions] = useState([]);
@@ -84,6 +86,7 @@ export default function FinanceModule({ products = [], purchases = [] }) {
   };
 
   const handleSaveInvestor = async () => {
+    if (!checkWritePermission(editingInvestor ? "mengedit investor" : "menambah investor")) return;
     if (!invForm.nama.trim()) return toast.error("Nama investor wajib diisi");
     setProcessing(true);
     try {
@@ -109,6 +112,7 @@ export default function FinanceModule({ products = [], purchases = [] }) {
   };
 
   const handleDeleteInvestor = async (inv) => {
+    if (!checkWritePermission("menghapus investor")) return;
     if (!confirm(`Hapus investor ${inv.nama}?`)) return;
     try {
       await deleteInvestor(inv.id);
@@ -164,6 +168,7 @@ export default function FinanceModule({ products = [], purchases = [] }) {
   };
 
   const handleSubmitBagiHasil = async () => {
+    if (!checkWritePermission("melakukan bagi hasil")) return;
     if (syncedProfit <= 0) return toast.error("Masukkan nominal keuntungan!");
     if (investors.length === 0) return toast.error("Belum ada investor!");
     if (isOverBudget) return toast.error("Total melebihi keuntungan!");
@@ -197,6 +202,7 @@ export default function FinanceModule({ products = [], purchases = [] }) {
   };
 
   const handleSaveTx = async () => {
+    if (!checkWritePermission("mencatat transaksi keuangan")) return;
     if (!txForm.tipeBuku) return toast.error("Pilih jenis transaksi");
     const nominal = parseInt(txForm.nominal.replace(/\D/g, ""));
     if (!nominal || nominal <= 0) return toast.error("Nominal tidak valid");
@@ -219,6 +225,7 @@ export default function FinanceModule({ products = [], purchases = [] }) {
   };
 
   const handleDeleteEntry = async (entry) => {
+    if (!checkWritePermission("menghapus entri keuangan")) return;
     if (!confirm(`Hapus entri "${entry.keterangan || entry.tipeBuku}"?`)) return;
     try {
       await deleteFinanceEntry(entry.id);

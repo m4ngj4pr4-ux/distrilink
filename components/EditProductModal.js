@@ -6,8 +6,10 @@ import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { storage } from "@/lib/firebase";
 import { updateProduct } from "@/lib/firestore";
 import toast from "react-hot-toast";
+import { usePermissions } from "@/hooks/usePermissions";
 
 export default function EditProductModal({ product, isOpen, onClose }) {
+  const { checkWritePermission } = usePermissions();
   const [form, setForm] = useState({
     name: "",
     packsPerSlop: "",
@@ -34,6 +36,7 @@ export default function EditProductModal({ product, isOpen, onClose }) {
   if (!isOpen || !product) return null;
 
   async function handleUpdate() {
+    if (!checkWritePermission("mengedit produk")) return;
     if (!form.name.trim()) return toast.error("Nama produk wajib diisi");
     
     setSaving(true);

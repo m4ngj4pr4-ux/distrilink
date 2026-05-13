@@ -13,8 +13,10 @@ import {
 } from "@/lib/firestore";
 import { HiOutlineDatabase, HiOutlineTruck, HiOutlineCube, HiOutlineExclamationCircle, HiOutlineChartPie, HiOutlineTrash, HiOutlineRefresh } from "react-icons/hi";
 import toast from "react-hot-toast";
+import { usePermissions } from "@/hooks/usePermissions";
 
 export default function SupplyChainRadar() {
+  const { checkWritePermission } = usePermissions();
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [isCleaning, setIsCleaning] = useState(false);
@@ -110,6 +112,7 @@ export default function SupplyChainRadar() {
     .sort((a, b) => a.currentStock - b.currentStock);
 
   const handleCleanup = async () => {
+    if (!checkWritePermission("membersihkan data hantu")) return;
     if (!confirm("Hapus semua data stok dari toko yang sudah tidak ada di database?")) return;
     setIsCleaning(true);
     try {
@@ -124,6 +127,7 @@ export default function SupplyChainRadar() {
   };
 
   const handleDeleteRecord = async (id, name) => {
+    if (!checkWritePermission("menghapus record inventory")) return;
     if (!confirm(`Hapus catatan stok ${name} ini secara permanen?`)) return;
     try {
       await deleteStoreInventoryRecord(id);

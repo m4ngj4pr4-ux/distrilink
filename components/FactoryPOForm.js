@@ -19,9 +19,10 @@ import {
   addProduct,
   deleteProduct,
 } from "@/lib/firestore";
-import toast from "react-hot-toast";
+import { usePermissions } from "@/hooks/usePermissions";
 
 export default function FactoryPOForm({ products }) {
+  const { checkWritePermission } = usePermissions();
   const [selectedProductId, setSelectedProductId] = useState("");
   const [showAddProduct, setShowAddProduct] = useState(false);
   const [newProduct, setNewProduct] = useState({
@@ -142,6 +143,7 @@ export default function FactoryPOForm({ products }) {
   }
 
   async function handleSubmit() {
+    if (!checkWritePermission("membuat PO baru")) return;
     if (!result) {
       toast.error("Silakan hitung HPP terlebih dahulu");
       return;

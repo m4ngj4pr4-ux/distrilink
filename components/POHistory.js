@@ -8,8 +8,10 @@ import EditPOModal from "./EditPOModal";
 import toast from "react-hot-toast";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import { usePermissions } from "@/hooks/usePermissions";
 
 export default function POHistory({ purchases, distributions }) {
+  const { checkWritePermission } = usePermissions();
   const [searchTerm, setSearchTerm] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
@@ -30,6 +32,7 @@ export default function POHistory({ purchases, distributions }) {
   }, [detailModal]);
 
   async function handleDelete(purchase) {
+    if (!checkWritePermission("menghapus PO")) return;
     if (confirm(`Hapus PO ${purchase.productName}? Stok dan Hutang akan disesuaikan.`)) {
       try {
         await deletePurchase(purchase.id, purchase);
@@ -41,6 +44,7 @@ export default function POHistory({ purchases, distributions }) {
   }
 
   async function handlePayment() {
+    if (!checkWritePermission("membayar hutang pabrik")) return;
     if (!payModal) return;
     const amount = parseFloat(parseInputNumber(payAmount));
     if (!amount || amount <= 0) return toast.error("Masukkan nominal pembayaran");

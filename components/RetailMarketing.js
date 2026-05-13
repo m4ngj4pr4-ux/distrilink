@@ -60,6 +60,7 @@ export default function RetailMarketing() {
 
   async function handleAddStore(e) {
     e.preventDefault();
+    if (!checkWritePermission(editingStoreId ? "mengedit toko" : "menambah toko retail")) return;
     
     // Parse Koordinat (Lat, Lng)
     let lat = 0;

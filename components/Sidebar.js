@@ -21,14 +21,14 @@ import { HiOutlineLogout } from "react-icons/hi";
 
 const ALL_NAV_ITEMS = [
   { icon: HiOutlineHome, label: "Dashboard", id: "dashboard", roles: ["owner", "admin", "investor"] },
-  { icon: HiOutlineDocumentText, label: "PO Pabrik", id: "po", roles: ["owner"] },
-  { icon: HiOutlineClipboardList, label: "Riwayat PO", id: "po-history", roles: ["owner"] },
-  { icon: HiOutlineCube, label: "Stok Barang", id: "stock", roles: ["owner", "admin"] },
-  { icon: HiOutlineTrendingUp, label: "Laba Rugi", id: "laba-rugi", roles: ["owner"] },
+  { icon: HiOutlineDocumentText, label: "PO Pabrik", id: "po", roles: ["owner", "investor"] },
+  { icon: HiOutlineClipboardList, label: "Riwayat PO", id: "po-history", roles: ["owner", "investor"] },
+  { icon: HiOutlineCube, label: "Stok Barang", id: "stock", roles: ["owner", "admin", "investor"] },
+  { icon: HiOutlineTrendingUp, label: "Laba Rugi", id: "laba-rugi", roles: ["owner", "investor"] },
   { icon: HiOutlineCash, label: "Keuangan", id: "keuangan", roles: ["owner", "investor"] },
-  { icon: HiOutlineUserGroup, label: "Buku Penjualan", id: "sales", roles: ["owner", "admin"] },
-  { icon: HiOutlineLocationMarker, label: "Pemasaran Retail", id: "retail", roles: ["owner", "admin"] },
-  { icon: HiOutlineReply, label: "Retur Barang", id: "returns", roles: ["owner"] },
+  { icon: HiOutlineUserGroup, label: "Buku Penjualan", id: "sales", roles: ["owner", "admin", "investor"] },
+  { icon: HiOutlineLocationMarker, label: "Pemasaran Retail", id: "retail", roles: ["owner", "admin", "investor"] },
+  { icon: HiOutlineReply, label: "Retur Barang", id: "returns", roles: ["owner", "investor"] },
   { icon: HiOutlineCog, label: "Pengaturan", id: "settings", roles: ["owner"] },
 ];
 

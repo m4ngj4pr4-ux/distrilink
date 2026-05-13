@@ -5,8 +5,10 @@ import { HiOutlineReply, HiOutlineClipboardCheck, HiOutlineTruck } from "react-i
 import { formatRupiah, parseInputNumber, formatInputNumber } from "@/lib/utils";
 import { addReturnTransaction, addFactoryReturnTransaction } from "@/lib/firestore";
 import toast from "react-hot-toast";
+import { usePermissions } from "@/hooks/usePermissions";
 
 export default function ReturnsForm({ products, teams, returns, factoryReturns }) {
+  const { checkWritePermission } = usePermissions();
   const [activeTab, setActiveTab] = useState("sales"); // "sales" or "factory"
   
   const [selectedTeamId, setSelectedTeamId] = useState("");
@@ -19,6 +21,7 @@ export default function ReturnsForm({ products, teams, returns, factoryReturns }
   // Handle Retur dari Sales
   async function handleSalesSubmit(e) {
     e.preventDefault();
+    if (!checkWritePermission("mencatat retur sales")) return;
     if (!selectedTeamId || !selectedProductId || !returnQty) return toast.error("Lengkapi data retur!");
     
     const qty = parseFloat(parseInputNumber(returnQty));
@@ -47,6 +50,7 @@ export default function ReturnsForm({ products, teams, returns, factoryReturns }
   // Handle Retur ke Pabrik
   async function handleFactorySubmit(e) {
     e.preventDefault();
+    if (!checkWritePermission("mencatat retur ke pabrik")) return;
     if (!selectedProductId || !returnQty) return toast.error("Lengkapi data retur pabrik!");
     
     const qty = parseFloat(parseInputNumber(returnQty));

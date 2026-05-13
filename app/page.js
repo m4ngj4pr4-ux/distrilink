@@ -32,9 +32,11 @@ import {
 } from "@/lib/firestore";
 import toast from "react-hot-toast";
 import { useAdminAuth } from "@/lib/AdminAuthContext";
+import { usePermissions } from "@/hooks/usePermissions";
 
 export default function DashboardPage() {
   const { adminUser } = useAdminAuth();
+  const { isInvestor, checkWritePermission } = usePermissions();
   const [activeSection, setActiveSection] = useState("dashboard");
   const [isRecalculating, setIsRecalculating] = useState(false);
   const [products, setProducts] = useState([]);
@@ -57,7 +59,7 @@ export default function DashboardPage() {
   const [isVerificationQueueOpen, setIsVerificationQueueOpen] = useState(false);
 
   useEffect(() => {
-    if (adminUser?.role === 'investor' && !['dashboard', 'keuangan'].includes(activeSection)) {
+    if (adminUser?.role === 'investor' && activeSection === 'settings') {
       setActiveSection('dashboard');
     }
   }, [adminUser, activeSection]);
@@ -102,6 +104,7 @@ export default function DashboardPage() {
   }, []);
 
   async function handleRecalculate() {
+    if (!checkWritePermission("sinkronisasi dashboard")) return;
     setIsRecalculating(true);
     try {
       await recalculateSummary();
@@ -114,6 +117,7 @@ export default function DashboardPage() {
   }
 
   const handleGlobalVerify = async (item) => {
+    if (!checkWritePermission("verifikasi setoran")) return;
     if (confirm(`Sahkan setoran Rp ${item.nominal?.toLocaleString('id-ID')} dari ${item.namaSales}?`)) {
       try {
         await verifikasiSetoranAdmin(item.id, item.teamId, item.nominal);
@@ -137,7 +141,7 @@ export default function DashboardPage() {
       case "dashboard":
         return (
           <div className="space-y-8 animate-fadeIn">
-            {adminUser?.role !== 'investor' && pendingCount > 0 && (
+            {pendingCount > 0 && (
               <div className="glass-card p-4 border border-amber-500/20 bg-amber-500/5 flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <span className="text-xl">⚠️</span>
@@ -158,7 +162,7 @@ export default function DashboardPage() {
           </div>
         );
       case "po":
-        if (adminUser?.role !== 'owner') return null;
+        if (adminUser?.role === 'admin') return null; // Admin can't see PO, but Investor can
         return (
           <div className="space-y-8 animate-fadeIn">
             <SummaryCards summary={summary} products={products} />
@@ -166,7 +170,7 @@ export default function DashboardPage() {
           </div>
         );
       case "po-history":
-        if (adminUser?.role !== 'owner') return null;
+        if (adminUser?.role === 'admin') return null;
         return (
           <div className="space-y-8 animate-fadeIn">
             <SummaryCards summary={summary} products={products} />
@@ -174,7 +178,6 @@ export default function DashboardPage() {
           </div>
         );
       case "stock":
-        if (!['owner', 'admin'].includes(adminUser?.role)) return null;
         return (
           <div className="space-y-8 animate-fadeIn">
             <SummaryCards summary={summary} products={products} />
@@ -247,7 +250,11 @@ export default function DashboardPage() {
                           </td>
                           <td className="py-3 px-4 text-center">
                             <button 
-                              onClick={() => setEditingProduct(p)}
+                              onClick={() => {
+                                if (checkWritePermission("edit produk")) {
+                                  setEditingProduct(p);
+                                }
+                              }}
                               className="p-1.5 rounded hover:bg-emerald-500/10 text-slate-500 hover:text-emerald-400 transition-colors"
                             >
                               <HiOutlinePencil size={18} />
@@ -289,7 +296,7 @@ export default function DashboardPage() {
           </div>
         );
       case "laba-rugi":
-        if (adminUser?.role !== 'owner') return null;
+        if (adminUser?.role === 'admin') return null;
         return (
           <div className="space-y-8 animate-fadeIn">
             <SummaryCards summary={summary} products={products} />
@@ -304,7 +311,6 @@ export default function DashboardPage() {
           </div>
         );
       case "sales":
-        if (!['owner', 'admin'].includes(adminUser?.role)) return null;
         return (
           <div className="space-y-8 animate-fadeIn">
             <SummaryCards summary={summary} products={products} />
@@ -312,7 +318,6 @@ export default function DashboardPage() {
           </div>
         );
       case "retail":
-        if (!['owner', 'admin'].includes(adminUser?.role)) return null;
         return (
           <div className="space-y-8 animate-fadeIn">
             <SummaryCards summary={summary} products={products} />
@@ -320,7 +325,7 @@ export default function DashboardPage() {
           </div>
         );
       case "returns":
-        if (adminUser?.role !== 'owner') return null;
+        if (adminUser?.role === 'admin') return null;
         return (
           <div className="space-y-8 animate-fadeIn">
             <SummaryCards summary={summary} products={products} />

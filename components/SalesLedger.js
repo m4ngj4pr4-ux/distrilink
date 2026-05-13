@@ -24,8 +24,10 @@ import {
   verifikasiSetoranAdmin,
 } from "@/lib/firestore";
 import toast from "react-hot-toast";
+import { usePermissions } from "@/hooks/usePermissions";
 
 export default function SalesLedger({ teams, products, purchases, allDistributions }) {
+  const { checkWritePermission } = usePermissions();
   const [depositModal, setDepositModal] = useState(null);
   const [dropModal, setDropModal] = useState(null);
   const [addTeamModal, setAddTeamModal] = useState(false);
@@ -136,6 +138,7 @@ export default function SalesLedger({ teams, products, purchases, allDistributio
   }, [selectedPoId, dropQty, dropUnit, dropPricePerPack, purchases, products]);
 
   async function handleDeposit() {
+    if (!checkWritePermission("mencatat setoran sales")) return;
     if (!depositModal) return;
     const amount = parseFloat(parseInputNumber(depositAmount));
     if (!amount || amount <= 0) return toast.error("Masukkan jumlah setoran");
@@ -160,6 +163,7 @@ export default function SalesLedger({ teams, products, purchases, allDistributio
   }
 
   async function handleVerifikasi(dep) {
+    if (!checkWritePermission("verifikasi setoran")) return;
     if (!confirm(`Sahkan setoran ${formatRupiah(dep.nominal)} dari ${dep.namaSales || 'Sales'}? Piutang akan dikurangi secara permanen.`)) return;
     
     setProcessing(true);
@@ -174,6 +178,7 @@ export default function SalesLedger({ teams, products, purchases, allDistributio
   }
 
   async function handleDeleteDist(dist) {
+    if (!checkWritePermission("menghapus riwayat distribusi")) return;
     if (!confirm(`Hapus distribusi ${dist.productName} sejumlah ${dist.qtyOriginal} ${dist.unit}? Stok dan piutang akan dikoreksi otomatis.`)) return;
     try {
       await deleteDistribution(dist.id, dist);
@@ -184,6 +189,7 @@ export default function SalesLedger({ teams, products, purchases, allDistributio
   }
 
   async function handleGoodsDrop() {
+    if (!checkWritePermission("mencatat dropping barang")) return;
     if (!dropModal) return;
     const amount = parseFloat(dropAmount);
     const qty = parseFloat(dropQty);
@@ -251,6 +257,7 @@ export default function SalesLedger({ teams, products, purchases, allDistributio
 
 
   async function handleAddTeam() {
+    if (!checkWritePermission("menambah tim sales baru")) return;
     if (!newTeamName.trim()) return toast.error("Masukkan nama tim");
     if (!newTeamPin || newTeamPin.length < 6) return toast.error("PIN harus 6 angka");
     setProcessing(true);
@@ -268,6 +275,7 @@ export default function SalesLedger({ teams, products, purchases, allDistributio
   }
 
   async function handleUpdateTeam() {
+    if (!checkWritePermission("mengedit tim sales")) return;
     if (!editTeamModal || !newTeamName.trim()) return;
     if (!newTeamPin || newTeamPin.length < 6) return toast.error("PIN harus 6 angka");
     setProcessing(true);
@@ -286,6 +294,7 @@ export default function SalesLedger({ teams, products, purchases, allDistributio
   }
 
   async function handleDeleteTeam(team) {
+    if (!checkWritePermission("menghapus tim sales")) return;
     if (!confirm(`Hapus ${team.name}? Data tidak dapat dikembalikan.`)) return;
     try {
       await deleteSalesTeam(team.id, team);
