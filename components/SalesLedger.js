@@ -9,6 +9,7 @@ import {
   HiOutlineTrash,
   HiOutlinePencilAlt,
   HiOutlineEye,
+  HiOutlineEyeOff,
 } from "react-icons/hi";
 import { formatRupiah, formatNumber, formatInputNumber, parseInputNumber } from "@/lib/utils";
 import {
@@ -45,6 +46,7 @@ export default function SalesLedger({ teams, products, purchases, allDistributio
   const [newTeamPin, setNewTeamPin] = useState("");
   const [newTeamRole, setNewTeamRole] = useState("sales");
   const [processing, setProcessing] = useState(false);
+  const [showPin, setShowPin] = useState(false);
   const [distributions, setDistributions] = useState([]);
   const [depositHistory, setDepositHistory] = useState([]);
 
@@ -649,17 +651,26 @@ export default function SalesLedger({ teams, products, purchases, allDistributio
             </div>
             <div className="mb-6">
               <label className="block text-xs font-medium text-slate-400 mb-1.5">PIN Akses Aplikasi (6 Angka)</label>
-              <input 
-                type="text" 
-                maxLength="6"
-                pattern="\d{6}"
-                value={newTeamPin} 
-                onChange={(e) => setNewTeamPin(e.target.value.replace(/\D/g, ''))}
-                className="input-field w-full text-center tracking-[0.5em] font-mono text-lg"
-                placeholder="123456"
-                required
-              />
-              <p className="text-[10px] text-slate-500 mt-1">PIN ini akan digunakan sales untuk login ke aplikasi HP.</p>
+              <div className="relative">
+                <input 
+                  type={showPin ? "text" : "password"} 
+                  maxLength="6"
+                  pattern="\d{6}"
+                  value={newTeamPin} 
+                  onChange={(e) => setNewTeamPin(e.target.value.replace(/\D/g, ''))}
+                  className="input-field w-full text-center tracking-[0.5em] font-mono text-lg pr-12"
+                  placeholder="123456"
+                  required
+                />
+                <button 
+                  type="button"
+                  onClick={() => setShowPin(!showPin)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white transition-colors"
+                >
+                  {showPin ? <HiOutlineEyeOff size={20} /> : <HiOutlineEye size={20} />}
+                </button>
+              </div>
+              <p className="text-[10px] text-slate-500 mt-1 text-center">PIN ini akan digunakan sales untuk login ke aplikasi HP.</p>
             </div>
             <div className="flex items-center gap-3">
               <button onClick={() => setAddTeamModal(false)} className="btn-ghost flex-1">Batal</button>
@@ -678,17 +689,26 @@ export default function SalesLedger({ teams, products, purchases, allDistributio
             </div>
             <div className="mb-6">
               <label className="block text-xs font-medium text-slate-400 mb-1.5">PIN Akses Aplikasi (6 Angka)</label>
-              <input 
-                type="text" 
-                maxLength="6"
-                pattern="\d{6}"
-                value={newTeamPin} 
-                onChange={(e) => setNewTeamPin(e.target.value.replace(/\D/g, ''))}
-                className="input-field w-full text-center tracking-[0.5em] font-mono text-lg"
-                placeholder="123456"
-                required
-              />
-              <p className="text-[10px] text-slate-500 mt-1">Ubah PIN jika sales lupa atau ganti device.</p>
+              <div className="relative">
+                <input 
+                  type={showPin ? "text" : "password"} 
+                  maxLength="6"
+                  pattern="\d{6}"
+                  value={newTeamPin} 
+                  onChange={(e) => setNewTeamPin(e.target.value.replace(/\D/g, ''))}
+                  className="input-field w-full text-center tracking-[0.5em] font-mono text-lg pr-12"
+                  placeholder="123456"
+                  required
+                />
+                <button 
+                  type="button"
+                  onClick={() => setShowPin(!showPin)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white transition-colors"
+                >
+                  {showPin ? <HiOutlineEyeOff size={20} /> : <HiOutlineEye size={20} />}
+                </button>
+              </div>
+              <p className="text-[10px] text-slate-500 mt-1 text-center">Ubah PIN jika sales lupa atau ganti device.</p>
             </div>
             <div className="mb-6">
               <label className="flex items-center gap-3 cursor-pointer group">

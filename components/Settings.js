@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { HiOutlineShieldCheck, HiOutlineRefresh, HiDatabase, HiOutlineExclamation, HiOutlineX, HiOutlineUserAdd, HiOutlineTrash, HiOutlinePencilAlt } from "react-icons/hi";
+import { HiOutlineShieldCheck, HiOutlineRefresh, HiDatabase, HiOutlineExclamation, HiOutlineX, HiOutlineUserAdd, HiOutlineTrash, HiOutlinePencilAlt, HiOutlineEye, HiOutlineEyeOff } from "react-icons/hi";
 import { factoryResetDatabase, subscribeAdminUsers, addAdminUser, updateAdminUser, deleteAdminUser } from "@/lib/firestore";
 import { useAdminAuth } from "@/lib/AdminAuthContext";
 import toast from "react-hot-toast";
@@ -15,6 +15,7 @@ export default function Settings({ onRecalculate, isRecalculating }) {
   const [editingUser, setEditingUser] = useState(null);
   const [userForm, setUserForm] = useState({ email: "", password: "", nama: "", role: "admin" });
   const [isSavingUser, setIsSavingUser] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => {
     if (adminUser?.role === "owner") {
@@ -223,7 +224,23 @@ export default function Settings({ onRecalculate, isRecalculating }) {
               </div>
               <div>
                 <label className="block text-[10px] uppercase font-bold text-slate-500 mb-1">Password</label>
-                <input type="password" required={!editingUser} value={userForm.password} onChange={(e) => setUserForm({...userForm, password: e.target.value})} className="input-field w-full" placeholder="••••••••" />
+                <div className="relative">
+                  <input 
+                    type={showPassword ? "text" : "password"} 
+                    required={!editingUser} 
+                    value={userForm.password} 
+                    onChange={(e) => setUserForm({...userForm, password: e.target.value})} 
+                    className="input-field w-full pr-10" 
+                    placeholder="••••••••" 
+                  />
+                  <button 
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white transition-colors"
+                  >
+                    {showPassword ? <HiOutlineEyeOff size={18} /> : <HiOutlineEye size={18} />}
+                  </button>
+                </div>
               </div>
               <div>
                 <label className="block text-[10px] uppercase font-bold text-slate-500 mb-1">Role Akses</label>
