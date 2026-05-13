@@ -65,7 +65,14 @@ export default function FinanceModule({ products = [], purchases = [] }) {
   // Hitung Laba Kotor (sinkron dengan modul Laba Rugi) - Sekarang menggunakan globalSummary
   const grossProfit = globalSummary?.totalLabaKotor || 0;
   
-  const summary = useMemo(() => calcFinanceSummary(ledger), [ledger]);
+  // Filter out any mirrored "Hutang PO" entries to keep general finance separate from stock operations
+  const filteredLedger = useMemo(() => {
+    return ledger.filter(entry => 
+      !entry.keterangan?.toLowerCase().includes("hutang po")
+    );
+  }, [ledger]);
+
+  const summary = useMemo(() => calcFinanceSummary(filteredLedger), [filteredLedger]);
 
   // ── Investor Handlers ──
   const openAddInvestor = () => {
@@ -380,7 +387,7 @@ export default function FinanceModule({ products = [], purchases = [] }) {
                 </tr>
               </thead>
               <tbody>
-                {ledger.map(entry => {
+                {filteredLedger.map(entry => {
                   const meta = TIPE_MAP[entry.tipeBuku] || { label: entry.tipeBuku, color: "text-slate-400", sign: "" };
                   return (
                     <tr key={entry.id} className="border-b border-slate-400/5 hover:bg-dark-700/30 transition-colors group">
