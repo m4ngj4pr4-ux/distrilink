@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
-import { HiOutlineSearch, HiOutlineLocationMarker, HiOutlinePlus, HiOutlinePhone, HiOutlineUser, HiOutlineTrash, HiOutlinePencilAlt } from "react-icons/hi";
+import { HiOutlineSearch, HiOutlineLocationMarker, HiOutlinePlus, HiOutlinePhone, HiOutlineUser, HiOutlineTrash, HiOutlinePencilAlt, HiOutlineChartPie } from "react-icons/hi";
 import { subscribeRetailStores, addRetailStore, deleteRetailStore, updateRetailStore } from "@/lib/firestore";
+import SupplyChainRadar from "./SupplyChainRadar";
 import toast from "react-hot-toast";
 
 // Import Map with SSR disabled
@@ -23,6 +24,7 @@ export default function RetailMarketing() {
   const [showAddForm, setShowAddForm] = useState(false);
   const [tempCoords, setTempCoords] = useState(null);
   const [editingStoreId, setEditingStoreId] = useState(null);
+  const [activeTab, setActiveTab] = useState("map"); // "map" or "radar"
   
   // Form State
   const [newStore, setNewStore] = useState({
@@ -120,7 +122,27 @@ export default function RetailMarketing() {
   }
 
   return (
-    <div className="flex flex-col lg:flex-row h-[calc(100vh-180px)] gap-6 animate-fadeIn">
+    <div className="flex flex-col gap-6">
+      {/* Tab Switcher */}
+      <div className="flex items-center gap-1 bg-dark-800 p-1 rounded-xl w-fit border border-slate-700 shadow-xl">
+        <button 
+          onClick={() => setActiveTab("map")}
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all ${activeTab === "map" ? "bg-blue-600 text-white shadow-lg" : "text-slate-400 hover:text-slate-200"}`}
+        >
+          <HiOutlineLocationMarker size={16} />
+          Peta Lokasi Retail
+        </button>
+        <button 
+          onClick={() => setActiveTab("radar")}
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all ${activeTab === "radar" ? "bg-emerald-600 text-white shadow-lg" : "text-slate-400 hover:text-slate-200"}`}
+        >
+          <HiOutlineChartPie size={16} />
+          Supply Chain Radar
+        </button>
+      </div>
+
+      {activeTab === "map" ? (
+        <div className="flex flex-col lg:flex-row h-[calc(100vh-230px)] gap-6 animate-fadeIn">
       {/* Sidebar List */}
       <div className="w-full lg:w-96 flex flex-col gap-4">
         <div className="glass-card p-4 flex flex-col h-full overflow-hidden">
@@ -266,6 +288,9 @@ export default function RetailMarketing() {
           </div>
         )}
       </div>
+      ) : (
+        <SupplyChainRadar />
+      )}
     </div>
   );
 }
