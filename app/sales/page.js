@@ -1,3 +1,6 @@
+"use client";
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { HiOutlineExclamationCircle, HiOutlineCube, HiOutlineUserGroup, HiOutlineShieldCheck, HiOutlineClipboardList, HiOutlineCash } from 'react-icons/hi';
 import { getSisaStokSales, getSalesStockBreakdown, getTeamPendingSetoran } from '@/lib/firestore';
 import { formatRupiah } from '@/lib/utils';
