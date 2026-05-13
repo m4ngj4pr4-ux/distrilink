@@ -156,7 +156,7 @@ export default function Settings({ onRecalculate, isRecalculating }) {
           </div>
         </div>
 
-        <div className="p-5 rounded-2xl bg-dark-800/50 border border-slate-400/5 flex items-center justify-between gap-6">
+        <div className="p-5 rounded-2xl bg-dark-800/50 border border-slate-400/5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 sm:gap-6">
           <div className="flex-1">
             <h3 className="text-sm font-semibold text-white mb-1">Sinkronisasi Ulang Saldo</h3>
             <p className="text-xs text-slate-400 leading-relaxed">
@@ -167,7 +167,7 @@ export default function Settings({ onRecalculate, isRecalculating }) {
           <button 
             onClick={onRecalculate}
             disabled={isRecalculating || isResetting}
-            className="flex-shrink-0 px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold transition-all flex items-center gap-2 shadow-lg shadow-emerald-500/20 disabled:opacity-50"
+            className="w-full sm:w-auto flex-shrink-0 px-5 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold transition-all flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20 disabled:opacity-50"
           >
             <HiOutlineRefresh className={isRecalculating ? "animate-spin" : ""} size={18} />
             {isRecalculating ? "Memproses..." : "Sinkron Sekarang"}
@@ -187,7 +187,7 @@ export default function Settings({ onRecalculate, isRecalculating }) {
           </div>
         </div>
         
-        <div className="p-5 rounded-2xl bg-rose-500/5 border border-rose-500/10 flex items-center justify-between gap-6">
+        <div className="p-5 rounded-2xl bg-rose-500/5 border border-rose-500/10 flex flex-col sm:flex-row sm:items-center justify-between gap-4 sm:gap-6">
           <div className="flex-1">
             <h3 className="text-sm font-semibold text-white mb-1">Factory Reset (Kosongkan Database)</h3>
             <p className="text-xs text-rose-400/80 leading-relaxed">
@@ -197,7 +197,7 @@ export default function Settings({ onRecalculate, isRecalculating }) {
           <button 
             onClick={() => setShowResetModal(true)}
             disabled={isResetting || isRecalculating}
-            className="flex-shrink-0 px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-sm font-bold transition-all shadow-lg shadow-rose-500/20 disabled:opacity-50"
+            className="w-full sm:w-auto flex-shrink-0 px-5 py-3 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-sm font-bold transition-all shadow-lg shadow-rose-500/20 disabled:opacity-50"
           >
             Hapus Semua Data
           </button>
