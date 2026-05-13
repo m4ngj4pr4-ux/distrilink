@@ -145,7 +145,7 @@ export default function SalesDashboard() {
                     
                     <div className="flex items-center gap-2 mb-2">
                       <span className={`text-[8px] font-black uppercase tracking-tighter px-1.5 py-0.5 rounded ${isLow ? 'bg-rose-500 text-white' : 'bg-emerald-500/10 text-emerald-500'}`}>
-                        {isLow ? 'Hampir Habis' : 'Stok Ready'}
+                        {item.currentStock === 0 ? 'Habis' : isLow ? 'Hampir Habis' : 'Stok Ready'}
                       </span>
                       <span className="text-[9px] text-slate-500 font-bold">{item.brand}</span>
                     </div>
