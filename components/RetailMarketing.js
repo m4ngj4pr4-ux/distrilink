@@ -143,9 +143,9 @@ export default function RetailMarketing() {
       </div>
 
       {activeTab === "map" ? (
-        <div className="flex flex-col lg:flex-row h-[calc(100vh-230px)] gap-6 animate-fadeIn">
-      {/* Sidebar List */}
-      <div className="w-full lg:w-96 flex flex-col gap-4">
+        <div className="flex flex-col lg:flex-row h-full lg:h-[calc(100vh-230px)] gap-6 animate-fadeIn">
+          {/* Sidebar List */}
+          <div className="w-full lg:w-96 flex flex-col gap-4 h-[350px] lg:h-full shrink-0">
         <div className="glass-card p-4 flex flex-col h-full overflow-hidden">
           <div className="flex items-center justify-between mb-4">
             <h2 className="font-bold text-white flex items-center gap-2">
