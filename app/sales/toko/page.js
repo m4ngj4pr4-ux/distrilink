@@ -4,7 +4,7 @@ import { getRetailStoresList, addRetailStore, updateRetailStore } from '@/lib/fi
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import dynamic from 'next/dynamic';
-import { HiOutlineMap, HiOutlineViewList, HiOutlineSearch, HiOutlinePlus } from 'react-icons/hi';
+import { HiOutlineMap, HiOutlineViewList, HiOutlineSearch, HiOutlinePlus, HiOutlineLocationMarker } from 'react-icons/hi';
 
 const RetailMap = dynamic(() => import("@/components/RetailMap"), { 
   ssr: false,
