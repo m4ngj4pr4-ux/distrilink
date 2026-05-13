@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
 import { HiOutlineSearch, HiOutlineLocationMarker, HiOutlinePlus, HiOutlinePhone, HiOutlineUser, HiOutlineTrash, HiOutlinePencilAlt, HiOutlineChartPie } from "react-icons/hi";
 import { subscribeRetailStores, addRetailStore, deleteRetailStore, updateRetailStore } from "@/lib/firestore";
-import SupplyChainRadar from "./SupplyChainRadar";
+import SupplyChainRadar from "@/components/SupplyChainRadar";
 import toast from "react-hot-toast";
 
 // Import Map with SSR disabled
