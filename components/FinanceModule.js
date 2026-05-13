@@ -12,7 +12,7 @@ import {
 import {
   subscribeInvestors, addInvestor, updateInvestor, deleteInvestor,
   subscribeFinanceLedger, addFinanceEntry, deleteFinanceEntry,
-  calcFinanceSummary, subscribeAllDistributions,
+  calcFinanceSummary, subscribeAllDistributions, subscribeSummary
 } from "@/lib/firestore";
 import { formatRupiah } from "@/lib/utils";
 import toast from "react-hot-toast";
@@ -33,6 +33,7 @@ export default function FinanceModule({ products = [], purchases = [] }) {
   const [investors, setInvestors] = useState([]);
   const [ledger, setLedger] = useState([]);
   const [distributions, setDistributions] = useState([]);
+  const [globalSummary, setGlobalSummary] = useState(null);
 
   // Modals
   const [showInvestorModal, setShowInvestorModal] = useState(false);
@@ -52,28 +53,13 @@ export default function FinanceModule({ products = [], purchases = [] }) {
     const unsubInv = subscribeInvestors(setInvestors);
     const unsubLedger = subscribeFinanceLedger(setLedger);
     const unsubDist = subscribeAllDistributions(setDistributions);
-    return () => { unsubInv(); unsubLedger(); unsubDist(); };
+    const unsubSummary = subscribeSummary(setGlobalSummary);
+    return () => { unsubInv(); unsubLedger(); unsubDist(); unsubSummary(); };
   }, []);
 
-  // Hitung Laba Kotor (sinkron dengan modul Laba Rugi)
-  const grossProfit = useMemo(() => {
-    const batchProfit = purchases.map(po => {
-      // Filter out internal captain-to-sales distributions to prevent double counting
-      const poDist = distributions.filter(d => d.poId === po.id && d.source !== "captain");
-      const revenue = poDist.reduce((s, d) => s + (d.amount || 0), 0);
-      const cogs = poDist.reduce((s, d) => s + ((d.totalPacksDistributed || 0) * (d.hppSnapshot || po.hpp || 0)), 0);
-      return revenue - cogs;
-    }).reduce((s, v) => s + v, 0);
-    
-    const legacyDist = distributions.filter(d => !d.poId && d.source !== "captain");
-    const legRev = legacyDist.reduce((s, d) => s + (d.amount || 0), 0);
-    const legCogs = legacyDist.reduce((s, d) => {
-      const p = products.find(pr => pr.id === d.productId);
-      return s + ((d.totalPacksDistributed || 0) * (d.hppSnapshot || p?.lastHPP || 0));
-    }, 0);
-    return batchProfit + (legRev - legCogs);
-  }, [purchases, distributions, products]);
-
+  // Hitung Laba Kotor (sinkron dengan modul Laba Rugi) - Sekarang menggunakan globalSummary
+  const grossProfit = globalSummary?.totalLabaKotor || 0;
+  
   const summary = useMemo(() => calcFinanceSummary(ledger), [ledger]);
 
   // ── Investor Handlers ──
@@ -134,7 +120,7 @@ export default function FinanceModule({ products = [], purchases = [] }) {
   const [customPayouts, setCustomPayouts] = useState({});
 
   // Laba tersedia = Laba Kotor dikurangi Bagi Hasil yang sudah dibayarkan
-  const availableProfit = grossProfit - summary.totalBagiHasil;
+  const availableProfit = globalSummary?.sisaLabaBelumDibagikan || 0;
 
   const openBagiHasil = () => {
     setProfitInput(availableProfit > 0 ? availableProfit.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".") : "");
@@ -271,6 +257,14 @@ export default function FinanceModule({ products = [], purchases = [] }) {
           <div className="absolute top-0 right-0 w-24 h-24 bg-amber-500/10 rounded-full -mr-8 -mt-8 blur-xl"></div>
           <p className="text-[10px] text-slate-500 uppercase tracking-wider font-bold mb-1">Total Piutang</p>
           <p className={`text-2xl font-black ${summary.sisaPiutang > 0 ? 'text-amber-400' : 'text-slate-500'}`}>{fmtRp(summary.sisaPiutang)}</p>
+        </div>
+        <div className="glass-card p-5 relative overflow-hidden md:col-span-3 lg:col-span-1">
+          <div className="absolute top-0 right-0 w-24 h-24 bg-purple-500/10 rounded-full -mr-8 -mt-8 blur-xl"></div>
+          <p className="text-[10px] text-slate-500 uppercase tracking-wider font-bold mb-1">Sisa Laba Belum Dibagikan</p>
+          <p className={`text-2xl font-black ${(globalSummary?.sisaLabaBelumDibagikan || 0) > 0 ? 'text-purple-400' : 'text-slate-500'}`}>
+            {fmtRp(globalSummary?.sisaLabaBelumDibagikan || 0)}
+          </p>
+          <p className="text-[10px] text-slate-400 mt-1">Dari Total Laba: {fmtRp(globalSummary?.totalLabaKotor || 0)}</p>
         </div>
       </div>
 
