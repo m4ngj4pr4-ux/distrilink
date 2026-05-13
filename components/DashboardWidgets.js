@@ -4,10 +4,10 @@ import { HiOutlineStar, HiOutlineExclamationCircle } from "react-icons/hi";
 import { formatRupiah } from "@/lib/utils";
 
 export default function DashboardWidgets({ products, teams }) {
-  // Ambil 5 tim dengan distribusi terbanyak
+  // Ambil 10 tim dengan distribusi terbanyak
   const topTeams = [...(teams || [])]
     .sort((a, b) => (b.goodsDropped || 0) - (a.goodsDropped || 0))
-    .slice(0, 5);
+    .slice(0, 10);
 
   // Monitor Stok Terkini: Tampilkan semua produk, urutkan dari stok terendah
   const monitorProducts = [...(products || [])]
@@ -17,39 +17,41 @@ export default function DashboardWidgets({ products, teams }) {
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8 animate-fadeIn">
       
       {/* Widget 1: Top Sales Teams */}
-      <div className="glass-card p-6 border-t-4 border-violet-500">
+      <div className="glass-card p-6 border-t-4 border-violet-500 flex flex-col">
         <div className="flex items-center gap-3 mb-6">
           <div className="w-10 h-10 rounded-xl bg-violet-500/10 flex items-center justify-center">
             <HiOutlineStar className="text-violet-400" size={22} />
           </div>
           <div>
-            <h3 className="text-base font-bold text-white">Top 5 Performa Tim</h3>
+            <h3 className="text-base font-bold text-white">Top 10 Performa Tim</h3>
             <p className="text-xs text-slate-400">Berdasarkan total nilai distribusi</p>
           </div>
         </div>
         
-        <div className="space-y-4">
+        <div className="flex-1 overflow-y-auto custom-scrollbar">
           {topTeams.length === 0 ? (
             <p className="text-center py-4 text-slate-500 text-sm italic">Belum ada data distribusi sales.</p>
           ) : (
-            topTeams.map((team, index) => (
-              <div key={team.id} className="flex items-center justify-between p-3 rounded-xl bg-dark-800/50 border border-slate-400/5">
-                <div className="flex items-center gap-3">
-                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-bold text-xs ${
-                    index === 0 ? 'bg-amber-500/20 text-amber-400' : 
-                    index === 1 ? 'bg-slate-300/20 text-slate-300' : 
-                    index === 2 ? 'bg-orange-700/20 text-orange-400' : 
-                    'bg-dark-700 text-slate-500'
-                  }`}>
-                    #{index + 1}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-2">
+              {topTeams.map((team, index) => (
+                <div key={team.id} className="flex items-center justify-between p-2.5 rounded-xl bg-dark-800/50 border border-slate-400/5 hover:border-violet-500/20 transition-all">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className={`w-7 h-7 rounded-lg flex items-center justify-center font-black text-[10px] shrink-0 ${
+                      index === 0 ? 'bg-amber-500 text-dark-900 shadow-[0_0_10px_rgba(245,158,11,0.3)]' : 
+                      index === 1 ? 'bg-slate-300 text-dark-900' : 
+                      index === 2 ? 'bg-orange-700 text-white' : 
+                      'bg-dark-700 text-slate-400 border border-slate-600'
+                    }`}>
+                      {index + 1}
+                    </div>
+                    <span className="font-bold text-xs text-slate-200 truncate">{team.name}</span>
                   </div>
-                  <span className="font-medium text-sm text-white">{team.name}</span>
+                  <div className="text-right shrink-0">
+                    <p className="text-[11px] font-black text-violet-400 font-mono">{formatRupiah(team.goodsDropped || 0)}</p>
+                  </div>
                 </div>
-                <div className="text-right">
-                  <p className="text-sm font-bold text-violet-400 font-mono">{formatRupiah(team.goodsDropped || 0)}</p>
-                </div>
-              </div>
-            ))
+              ))}
+            </div>
           )}
         </div>
       </div>
