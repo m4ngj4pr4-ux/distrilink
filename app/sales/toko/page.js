@@ -3,12 +3,25 @@ import { useEffect, useState } from 'react';
 import { getRetailStoresList, addRetailStore, updateRetailStore } from '@/lib/firestore';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
+import dynamic from 'next/dynamic';
+import { HiOutlineMap, HiOutlineViewList, HiOutlineSearch, HiOutlinePlus } from 'react-icons/hi';
+
+const RetailMap = dynamic(() => import("@/components/RetailMap"), { 
+  ssr: false,
+  loading: () => (
+    <div className="w-full h-full bg-dark-800 animate-pulse flex items-center justify-center text-slate-500 rounded-2xl border border-slate-700">
+      Memuat Peta...
+    </div>
+  )
+});
 
 export default function SalesTokoPage() {
   const router = useRouter();
   const [stores, setStores] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
-  const [activeTab, setActiveTab] = useState("saya");
+  const [filterTab, setFilterTab] = useState("saya"); // "saya" or "semua"
+  const [viewTab, setViewTab] = useState("list"); // "list" or "map"
+  const [mapCenter, setMapCenter] = useState(null);
   const [user, setUser] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -31,11 +44,20 @@ export default function SalesTokoPage() {
     const matchesSearch = 
       store.namaToko?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       store.alamat?.toLowerCase().includes(searchTerm.toLowerCase());
-    if (activeTab === "saya") {
+    if (filterTab === "saya") {
       return matchesSearch && store.diinputOleh === user?.name;
     }
     return matchesSearch;
   });
+
+  const handleFocusOnMap = (store) => {
+    if (store.latitude && store.longitude) {
+      setMapCenter([parseFloat(store.latitude), parseFloat(store.longitude)]);
+      setViewTab("map");
+    } else {
+      toast.error("Toko ini belum memiliki koordinat GPS.");
+    }
+  };
 
   const handleGetLocation = (e) => {
     e.preventDefault();
@@ -134,64 +156,114 @@ export default function SalesTokoPage() {
         </button>
       </div>
 
-      {/* Tabs */}
-      <div className="flex bg-dark-800 p-1 rounded-xl mb-4 border border-slate-700">
-        <button 
-          onClick={() => setActiveTab("saya")}
-          className={`flex-1 py-2.5 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 ${activeTab === "saya" ? 'bg-emerald-600 text-white shadow-md' : 'text-slate-400 hover:text-slate-200'}`}
-        >
-          Toko Saya
-          <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-black ${activeTab === "saya" ? 'bg-emerald-700 text-emerald-100' : 'bg-slate-700 text-slate-400'}`}>{myStoresCount}</span>
-        </button>
-        <button 
-          onClick={() => setActiveTab("semua")}
-          className={`flex-1 py-2.5 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 ${activeTab === "semua" ? 'bg-emerald-600 text-white shadow-md' : 'text-slate-400 hover:text-slate-200'}`}
-        >
-          Semua Toko
-          <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-black ${activeTab === "semua" ? 'bg-emerald-700 text-emerald-100' : 'bg-slate-700 text-slate-400'}`}>{stores.length}</span>
-        </button>
+      {/* View & Filter Toggles */}
+      <div className="flex flex-col gap-3 mb-6">
+        <div className="flex bg-dark-800 p-1 rounded-xl border border-slate-700 shadow-lg">
+          <button 
+            onClick={() => setViewTab("list")}
+            className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 ${viewTab === "list" ? 'bg-blue-600 text-white' : 'text-slate-400'}`}
+          >
+            <HiOutlineViewList size={16} /> Daftar
+          </button>
+          <button 
+            onClick={() => setViewTab("map")}
+            className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 ${viewTab === "map" ? 'bg-blue-600 text-white' : 'text-slate-400'}`}
+          >
+            <HiOutlineMap size={16} /> Peta
+          </button>
+        </div>
+
+        <div className="flex bg-slate-800/50 p-1 rounded-xl border border-slate-700/50">
+          <button 
+            onClick={() => setFilterTab("saya")}
+            className={`flex-1 py-2 text-[10px] font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 ${filterTab === "saya" ? 'bg-emerald-600 text-white' : 'text-slate-500'}`}
+          >
+            Toko Saya ({myStoresCount})
+          </button>
+          <button 
+            onClick={() => setFilterTab("semua")}
+            className={`flex-1 py-2 text-[10px] font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 ${filterTab === "semua" ? 'bg-emerald-600 text-white' : 'text-slate-500'}`}
+          >
+            Semua Toko ({stores.length})
+          </button>
+        </div>
       </div>
 
-      {/* Store List */}
-      <div className="flex flex-col gap-3">
-        {displayedStores.map(store => {
-          const isMine = store.diinputOleh === user?.name;
-          return (
-            <div key={store.id} className={`bg-dark-800 border p-4 rounded-xl flex justify-between items-center shadow-sm ${isMine ? 'border-slate-700' : 'border-slate-700/50'}`}>
-              <div className="flex-1 overflow-hidden pr-2">
-                <h3 className="font-bold text-sm text-emerald-400 truncate">{store.namaToko}</h3>
-                <p className="text-[10px] text-slate-400 mt-1 line-clamp-1">{store.alamat}</p>
-                {!isMine && (
-                  <span className="inline-block mt-1.5 text-[9px] bg-slate-700/80 text-slate-300 px-2 py-0.5 rounded-md">
-                    Binaan: {store.diinputOleh || "Admin"}
-                  </span>
-                )}
+      {/* Main Content Area */}
+      <div className={`flex flex-col gap-6 animate-fadeIn ${viewTab === "map" ? "h-auto" : ""}`}>
+        
+        {/* Store List (Scrollable if in Map View) */}
+        <div className={`${viewTab === "map" ? "h-[300px] overflow-y-auto pr-1 custom-scrollbar shrink-0" : "flex flex-col gap-3"}`}>
+          {displayedStores.map(store => {
+            const isMine = store.diinputOleh === user?.name;
+            return (
+              <div 
+                key={store.id} 
+                onClick={() => viewTab === "map" ? handleFocusOnMap(store) : null}
+                className={`bg-dark-800 border p-4 rounded-xl flex justify-between items-center shadow-sm transition-all active:scale-[0.98] ${isMine ? 'border-slate-700' : 'border-slate-700/50'} ${viewTab === "map" ? 'cursor-pointer hover:border-blue-500/30' : ''}`}
+              >
+                <div className="flex-1 overflow-hidden pr-2">
+                  <h3 className="font-bold text-sm text-emerald-400 truncate">{store.namaToko}</h3>
+                  <p className="text-[10px] text-slate-400 mt-1 line-clamp-1">{store.alamat}</p>
+                  <div className="flex items-center gap-2 mt-1.5">
+                    {!isMine && (
+                      <span className="text-[8px] bg-slate-700/80 text-slate-300 px-1.5 py-0.5 rounded uppercase font-bold">
+                        Binaan: {store.diinputOleh || "Admin"}
+                      </span>
+                    )}
+                    {store.latitude && (
+                      <span className="text-[8px] bg-blue-500/10 text-blue-400 px-1.5 py-0.5 rounded uppercase font-bold flex items-center gap-0.5">
+                        <HiOutlineLocationMarker size={8} /> GPS Aktif
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  {viewTab === "list" && (
+                    <button 
+                      onClick={() => handleFocusOnMap(store)}
+                      className="p-2.5 bg-blue-600/10 text-blue-400 rounded-xl border border-blue-500/20 active:scale-90 transition-all text-xs shrink-0"
+                      title="Lihat di Peta"
+                    >
+                      <HiOutlineMap size={14} />
+                    </button>
+                  )}
+                  {isMine && (
+                    <button 
+                      onClick={(e) => openEditModal(e, store)}
+                      className="p-2.5 bg-slate-700/50 rounded-xl border border-slate-600 active:scale-90 transition-all text-xs shrink-0"
+                    >
+                      ✏️
+                    </button>
+                  )}
+                </div>
               </div>
-              {isMine ? (
-                <button 
-                  onClick={(e) => openEditModal(e, store)}
-                  className="p-2.5 bg-slate-700/50 rounded-xl border border-slate-600 active:scale-90 transition-all text-xs shrink-0"
-                >
-                  ✏️
-                </button>
-              ) : (
-                <div className="text-[10px] text-slate-500 italic shrink-0">Hanya Lihat</div>
-              )}
+            );
+          })}
+          {displayedStores.length === 0 && (
+            <div className="text-center py-10 opacity-50">
+              <span className="text-4xl mb-3 block">{filterTab === "saya" ? "📭" : "🏪"}</span>
+              <p className="text-xs text-slate-500 italic">
+                {filterTab === "saya" ? "Anda belum mendaftarkan toko." : "Toko tidak ditemukan."}
+              </p>
             </div>
-          );
-        })}
-        {displayedStores.length === 0 && (
-          <div className="text-center py-10 opacity-50">
-            <span className="text-4xl mb-3 block">{activeTab === "saya" ? "📭" : "🏪"}</span>
-            <p className="text-xs text-slate-500 italic">
-              {activeTab === "saya" ? "Anda belum mendaftarkan toko." : "Toko tidak ditemukan."}
-            </p>
+          )}
+        </div>
+
+        {/* Map View Area */}
+        {viewTab === "map" && (
+          <div className="h-[450px] relative rounded-2xl overflow-hidden shadow-2xl border border-slate-700 animate-slideUp shrink-0">
+            <RetailMap 
+              stores={displayedStores} 
+              center={mapCenter} 
+              onMarkerClick={(s) => handleFocusOnMap(s)}
+            />
           </div>
         )}
       </div>
 
-      <p className="text-center text-[10px] text-slate-600 mt-6">
-        Menampilkan {displayedStores.length} dari {stores.length} toko
+      <p className="text-center text-[10px] text-slate-600 mt-6 pb-4 uppercase tracking-widest font-medium">
+        Terdata {displayedStores.length} dari {stores.length} toko
       </p>
 
       {/* ── MODAL ADD / EDIT TOKO ── */}
