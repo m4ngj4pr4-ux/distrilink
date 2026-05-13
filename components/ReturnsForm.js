@@ -36,7 +36,8 @@ export default function ReturnsForm({ products, teams, returns, factoryReturns }
     try {
       await addReturnTransaction({
         teamId: team.id, teamName: team.name, productId: product.id, productName: product.name,
-        qtyOriginal: qty, unit: returnUnit, totalPacksReturned, returnAmount, reason: returnReason || "Sisa Tarikan Sales"
+        qtyOriginal: qty, unit: returnUnit, totalPacksReturned, returnAmount, reason: returnReason || "Sisa Tarikan Sales",
+        hppSnapshot: product.lastHPP || product.currentSellingPrice || 0
       });
       toast.success(`Retur ${product.name} dari ${team.name} berhasil!`);
       resetForm();

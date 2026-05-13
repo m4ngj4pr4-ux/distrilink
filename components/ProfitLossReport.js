@@ -3,14 +3,16 @@
 import { useState, useEffect } from "react";
 import { HiOutlineChartBar, HiTrendingUp, HiTrendingDown, HiOutlineDocumentReport } from "react-icons/hi";
 import { formatRupiah } from "@/lib/utils";
-import { subscribeAllDistributions } from "@/lib/firestore";
+import { subscribeAllDistributions, subscribeReturns } from "@/lib/firestore";
 
 export default function ProfitLossReport({ products, purchases }) {
   const [distributions, setDistributions] = useState([]);
+  const [returns, setReturns] = useState([]);
 
   useEffect(() => {
-    const unsub = subscribeAllDistributions(setDistributions);
-    return () => unsub();
+    const unsubDist = subscribeAllDistributions(setDistributions);
+    const unsubRet = subscribeReturns(setReturns);
+    return () => { unsubDist(); unsubRet(); };
   }, []);
 
   // HITUNG DATA PER BATCH PO
@@ -56,7 +58,31 @@ export default function ProfitLossReport({ products, purchases }) {
     });
   }
 
-  const reportData = [...batchData, ...legacyData];
+  // HITUNG RETUR (Pengurang)
+  const returnData = [];
+  if (returns.length > 0) {
+    const qtyPacks = returns.reduce((sum, d) => sum + Math.abs(d.totalPacksReturned || 0), 0);
+    const revenueReversed = returns.reduce((sum, d) => sum + (d.returnAmount || 0), 0);
+    const cogsReversed = returns.reduce((sum, d) => {
+      const p = products.find(prod => prod.id === d.productId);
+      return sum + (Math.abs(d.totalPacksReturned || 0) * (d.hppSnapshot || p?.lastHPP || p?.currentSellingPrice || 0));
+    }, 0);
+    const profitReversed = revenueReversed - cogsReversed;
+    
+    if (qtyPacks > 0 || revenueReversed > 0) {
+      returnData.push({
+        id: "sales-returns",
+        name: "Retur Sales (Pembatalan Laba)",
+        qtyPacks: -qtyPacks, 
+        revenue: -revenueReversed, 
+        cogs: -cogsReversed, 
+        profit: -profitReversed,
+        margin: 0
+      });
+    }
+  }
+
+  const reportData = [...batchData, ...legacyData, ...returnData];
   
   console.log("Processed P&L Data:", reportData);
 
