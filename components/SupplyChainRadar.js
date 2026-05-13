@@ -7,13 +7,17 @@ import {
   subscribeAllSalesTransactions, 
   subscribeAllStoreInventory,
   subscribeProducts,
-  subscribeRetailStores
+  subscribeRetailStores,
+  deleteStoreInventoryRecord,
+  cleanupOrphanStoreInventory
 } from "@/lib/firestore";
-import { HiOutlineDatabase, HiOutlineTruck, HiOutlineCube, HiOutlineExclamationCircle, HiOutlineChartPie } from "react-icons/hi";
+import { HiOutlineDatabase, HiOutlineTruck, HiOutlineCube, HiOutlineExclamationCircle, HiOutlineChartPie, HiOutlineTrash, HiOutlineRefresh } from "react-icons/hi";
+import toast from "react-hot-toast";
 
 export default function SupplyChainRadar() {
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const [isCleaning, setIsCleaning] = useState(false);
   
   const [products, setProducts] = useState([]);
   const [purchases, setPurchases] = useState([]);
@@ -69,7 +73,9 @@ export default function SupplyChainRadar() {
 
       // Di Etalase Toko: The LATEST audited stock from stores (all time, but only for this product)
       const productShelves = storeInventory.filter(inv => inv.productName === product.name);
-      const diEtalase = productShelves.reduce((sum, inv) => sum + (inv.currentStock || 0), 0);
+      // Auto-filter orphans: only count stock for stores that still exist
+      const validShelves = productShelves.filter(inv => retailStores.some(s => s.id === inv.storeId));
+      const diEtalase = validShelves.reduce((sum, inv) => sum + (inv.currentStock || 0), 0);
 
       // Ludes: (Total Dropped in month) - (Di Etalase currently)
       // User Logic: (Total dropped to stores) - (Di Etalase Toko)
@@ -92,6 +98,7 @@ export default function SupplyChainRadar() {
   // Restock Warning List
   const restockWarnings = storeInventory
     .filter(inv => inv.currentStock <= 5) // Critical threshold
+    .filter(inv => retailStores.some(s => s.id === inv.storeId)) // Auto-filter orphans
     .map(inv => {
       const store = retailStores.find(s => s.id === inv.storeId);
       return {
@@ -102,33 +109,76 @@ export default function SupplyChainRadar() {
     })
     .sort((a, b) => a.currentStock - b.currentStock);
 
+  const handleCleanup = async () => {
+    if (!confirm("Hapus semua data stok dari toko yang sudah tidak ada di database?")) return;
+    setIsCleaning(true);
+    try {
+      const storeIds = retailStores.map(s => s.id);
+      const count = await cleanupOrphanStoreInventory(storeIds);
+      toast.success(`${count} data hantu berhasil dibersihkan!`);
+    } catch (err) {
+      toast.error("Gagal membersihkan: " + err.message);
+    } finally {
+      setIsCleaning(false);
+    }
+  };
+
+  const handleDeleteRecord = async (id, name) => {
+    if (!confirm(`Hapus catatan stok ${name} ini secara permanen?`)) return;
+    try {
+      await deleteStoreInventoryRecord(id);
+      toast.success("Catatan dihapus");
+    } catch (err) {
+      toast.error("Gagal: " + err.message);
+    }
+  };
+
   return (
     <div className="flex flex-col gap-6 animate-fadeIn pb-10">
       {/* Month Filter */}
       <div className="glass-card p-4 flex flex-col sm:flex-row items-center justify-between gap-4">
-        <h2 className="font-bold text-white flex items-center gap-2">
-          <HiOutlineChartPie className="text-emerald-400" />
-          Market Radar Analytics
-        </h2>
-        <div className="flex gap-2">
-          <select 
-            value={selectedMonth} 
-            onChange={e => setSelectedMonth(parseInt(e.target.value))}
-            className="bg-dark-700 border border-slate-600 rounded-lg px-3 py-1.5 text-xs text-white outline-none focus:border-emerald-500"
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 bg-emerald-500/10 rounded-xl flex items-center justify-center text-emerald-400">
+            <HiOutlineChartPie size={24} />
+          </div>
+          <div>
+            <h2 className="font-bold text-white leading-tight">Market Radar Analytics</h2>
+            <p className="text-[10px] text-slate-500 uppercase tracking-widest font-medium">Supply Chain & Market Absorption</p>
+          </div>
+        </div>
+        
+        <div className="flex items-center gap-3">
+          <button 
+            onClick={handleCleanup}
+            disabled={isCleaning}
+            className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-dark-700 hover:bg-rose-500/20 text-slate-400 hover:text-rose-400 transition-all border border-slate-700 text-[10px] font-bold uppercase tracking-wider disabled:opacity-50"
           >
-            {["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"].map((m, i) => (
-              <option key={i} value={i}>{m}</option>
-            ))}
-          </select>
-          <select 
-            value={selectedYear} 
-            onChange={e => setSelectedYear(parseInt(e.target.value))}
-            className="bg-dark-700 border border-slate-600 rounded-lg px-3 py-1.5 text-xs text-white outline-none focus:border-emerald-500"
-          >
-            {[2024, 2025, 2026].map(y => (
-              <option key={y} value={y}>{y}</option>
-            ))}
-          </select>
+            <HiOutlineRefresh className={isCleaning ? "animate-spin" : ""} />
+            Bersihkan Data Hantu
+          </button>
+
+          <div className="h-8 w-px bg-slate-700 mx-1"></div>
+
+          <div className="flex gap-2">
+            <select 
+              value={selectedMonth} 
+              onChange={e => setSelectedMonth(parseInt(e.target.value))}
+              className="bg-dark-700 border border-slate-600 rounded-lg px-3 py-1.5 text-[11px] text-white outline-none focus:border-emerald-500 font-bold"
+            >
+              {["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"].map((m, i) => (
+                <option key={i} value={i}>{m}</option>
+              ))}
+            </select>
+            <select 
+              value={selectedYear} 
+              onChange={e => setSelectedYear(parseInt(e.target.value))}
+              className="bg-dark-700 border border-slate-600 rounded-lg px-3 py-1.5 text-[11px] text-white outline-none focus:border-emerald-500 font-bold"
+            >
+              {[2024, 2025, 2026].map(y => (
+                <option key={y} value={y}>{y}</option>
+              ))}
+            </select>
+          </div>
         </div>
       </div>
 
@@ -238,6 +288,7 @@ export default function SupplyChainRadar() {
                 <th className="p-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest text-center">Shelf Stock</th>
                 <th className="p-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Last Audit</th>
                 <th className="p-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Pembina (Sales)</th>
+                <th className="p-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest text-center">Aksi</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800/50">
@@ -261,6 +312,15 @@ export default function SupplyChainRadar() {
                       <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
                       {warn.lastAuditBy || warn.lastDropBy || "System"}
                     </span>
+                  </td>
+                  <td className="p-4 text-center">
+                    <button 
+                      onClick={() => handleDeleteRecord(warn.id, warn.productName)}
+                      className="p-2 text-slate-600 hover:text-rose-500 transition-colors"
+                      title="Hapus Catatan Stok"
+                    >
+                      <HiOutlineTrash size={16} />
+                    </button>
                   </td>
                 </tr>
               ))}
