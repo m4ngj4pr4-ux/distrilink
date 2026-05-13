@@ -63,10 +63,9 @@ export default function SalesDashboard() {
           </div>
         </div>
         <img 
-          src="/icon.png" 
+          src="/icon-sales.png" 
           alt="Logo" 
-          className="w-12 h-12 rounded-xl shadow-lg border border-slate-700/50 object-cover" 
-          onError={(e) => { e.target.style.display = 'none'; }}
+          className="w-12 h-12 rounded-xl shadow-lg border border-emerald-500/20 object-cover" 
         />
       </header>
       

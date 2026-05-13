@@ -38,11 +38,11 @@ export default function LoginPage() {
         <div className="absolute -bottom-24 -right-24 w-48 h-48 bg-emerald-500 opacity-10 rounded-full blur-3xl"></div>
 
         <div className="relative z-10 text-center mb-8">
-          <div className="w-16 h-16 bg-blue-500/10 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-blue-500/20">
-            <img src="/icon.png" alt="Logo" className="w-10 h-10 object-contain" />
+          <div className="w-16 h-16 bg-blue-500/10 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-blue-500/20 shadow-lg shadow-blue-500/10">
+            <img src="/icon-admin.png" alt="Logo" className="w-12 h-12 object-contain rounded-lg" />
           </div>
-          <h1 className="text-2xl font-black text-white tracking-tight">DistriLink</h1>
-          <p className="text-slate-400 text-sm mt-1">Dashboard Admin & Keuangan</p>
+          <h1 className="text-2xl font-black text-white tracking-tight">Distri<span className="text-blue-500">Link</span></h1>
+          <p className="text-slate-400 text-[10px] uppercase tracking-[0.2em] font-bold mt-2">Executive Portal</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-5 relative z-10">

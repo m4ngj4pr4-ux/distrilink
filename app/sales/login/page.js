@@ -50,14 +50,14 @@ export default function SalesLogin() {
 
   return (
     <div className="p-6 flex flex-col items-center justify-center w-full animate-fadeIn min-h-[80vh]">
-      <div className="w-28 h-28 mb-8 rounded-[32px] overflow-hidden shadow-2xl border border-slate-700/50 bg-dark-800 relative group">
-        <div className="absolute inset-0 bg-blue-500/20 mix-blend-overlay group-hover:bg-transparent transition-all"></div>
-        <img src="/icon.png" alt="DistriLink Logo" className="w-full h-full object-cover" onError={(e) => { e.target.src = "https://via.placeholder.com/150?text=Logo"; }} />
+      <div className="w-28 h-28 mb-8 rounded-[32px] overflow-hidden shadow-2xl border border-emerald-500/20 bg-dark-800 relative group">
+        <div className="absolute inset-0 bg-emerald-500/10 mix-blend-overlay group-hover:bg-transparent transition-all"></div>
+        <img src="/icon-sales.png" alt="DistriLink Logo" className="w-full h-full object-cover" />
       </div>
       
       <div className="text-center mb-10">
-        <h1 className="text-3xl font-black text-white mb-2 tracking-tight">Distri<span className="text-blue-500">Link</span></h1>
-        <p className="text-xs text-slate-400 uppercase tracking-widest font-bold">Portal Sales Mobile</p>
+        <h1 className="text-3xl font-black text-white mb-1 tracking-tight">Distri<span className="text-emerald-500">Link</span></h1>
+        <p className="text-[10px] text-emerald-500/70 uppercase tracking-[0.25em] font-black">Field Sales App</p>
       </div>
 
       <form onSubmit={handleLogin} className="w-full space-y-4">
@@ -91,9 +91,9 @@ export default function SalesLogin() {
         <button 
           type="submit" 
           disabled={loading}
-          className="btn-primary w-full py-3 mt-4 text-sm font-bold"
+          className="w-full bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white py-4 rounded-xl shadow-lg shadow-emerald-900/20 active:scale-[0.98] transition-all disabled:opacity-50 mt-4 text-sm font-bold uppercase tracking-widest"
         >
-          {loading ? "Memverifikasi..." : "Masuk"}
+          {loading ? "Memverifikasi..." : "Masuk ke Sistem"}
         </button>
       </form>
     </div>

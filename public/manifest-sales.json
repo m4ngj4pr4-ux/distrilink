@@ -1,0 +1,16 @@
+{
+  "name": "DistriLink Field",
+  "short_name": "DL Sales",
+  "start_url": "/sales",
+  "display": "standalone",
+  "background_color": "#000000",
+  "theme_color": "#10b981",
+  "icons": [
+    {
+      "src": "/icon-sales.png",
+      "sizes": "1024x1024",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
