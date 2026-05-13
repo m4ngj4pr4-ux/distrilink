@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata = {
-  title: "DistriLink Executive — Admin Portal",
+  title: "DistriLink",
   description:
     "Owner dashboard for managing cigarette distribution, factory POs, COGS calculation, and sales team ledger.",
   keywords: ["cigarette", "distribution", "dashboard", "COGS", "sales ledger"],

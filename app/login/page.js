@@ -39,10 +39,10 @@ export default function LoginPage() {
 
         <div className="relative z-10 text-center mb-8">
           <div className="w-16 h-16 bg-blue-500/10 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-blue-500/20 shadow-lg shadow-blue-500/10">
-            <img src="/icon-admin.png" alt="Logo" className="w-12 h-12 object-contain rounded-lg" />
+            <img src="/icon.png" alt="Logo" className="w-12 h-12 object-contain rounded-lg" />
           </div>
           <h1 className="text-2xl font-black text-white tracking-tight">Distri<span className="text-blue-500">Link</span></h1>
-          <p className="text-slate-400 text-[10px] uppercase tracking-[0.2em] font-bold mt-2">Executive Portal</p>
+          <p className="text-slate-400 text-[10px] uppercase tracking-[0.2em] font-bold mt-2">Executive & Sales</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-5 relative z-10">

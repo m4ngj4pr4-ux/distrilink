@@ -1,14 +1,15 @@
 {
-  "name": "DistriLink Executive",
-  "short_name": "DL Admin",
+  "name": "DistriLink",
+  "short_name": "DistriLink",
+  "description": "DistriLink Executive Portal",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#000000",
+  "background_color": "#0b0f19",
   "theme_color": "#3b82f6",
   "icons": [
     {
-      "src": "/icon-admin.png",
-      "sizes": "1024x1024",
+      "src": "/icon.png",
+      "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
     }
