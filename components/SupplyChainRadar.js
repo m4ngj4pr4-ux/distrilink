@@ -9,7 +9,7 @@ import {
   subscribeProducts,
   subscribeRetailStores
 } from "@/lib/firestore";
-import { HiOutlineDatabase, HiOutlineTruck, HiOutlineStorefront, HiOutlineExclamationCircle, HiOutlineChartPie } from "react-icons/hi";
+import { HiOutlineDatabase, HiOutlineTruck, HiOutlineCube, HiOutlineExclamationCircle, HiOutlineChartPie } from "react-icons/hi";
 
 export default function SupplyChainRadar() {
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
@@ -175,7 +175,7 @@ export default function SupplyChainRadar() {
               <div>
                 <div className="flex justify-between text-[10px] mb-1.5">
                   <span className="text-slate-400 uppercase font-bold flex items-center gap-1.5">
-                    <HiOutlineStorefront size={14} className="text-indigo-400" /> Di Etalase Toko
+                    <HiOutlineCube size={14} className="text-indigo-400" /> Di Etalase Toko
                   </span>
                   <span className="text-white font-mono">{item.diEtalase} Pk</span>
                 </div>
@@ -268,7 +268,7 @@ export default function SupplyChainRadar() {
                 <tr>
                   <td colSpan="5" className="p-16 text-center">
                     <div className="flex flex-col items-center gap-2 opacity-30">
-                      <HiOutlineStorefront size={40} className="text-slate-500" />
+                      <HiOutlineCube size={40} className="text-slate-500" />
                       <p className="italic text-xs font-medium">Semua toko masih memiliki stok yang mencukupi.</p>
                     </div>
                   </td>
