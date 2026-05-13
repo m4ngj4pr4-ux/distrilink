@@ -17,7 +17,7 @@ import {
 import { formatRupiah } from "@/lib/utils";
 import toast from "react-hot-toast";
 
-const TIPE_BUKU_OPTIONS = [
+const ALL_TYPES = [
   { value: "modal_masuk", label: "Modal Masuk (Investment)", color: "text-emerald-400", sign: "+" },
   { value: "bagi_hasil", label: "Bagi Hasil (Dividend)", color: "text-purple-400", sign: "-" },
   { value: "hutang_masuk", label: "Terima Pinjaman (Hutang)", color: "text-blue-400", sign: "+" },
@@ -27,8 +27,10 @@ const TIPE_BUKU_OPTIONS = [
   { value: "biaya_operasional", label: "Biaya Operasional (Ops)", color: "text-rose-500", sign: "-" },
 ];
 
+const TIPE_BUKU_OPTIONS = ALL_TYPES.filter(t => t.value !== "bagi_hasil");
+
 const TIPE_MAP = {};
-TIPE_BUKU_OPTIONS.forEach(t => { TIPE_MAP[t.value] = t; });
+ALL_TYPES.forEach(t => { TIPE_MAP[t.value] = t; });
 
 export default function FinanceModule({ products = [], purchases = [] }) {
   const [investors, setInvestors] = useState([]);
