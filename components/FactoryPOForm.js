@@ -204,6 +204,7 @@ export default function FactoryPOForm({ products }) {
   }
 
   async function handleAddProduct() {
+    if (!checkWritePermission("menambah produk baru")) return;
     const { name, packsPerSlop, slopsPerBall, ballsPerKarton } = newProduct;
     if (!name.trim()) return toast.error("Nama produk wajib diisi");
     if (!packsPerSlop || !slopsPerBall || !ballsPerKarton)
@@ -695,6 +696,7 @@ export default function FactoryPOForm({ products }) {
                 </button>
                 <button
                   onClick={async () => {
+                    if (!checkWritePermission("menghapus produk")) return;
                     setDeleting(true);
                     try {
                       await deleteProduct(selectedProductId);

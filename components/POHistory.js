@@ -263,7 +263,11 @@ export default function POHistory({ purchases, distributions }) {
                         {/* Aksi Edit, Bayar, & Hapus Hanya Jika Belum Lunas */}
                         {p.sisaHutang > 0 && (
                           <>
-                            <button onClick={() => setEditingPO(p)} className="p-2 rounded-lg hover:bg-amber-500/10 text-slate-500 hover:text-amber-400 transition-colors" title="Edit PO">
+                            <button onClick={() => {
+                              if (checkWritePermission("mengedit riwayat PO")) {
+                                setEditingPO(p);
+                              }
+                            }} className="p-2 rounded-lg hover:bg-amber-500/10 text-slate-500 hover:text-amber-400 transition-colors" title="Edit PO">
                               <HiOutlinePencil size={16} />
                             </button>
                             <button onClick={() => setPayModal(p)} className="btn-emerald text-[10px] py-1 px-2">

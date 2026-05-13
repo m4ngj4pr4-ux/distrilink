@@ -5,8 +5,10 @@ import { HiOutlineX, HiOutlineSave, HiOutlineCalculator } from "react-icons/hi";
 import { updatePO } from "@/lib/firestore";
 import { formatRupiah } from "@/lib/utils";
 import toast from "react-hot-toast";
+import { usePermissions } from "@/hooks/usePermissions";
 
 export default function EditPOModal({ po, onClose, distributions }) {
+  const { checkWritePermission } = usePermissions();
   const [form, setForm] = useState({
     tanggal: "", // Tambah field tanggal
     jumlahKarton: "",
@@ -55,6 +57,7 @@ export default function EditPOModal({ po, onClose, distributions }) {
   const newSisaHutang = totalFaktur - dp;
 
   async function handleSave() {
+    if (!checkWritePermission("mengedit riwayat PO")) return;
     if (karton <= 0 || hargaPack <= 0) return toast.error("Jumlah & Harga harus valid!");
     
     setSaving(true);
@@ -91,7 +94,7 @@ export default function EditPOModal({ po, onClose, distributions }) {
 
   return (
     <div className="modal-overlay z-[150]" onClick={onClose}>
-      <div className="modal-content max-w-lg animate-zoomIn" onClick={e => e.stopPropagation()}>
+      <div className="modal-content animate-zoomIn" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center">
