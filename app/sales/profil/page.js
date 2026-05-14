@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { addSetoranDana, getRiwayatSetoran, getSalesProfile, getSalesHistory } from '@/lib/firestore';
+import { addSetoranDana, getRiwayatSetoran, getSalesProfile, getSalesHistory, updateSalesTeam, uploadProfilePicture } from '@/lib/firestore';
 import toast from 'react-hot-toast';
 import { printer } from '@/lib/printer';
 import { HiOutlinePrinter, HiOutlineLogout, HiOutlineCash, HiOutlineShoppingBag, HiX } from 'react-icons/hi';
@@ -23,18 +23,67 @@ export default function ProfilPage() {
   const [riwayatPenjualan, setRiwayatPenjualan] = useState([]);
   const [isPrinting, setIsPrinting] = useState(false);
 
+  // Edit Profile States
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editName, setEditName] = useState("");
+  const [editPin, setEditPin] = useState("");
+  const [editPhone, setEditPhone] = useState("");
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [isSaving, setIsSaving] = useState(false);
+
   useEffect(() => {
     const storedUser = localStorage.getItem('sales_user');
     if (!storedUser) return router.push('/sales/login');
     
     const parsedUser = JSON.parse(storedUser);
     setUser(parsedUser);
+    setEditName(parsedUser.name);
+    setEditPin(parsedUser.pin || "");
+    setEditPhone(parsedUser.phone || "");
     
     // Fetch data
     getRiwayatSetoran(parsedUser.id).then(setRiwayatSetoran);
     getSalesProfile(parsedUser.id).then(setProfileData);
     getSalesHistory(parsedUser.name).then(setRiwayatPenjualan);
   }, [router]);
+
+  const handleUpdateProfile = async (e) => {
+    e.preventDefault();
+    setIsSaving(true);
+    try {
+      let photoURL = profileData?.photoURL || user.photoURL;
+      
+      if (selectedFile) {
+        toast.loading("Mengunggah foto...", { id: "upload" });
+        photoURL = await uploadProfilePicture(user.id, selectedFile);
+        toast.success("Foto berhasil diunggah!", { id: "upload" });
+      }
+
+      const updatedData = {
+        name: editName,
+        pin: editPin,
+        phone: editPhone,
+        photoURL
+      };
+
+      await updateSalesTeam(user.id, updatedData);
+      
+      // Update Local Storage for Sidebar/Navbar sync
+      const newUser = { ...user, ...updatedData };
+      localStorage.setItem('sales_user', JSON.stringify(newUser));
+      setUser(newUser);
+      setProfileData(prev => ({ ...prev, ...updatedData }));
+      
+      toast.success("Profil berhasil diperbarui!");
+      setIsEditModalOpen(false);
+      setSelectedFile(null);
+    } catch (error) {
+      console.error(error);
+      toast.error("Gagal memperbarui profil");
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   const handleLogout = () => {
     if(confirm("Yakin ingin keluar dari aplikasi?")) {
@@ -109,13 +158,25 @@ export default function ProfilPage() {
       <div className="bg-dark-800 border border-slate-700 p-6 rounded-3xl mb-8 shadow-2xl relative overflow-hidden group">
         <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 rounded-full -mr-10 -mt-10 blur-3xl group-hover:bg-emerald-500/20 transition-all"></div>
         <div className="flex items-center gap-5 relative z-10">
-          <div className="w-16 h-16 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl flex items-center justify-center text-3xl font-black text-white shadow-xl transform rotate-2">
-            {user.name.charAt(0).toUpperCase()}
+          <div className="w-16 h-16 rounded-2xl overflow-hidden shadow-xl transform rotate-2 bg-dark-900 border-2 border-emerald-500/30 flex items-center justify-center shrink-0">
+            {profileData?.photoURL || user.photoURL ? (
+              <img src={profileData?.photoURL || user.photoURL} alt="Foto Profil" className="w-full h-full object-cover" />
+            ) : (
+              <span className="text-3xl font-black text-white">{user.name.charAt(0).toUpperCase()}</span>
+            )}
           </div>
-          <div>
-            <h2 className="text-xl font-black text-white leading-tight">{user.name}</h2>
-            <div className="inline-flex items-center px-2 py-0.5 rounded-lg text-[9px] font-black bg-emerald-500/10 text-emerald-400 mt-2 border border-emerald-500/20 uppercase tracking-widest">
-              ID: {user.id.slice(-6).toUpperCase()}
+          <div className="flex-1 min-w-0">
+            <h2 className="text-xl font-black text-white leading-tight truncate">{profileData?.name || user.name}</h2>
+            <div className="flex items-center gap-2 mt-2">
+              <div className="inline-flex items-center px-2 py-0.5 rounded-lg text-[9px] font-black bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 uppercase tracking-widest">
+                ID: {user.id.slice(-6).toUpperCase()}
+              </div>
+              <button 
+                onClick={() => setIsEditModalOpen(true)}
+                className="text-[9px] font-black text-blue-400 hover:text-blue-300 transition-colors uppercase tracking-widest border-b border-blue-400/30 pb-0.5"
+              >
+                Edit Profil
+              </button>
             </div>
           </div>
         </div>
@@ -248,8 +309,89 @@ export default function ProfilPage() {
       </button>
 
       <div className="mt-12 text-center">
-        <p className="text-[10px] text-slate-600 font-black uppercase tracking-[0.3em]">DistriLink v1.2.0</p>
+        <p className="text-[10px] text-slate-600 font-black uppercase tracking-[0.3em]">DistriLink v1.3.0</p>
       </div>
+
+      {/* Edit Profile Modal */}
+      {isEditModalOpen && (
+        <div className="fixed inset-0 bg-black/80 flex items-end justify-center z-[120] pb-0 backdrop-blur-sm">
+          <div className="bg-dark-900 w-full max-w-md rounded-t-3xl p-8 border-t border-slate-700 animate-slideIn max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-8">
+              <h2 className="text-xl font-black text-white tracking-tight">Edit Profil</h2>
+              <button onClick={() => setIsEditModalOpen(false)} className="text-slate-500 hover:text-white transition-colors">
+                <HiX size={24}/>
+              </button>
+            </div>
+            
+            <form onSubmit={handleUpdateProfile} className="space-y-6">
+              {/* Photo Upload */}
+              <div className="flex flex-col items-center gap-4 mb-2">
+                <div className="w-24 h-24 rounded-3xl overflow-hidden bg-dark-800 border-2 border-slate-700 relative group cursor-pointer" onClick={() => document.getElementById('photoInput').click()}>
+                  <img 
+                    src={selectedFile ? URL.createObjectURL(selectedFile) : (profileData?.photoURL || user.photoURL)} 
+                    className="w-full h-full object-cover group-hover:opacity-50 transition-opacity" 
+                  />
+                  <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                    <p className="text-[9px] font-black text-white text-center px-2">GANTI FOTO</p>
+                  </div>
+                </div>
+                <input 
+                  id="photoInput"
+                  type="file" 
+                  accept="image/*" 
+                  className="hidden" 
+                  onChange={(e) => setSelectedFile(e.target.files[0])}
+                />
+                <p className="text-[9px] text-slate-500 font-bold uppercase tracking-widest">Klik foto untuk mengganti</p>
+              </div>
+
+              <div>
+                <label className="block text-[10px] uppercase tracking-[0.2em] font-black text-slate-500 mb-3">Nama Lengkap</label>
+                <input 
+                  type="text" 
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                  className="w-full bg-dark-800 border border-slate-700 rounded-2xl px-5 py-4 text-sm text-white focus:border-blue-500 outline-none"
+                  placeholder="Nama Anda"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-[10px] uppercase tracking-[0.2em] font-black text-slate-500 mb-3">PIN Keamanan (Password)</label>
+                <input 
+                  type="text" 
+                  inputMode="numeric"
+                  value={editPin}
+                  onChange={(e) => setEditPin(e.target.value.replace(/\D/g, "").slice(0,6))}
+                  className="w-full bg-dark-800 border border-slate-700 rounded-2xl px-5 py-4 text-sm text-white focus:border-blue-500 outline-none font-mono tracking-widest"
+                  placeholder="PIN 6 Digit"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-[10px] uppercase tracking-[0.2em] font-black text-slate-500 mb-3">No Telepon / WhatsApp</label>
+                <input 
+                  type="tel" 
+                  value={editPhone}
+                  onChange={(e) => setEditPhone(e.target.value)}
+                  className="w-full bg-dark-800 border border-slate-700 rounded-2xl px-5 py-4 text-sm text-white focus:border-blue-500 outline-none"
+                  placeholder="Contoh: 081234567890"
+                />
+              </div>
+
+              <button 
+                type="submit" 
+                disabled={isSaving} 
+                className="w-full bg-blue-600 hover:bg-blue-500 active:scale-95 text-white font-black py-5 rounded-2xl transition-all shadow-xl shadow-blue-900/40 disabled:opacity-50 mt-4"
+              >
+                {isSaving ? 'MENYIMPAN...' : 'SIMPAN PERUBAHAN'}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* Setoran Modal */}
       {isSetorModalOpen && (

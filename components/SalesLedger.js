@@ -45,6 +45,7 @@ export default function SalesLedger({ teams, products, purchases, allDistributio
   const [newTeamName, setNewTeamName] = useState("");
   const [newTeamPin, setNewTeamPin] = useState("");
   const [newTeamRole, setNewTeamRole] = useState("sales");
+  const [newTeamPhone, setNewTeamPhone] = useState("");
   const [processing, setProcessing] = useState(false);
   const [showPin, setShowPin] = useState(false);
   const [distributions, setDistributions] = useState([]);
@@ -264,10 +265,12 @@ export default function SalesLedger({ teams, products, purchases, allDistributio
     if (!newTeamPin || newTeamPin.length < 6) return toast.error("PIN harus 6 angka");
     setProcessing(true);
     try {
-      await addSalesTeam(newTeamName.trim(), newTeamPin);
+      await addSalesTeam(newTeamName.trim(), newTeamPin, newTeamRole, newTeamPhone);
       toast.success(`${newTeamName.trim()} berhasil ditambahkan!`);
       setNewTeamName("");
       setNewTeamPin("");
+      setNewTeamPhone("");
+      setNewTeamRole("sales");
       setAddTeamModal(false);
     } catch (err) {
       toast.error("Gagal: " + err.message);
@@ -282,11 +285,17 @@ export default function SalesLedger({ teams, products, purchases, allDistributio
     if (!newTeamPin || newTeamPin.length < 6) return toast.error("PIN harus 6 angka");
     setProcessing(true);
     try {
-      await updateSalesTeam(editTeamModal.id, { name: newTeamName.trim(), pin: newTeamPin, role: newTeamRole });
+      await updateSalesTeam(editTeamModal.id, { 
+        name: newTeamName.trim(), 
+        pin: newTeamPin, 
+        role: newTeamRole,
+        phone: newTeamPhone
+      });
       toast.success("Tim berhasil diperbarui");
       setEditTeamModal(null);
       setNewTeamName("");
       setNewTeamPin("");
+      setNewTeamPhone("");
       setNewTeamRole("sales");
     } catch (err) {
       toast.error("Gagal: " + err.message);
@@ -335,6 +344,8 @@ export default function SalesLedger({ teams, products, purchases, allDistributio
             <tr>
               <th>#</th>
               <th>Nama Tim</th>
+              <th className="text-center">PIN</th>
+              <th className="text-center">Telp</th>
               <th className="text-right">Total Distribusi</th>
               <th className="text-right">Total Setoran</th>
               <th className="text-right">Saldo Piutang</th>
@@ -349,18 +360,32 @@ export default function SalesLedger({ teams, products, purchases, allDistributio
                   <td className="text-slate-500 text-xs font-mono">{i + 1}</td>
                   <td>
                     <div className="flex items-center gap-2.5 group">
-                      <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-500/20 to-blue-500/20 flex items-center justify-center text-xs font-bold text-violet-300">
-                        {team.name?.charAt(0) || "T"}
+                      <div className="w-8 h-8 rounded-lg overflow-hidden bg-dark-700 flex items-center justify-center text-xs font-bold text-violet-300 shrink-0">
+                        {team.photoURL ? (
+                          <img src={team.photoURL} className="w-full h-full object-cover" />
+                        ) : (
+                          team.name?.charAt(0) || "T"
+                        )}
                       </div>
-                      <span className="font-medium text-white">{team.name}</span>
-                      {team.role === 'captain' && (
-                        <span className="text-[8px] bg-amber-500/15 text-amber-400 px-1.5 py-0.5 rounded border border-amber-500/20 font-bold uppercase">Captain</span>
-                      )}
-                      <button onClick={() => { setEditTeamModal(team); setNewTeamName(team.name); setNewTeamPin(team.pin || ""); setNewTeamRole(team.role || "sales"); }} className="opacity-0 group-hover:opacity-100 p-1 text-slate-500 hover:text-blue-400 transition-all">
+                      <div className="flex flex-col min-w-0">
+                        <span className="font-medium text-white truncate">{team.name}</span>
+                        {team.role === 'captain' && (
+                          <span className="w-fit text-[8px] bg-amber-500/15 text-amber-400 px-1.5 py-0.5 rounded border border-amber-500/20 font-bold uppercase mt-1">Captain</span>
+                        )}
+                      </div>
+                      <button onClick={() => { 
+                        setEditTeamModal(team); 
+                        setNewTeamName(team.name); 
+                        setNewTeamPin(team.pin || ""); 
+                        setNewTeamRole(team.role || "sales");
+                        setNewTeamPhone(team.phone || "");
+                      }} className="opacity-0 group-hover:opacity-100 p-1 text-slate-500 hover:text-blue-400 transition-all">
                         <HiOutlinePencilAlt size={14} />
                       </button>
                     </div>
                   </td>
+                  <td className="text-center font-mono text-xs text-slate-400">{team.pin || "------"}</td>
+                  <td className="text-center text-[10px] text-slate-500">{team.phone || "-"}</td>
                   <td className="text-right font-mono text-sm">{formatRupiah(team.goodsDropped || 0)}</td>
                   <td className="text-right font-mono text-sm text-emerald-400">{formatRupiah(team.totalDeposited || 0)}</td>
                   <td className={`text-right font-mono text-sm font-semibold ${balance > 0 ? "text-amber-400" : "text-emerald-400"}`}>
@@ -670,7 +695,29 @@ export default function SalesLedger({ teams, products, purchases, allDistributio
                   {showPin ? <HiOutlineEyeOff size={20} /> : <HiOutlineEye size={20} />}
                 </button>
               </div>
-              <p className="text-[10px] text-slate-500 mt-1 text-center">PIN ini akan digunakan sales untuk login ke aplikasi HP.</p>
+            <div className="mb-4">
+              <label className="block text-xs font-medium text-slate-400 mb-1.5">No Telepon / WhatsApp</label>
+              <input 
+                type="tel" 
+                value={newTeamPhone} 
+                onChange={(e) => setNewTeamPhone(e.target.value)} 
+                className="input-field w-full" 
+                placeholder="0812..."
+              />
+            </div>
+            <div className="mb-6">
+              <label className="flex items-center gap-3 cursor-pointer group">
+                <input 
+                  type="checkbox" 
+                  checked={newTeamRole === 'captain'}
+                  onChange={(e) => setNewTeamRole(e.target.checked ? 'captain' : 'sales')}
+                  className="w-4 h-4 rounded border-slate-600 bg-dark-700 text-amber-500 focus:ring-amber-500 focus:ring-offset-0 cursor-pointer"
+                />
+                <div>
+                  <span className="text-xs font-bold text-white group-hover:text-amber-400 transition-colors">Jadikan Captain</span>
+                  <p className="text-[9px] text-slate-500">Memiliki akses Distribusi ke Tim & Verifikasi Setoran</p>
+                </div>
+              </label>
             </div>
             <div className="flex items-center gap-3">
               <button onClick={() => setAddTeamModal(false)} className="btn-ghost flex-1">Batal</button>
@@ -709,6 +756,16 @@ export default function SalesLedger({ teams, products, purchases, allDistributio
                 </button>
               </div>
               <p className="text-[10px] text-slate-500 mt-1 text-center">Ubah PIN jika sales lupa atau ganti device.</p>
+            </div>
+            <div className="mb-6">
+              <label className="block text-xs font-medium text-slate-400 mb-1.5">No Telepon / WhatsApp</label>
+              <input 
+                type="tel" 
+                value={newTeamPhone} 
+                onChange={(e) => setNewTeamPhone(e.target.value)} 
+                className="input-field w-full" 
+                placeholder="0812..."
+              />
             </div>
             <div className="mb-6">
               <label className="flex items-center gap-3 cursor-pointer group">

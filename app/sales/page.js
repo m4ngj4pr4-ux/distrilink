@@ -66,8 +66,12 @@ export default function SalesDashboard() {
           </p>
         </div>
         <div className="relative">
-          <div className="w-14 h-14 rounded-2xl bg-dark-800 border-2 border-emerald-500/20 overflow-hidden shadow-xl shadow-emerald-900/10">
-            <img src="/icon.png" alt="Logo" className="w-full h-full object-cover" />
+          <div className="w-14 h-14 rounded-2xl bg-dark-800 border-2 border-emerald-500/20 overflow-hidden shadow-xl shadow-emerald-900/10 flex items-center justify-center">
+            {user.photoURL ? (
+              <img src={user.photoURL} alt="Foto Profil" className="w-full h-full object-cover" />
+            ) : (
+              <span className="text-xl font-black text-white">{user.name.charAt(0).toUpperCase()}</span>
+            )}
           </div>
           <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-emerald-500 rounded-full border-2 border-dark-900"></div>
         </div>
