@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import Sidebar from "@/components/Sidebar";
 import SummaryCards from "@/components/SummaryCards";
 import FactoryPOForm from "@/components/FactoryPOForm";
@@ -13,6 +14,7 @@ import FinanceModule from "@/components/FinanceModule";
 import EditProductModal from "@/components/EditProductModal";
 import DashboardWidgets from "@/components/DashboardWidgets";
 import Settings from "@/components/Settings";
+import HPPCalculator from "@/components/HPPCalculator";
 import { HiCube, HiInformationCircle, HiRefresh, HiOutlinePencil } from "react-icons/hi";
 import { 
   subscribeProducts, 
@@ -37,7 +39,8 @@ import { usePermissions } from "@/hooks/usePermissions";
 export default function DashboardPage() {
   const { adminUser } = useAdminAuth();
   const { isInvestor, checkWritePermission } = usePermissions();
-  const [activeSection, setActiveSection] = useState("dashboard");
+  const searchParams = useSearchParams();
+  const [activeSection, setActiveSection] = useState(searchParams.get("section") || "dashboard");
   const [isRecalculating, setIsRecalculating] = useState(false);
   const [products, setProducts] = useState([]);
   const [summary, setSummary] = useState({
@@ -325,6 +328,12 @@ export default function DashboardPage() {
             <ReturnsForm products={products} teams={teams} returns={returns} factoryReturns={factoryReturns} />
           </div>
         );
+      case "kalkulator":
+        return (
+          <div className="animate-fadeIn">
+            <HPPCalculator />
+          </div>
+        );
       case "settings":
         if (adminUser?.role !== 'owner') return null;
         return <Settings onRecalculate={handleRecalculate} isRecalculating={isRecalculating} />;
@@ -334,100 +343,102 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="flex h-screen bg-dark-900 text-slate-200 overflow-hidden font-sans">
-      <Sidebar 
-        activeSection={activeSection} 
-        onNavigate={setActiveSection} 
-        pendingCount={pendingCount}
-      />
-      
-      <main className="flex-1 overflow-y-auto custom-scrollbar relative p-4 md:p-8 pt-[80px] md:pt-8">
-        <header className="mb-8 flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-white capitalize">{activeSection.replace("-", " ")}</h1>
-            <p className="text-slate-400 text-xs mt-1">{new Date().toLocaleDateString("id-ID", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}</p>
-          </div>
-          
-          <div className="flex items-center gap-6">
-            {/* Status Sinkron */}
-            <button 
-              onClick={handleRecalculate} 
-              disabled={isRecalculating} 
-              className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/20 active:scale-95 transition-all text-[10px] font-bold uppercase tracking-wider disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isRecalculating ? (
-                <>⏳ Menyinkronkan...</>
-              ) : (
-                <><span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span> Sinkronisasi</>
-              )}
-            </button>
-
-            {/* Profil User */}
-            <div className="flex items-center gap-3 pl-6 border-l border-slate-400/10">
-              <div className="text-right hidden sm:block">
-                <p className="text-sm font-bold text-slate-200 leading-tight">{adminUser?.nama}</p>
-                <p className="text-[10px] text-slate-500 font-medium uppercase tracking-tight">{adminUser?.role}</p>
-              </div>
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white text-sm font-bold shadow-lg shadow-blue-500/20 uppercase">
-                {adminUser?.nama?.[0] || 'A'}
-              </div>
+    <Suspense fallback={<div className="h-screen bg-dark-900 flex items-center justify-center"><div className="w-8 h-8 border-4 border-emerald-500/20 border-t-emerald-500 rounded-full animate-spin"></div></div>}>
+      <div className="flex h-screen bg-dark-900 text-slate-200 overflow-hidden font-sans">
+        <Sidebar 
+          activeSection={activeSection} 
+          onNavigate={setActiveSection} 
+          pendingCount={pendingCount}
+        />
+        
+        <main className="flex-1 overflow-y-auto custom-scrollbar relative p-4 md:p-8 pt-[80px] md:pt-8">
+          <header className="mb-8 flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-bold text-white capitalize">{activeSection.replace("-", " ")}</h1>
+              <p className="text-slate-400 text-xs mt-1">{new Date().toLocaleDateString("id-ID", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}</p>
             </div>
-          </div>
-        </header>
-        {renderContent()}
-      </main>
-
-      {/* Global Verification Hub Modal */}
-      {isVerificationQueueOpen && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
-          <div className="bg-dark-900 w-full max-w-2xl rounded-2xl border border-slate-700 shadow-2xl flex flex-col max-h-[80vh] animate-slideIn">
             
-            {/* Modal Header */}
-            <div className="p-5 border-b border-slate-700 flex justify-between items-center bg-dark-800 rounded-t-2xl shrink-0">
-              <div>
-                <h2 className="text-lg font-bold text-white flex items-center gap-2">
-                  <span>🔔</span> Antrean Verifikasi Setoran
-                </h2>
-                <p className="text-xs text-slate-400 mt-1">Daftar setoran sales yang menunggu persetujuan Anda</p>
-              </div>
-              <button onClick={() => setIsVerificationQueueOpen(false)} className="text-slate-400 hover:text-white text-2xl px-2">&times;</button>
-            </div>
+            <div className="flex items-center gap-6">
+              {/* Status Sinkron */}
+              <button 
+                onClick={handleRecalculate} 
+                disabled={isRecalculating} 
+                className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/20 active:scale-95 transition-all text-[10px] font-bold uppercase tracking-wider disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isRecalculating ? (
+                  <>⏳ Menyinkronkan...</>
+                ) : (
+                  <><span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span> Sinkronisasi</>
+                )}
+              </button>
 
-            {/* Modal Body (Scrollable List) */}
-            <div className="p-5 overflow-y-auto custom-scrollbar flex-1">
-              <div className="flex flex-col gap-3">
-                {pendingList.map(item => (
-                  <div key={item.id} className="bg-dark-800 border border-slate-700 p-4 rounded-xl flex items-center justify-between hover:border-emerald-500/50 transition-colors">
-                    <div>
-                      <h3 className="font-bold text-emerald-400">{item.teamName || item.namaSales || "Sales"}</h3>
-                      <p className="text-[11px] font-medium text-slate-400 mb-1">
-                        {item.waktu ? new Date(item.waktu.toDate()).toLocaleString('id-ID', {
-                          day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
-                        }) : '-'}
-                      </p>
-                      {item.catatan && <p className="text-[10px] text-slate-500 italic max-w-[200px] truncate">"{item.catatan}"</p>}
-                    </div>
-                    
-                    <div className="flex items-center gap-5">
-                      <div className="text-right">
-                        <p className="text-[9px] uppercase tracking-widest text-slate-500 font-bold mb-0.5">Nominal Setor</p>
-                        <p className="font-black text-white text-lg">Rp {item.nominal?.toLocaleString('id-ID')}</p>
+              {/* Profil User */}
+              <div className="flex items-center gap-3 pl-6 border-l border-slate-400/10">
+                <div className="text-right hidden sm:block">
+                  <p className="text-sm font-bold text-slate-200 leading-tight">{adminUser?.nama}</p>
+                  <p className="text-[10px] text-slate-500 font-medium uppercase tracking-tight">{adminUser?.role}</p>
+                </div>
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white text-sm font-bold shadow-lg shadow-blue-500/20 uppercase">
+                  {adminUser?.nama?.[0] || 'A'}
+                </div>
+              </div>
+            </div>
+          </header>
+          {renderContent()}
+        </main>
+
+        {/* Global Verification Hub Modal */}
+        {isVerificationQueueOpen && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
+            <div className="bg-dark-900 w-full max-w-2xl rounded-2xl border border-slate-700 shadow-2xl flex flex-col max-h-[80vh] animate-slideIn">
+              
+              {/* Modal Header */}
+              <div className="p-5 border-b border-slate-700 flex justify-between items-center bg-dark-800 rounded-t-2xl shrink-0">
+                <div>
+                  <h2 className="text-lg font-bold text-white flex items-center gap-2">
+                    <span>🔔</span> Antrean Verifikasi Setoran
+                  </h2>
+                  <p className="text-xs text-slate-400 mt-1">Daftar setoran sales yang menunggu persetujuan Anda</p>
+                </div>
+                <button onClick={() => setIsVerificationQueueOpen(false)} className="text-slate-400 hover:text-white text-2xl px-2">&times;</button>
+              </div>
+
+              {/* Modal Body (Scrollable List) */}
+              <div className="p-5 overflow-y-auto custom-scrollbar flex-1">
+                <div className="flex flex-col gap-3">
+                  {pendingList.map(item => (
+                    <div key={item.id} className="bg-dark-800 border border-slate-700 p-4 rounded-xl flex items-center justify-between hover:border-emerald-500/50 transition-colors">
+                      <div>
+                        <h3 className="font-bold text-emerald-400">{item.teamName || item.namaSales || "Sales"}</h3>
+                        <p className="text-[11px] font-medium text-slate-400 mb-1">
+                          {item.waktu ? new Date(item.waktu.toDate()).toLocaleString('id-ID', {
+                            day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
+                          }) : '-'}
+                        </p>
+                        {item.catatan && <p className="text-[10px] text-slate-500 italic max-w-[200px] truncate">"{item.catatan}"</p>}
                       </div>
-                      <button 
-                        onClick={() => handleGlobalVerify(item)}
-                        className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-4 py-2 rounded-lg transition-all shadow-lg shadow-emerald-900/30 whitespace-nowrap active:scale-95"
-                      >
-                        ✅ Sahkan
-                      </button>
+                      
+                      <div className="flex items-center gap-5">
+                        <div className="text-right">
+                          <p className="text-[9px] uppercase tracking-widest text-slate-500 font-bold mb-0.5">Nominal Setor</p>
+                          <p className="font-black text-white text-lg">Rp {item.nominal?.toLocaleString('id-ID')}</p>
+                        </div>
+                        <button 
+                          onClick={() => handleGlobalVerify(item)}
+                          className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-4 py-2 rounded-lg transition-all shadow-lg shadow-emerald-900/30 whitespace-nowrap active:scale-95"
+                        >
+                          ✅ Sahkan
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
+              
             </div>
-            
           </div>
-        </div>
-      )}
-    </div>
+        )}
+      </div>
+    </Suspense>
   );
 }
