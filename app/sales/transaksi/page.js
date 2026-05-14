@@ -22,6 +22,7 @@ export default function TransaksiPage() {
   const [selectedBrand, setSelectedBrand] = useState("");
   const [jumlahDrop, setJumlahDrop] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isPrintEnabled, setIsPrintEnabled] = useState(true);
   
   // Success Modal for Printing
   const [lastDropData, setLastDropData] = useState(null);
@@ -87,7 +88,12 @@ export default function TransaksiPage() {
 
       await addDropTransaction(dropData);
       
-      setLastDropData(dropData);
+      if (isPrintEnabled) {
+        setLastDropData(dropData);
+      } else {
+        toast.success(`Drop ${qty} Pk ${selectedBrand} berhasil!`);
+      }
+      
       setRestockStore(null);
       await loadData(user.id);
     } catch (error) {
