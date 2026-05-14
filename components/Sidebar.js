@@ -22,7 +22,6 @@ import { HiOutlineLogout } from "react-icons/hi";
 
 const ALL_NAV_ITEMS = [
   { icon: HiOutlineHome, label: "Dashboard", id: "dashboard", roles: ["owner", "admin", "investor"] },
-  { icon: HiOutlineCalculator, label: "Kalkulator HPP", id: "kalkulator", roles: ["owner", "admin"] },
   { icon: HiOutlineDocumentText, label: "PO Pabrik", id: "po", roles: ["owner", "investor"] },
   { icon: HiOutlineClipboardList, label: "Riwayat PO", id: "po-history", roles: ["owner", "investor"] },
   { icon: HiOutlineCube, label: "Stok Barang", id: "stock", roles: ["owner", "admin", "investor"] },
@@ -31,6 +30,7 @@ const ALL_NAV_ITEMS = [
   { icon: HiOutlineUserGroup, label: "Buku Penjualan", id: "sales", roles: ["owner", "admin", "investor"] },
   { icon: HiOutlineLocationMarker, label: "Pemasaran Retail", id: "retail", roles: ["owner", "admin", "investor"] },
   { icon: HiOutlineReply, label: "Retur Barang", id: "returns", roles: ["owner", "investor"] },
+  { icon: HiOutlineCalculator, label: "Kalkulator HPP", id: "kalkulator", roles: ["owner", "admin"] },
   { icon: HiOutlineCog, label: "Pengaturan", id: "settings", roles: ["owner"] },
 ];
 
