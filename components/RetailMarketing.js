@@ -146,6 +146,9 @@ export default function RetailMarketing() {
             <h2 className="font-bold text-white flex items-center gap-2">
               <HiOutlineLocationMarker className="text-blue-400" />
               Titik Retail
+              <span className="text-[10px] bg-blue-500/10 text-blue-400 px-1.5 py-0.5 rounded-md border border-blue-500/20 ml-1">
+                {stores.length}
+              </span>
             </h2>
             <button 
               onClick={() => {
