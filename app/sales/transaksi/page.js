@@ -261,6 +261,26 @@ export default function TransaksiPage() {
                   <p className="text-[9px] text-slate-500 text-center mt-1">Maks: {carriedBrands[selectedBrand].sisa} Pk</p>
                 )}
               </div>
+
+              <div className="mb-6 flex items-center justify-between bg-dark-800/50 p-3 rounded-xl border border-slate-700/50">
+                <div className="flex items-center gap-3">
+                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${isPrintEnabled ? 'bg-emerald-500/10 text-emerald-500' : 'bg-slate-700 text-slate-500'}`}>
+                    <HiOutlinePrinter size={18} />
+                  </div>
+                  <div>
+                    <p className="text-[11px] font-bold text-white">Cetak Nota Fisik?</p>
+                    <p className="text-[9px] text-slate-500">Gunakan printer bluetooth</p>
+                  </div>
+                </div>
+                <button 
+                  type="button"
+                  onClick={() => setIsPrintEnabled(!isPrintEnabled)}
+                  className={`w-12 h-6 rounded-full relative transition-colors ${isPrintEnabled ? 'bg-emerald-600' : 'bg-slate-700'}`}
+                >
+                  <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${isPrintEnabled ? 'left-7' : 'left-1'}`}></div>
+                </button>
+              </div>
+
               <div className="flex gap-2">
                 <button type="button" onClick={() => setRestockStore(null)} className="flex-1 py-3.5 rounded-xl bg-dark-800 border border-slate-700 text-xs text-slate-400 font-bold active:scale-95 transition-all">
                   Batal
