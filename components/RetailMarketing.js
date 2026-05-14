@@ -31,9 +31,7 @@ export default function RetailMarketing() {
   // Form State
   const [newStore, setNewStore] = useState({
     namaToko: "",
-    pemilik: "",
     alamat: "",
-    nomorHp: "",
     coordinates: ""
   });
 
@@ -44,7 +42,6 @@ export default function RetailMarketing() {
 
   const filteredStores = stores.filter(s => 
     s.namaToko?.toLowerCase().includes(search.toLowerCase()) ||
-    s.pemilik?.toLowerCase().includes(search.toLowerCase()) ||
     s.alamat?.toLowerCase().includes(search.toLowerCase())
   );
 
@@ -79,11 +76,9 @@ export default function RetailMarketing() {
 
     const storeData = {
       namaToko: newStore.namaToko,
-      pemilik: newStore.pemilik,
       alamat: newStore.alamat,
-      nomorHp: newStore.nomorHp,
-      latitude: lat.toString(),
-      longitude: lng.toString()
+      latitude: lat, // Save as Number to match Sales app
+      longitude: lng // Save as Number to match Sales app
     };
 
     try {
@@ -95,7 +90,7 @@ export default function RetailMarketing() {
         toast.success("Toko berhasil didaftarkan");
       }
       
-      setNewStore({ namaToko: "", pemilik: "", alamat: "", nomorHp: "", coordinates: "" });
+      setNewStore({ namaToko: "", alamat: "", coordinates: "" });
       setTempCoords(null);
       setShowAddForm(false);
       setEditingStoreId(null);
@@ -107,9 +102,7 @@ export default function RetailMarketing() {
   function handleEdit(store) {
     setNewStore({
       namaToko: store.namaToko,
-      pemilik: store.pemilik,
       alamat: store.alamat,
-      nomorHp: store.nomorHp || "",
       coordinates: `${store.latitude}, ${store.longitude}`
     });
     setEditingStoreId(store.id);
@@ -160,7 +153,7 @@ export default function RetailMarketing() {
                 if (!showAddForm) {
                   setTempCoords(null);
                   setEditingStoreId(null);
-                  setNewStore({ namaToko: "", pemilik: "", alamat: "", nomorHp: "", coordinates: "" });
+                  setNewStore({ namaToko: "", alamat: "", coordinates: "" });
                 }
               }}
               className={`p-1.5 rounded-lg transition-colors ${showAddForm ? "bg-rose-500/10 text-rose-400" : "bg-blue-500/10 text-blue-400 hover:bg-blue-500/20"}`}
@@ -205,11 +198,8 @@ export default function RetailMarketing() {
                     </button>
                   </div>
                 </div>
-                <p className="text-[11px] text-slate-400 flex items-center gap-1.5 mb-1">
-                  <HiOutlineUser size={12} className="text-slate-500" /> {store.pemilik}
-                </p>
-                <p className="text-[11px] text-slate-500 truncate mb-1.5">{store.alamat}</p>
-                <span className="inline-flex items-center gap-1 text-[9px] bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded-md border border-emerald-500/20 font-medium">
+                <p className="text-[11px] text-slate-500 line-clamp-2 mb-2">{store.alamat}</p>
+                <span className="inline-flex items-center gap-1 text-[9px] bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded-md border border-emerald-500/20 font-black uppercase">
                   📋 Pembina: {store.diinputOleh || "Admin"}
                 </span>
               </div>
@@ -241,28 +231,24 @@ export default function RetailMarketing() {
               📍 Klik lokasi pada peta untuk mengisi koordinat otomatis
             </p>
             <form onSubmit={handleAddStore} className="space-y-3">
-              <input 
-                type="text" placeholder="Nama Toko" required
-                value={newStore.namaToko} onChange={e => setNewStore({...newStore, namaToko: e.target.value})}
-                className="input-field text-xs" 
-              />
-              <input 
-                type="text" placeholder="Nama Pemilik" required
-                value={newStore.pemilik} onChange={e => setNewStore({...newStore, pemilik: e.target.value})}
-                className="input-field text-xs" 
-              />
-              <input 
-                type="text" placeholder="Alamat / Wilayah" required
-                value={newStore.alamat} onChange={e => setNewStore({...newStore, alamat: e.target.value})}
-                className="input-field text-xs" 
-              />
-              <input 
-                type="text" placeholder="Nomor HP (WhatsApp)" required
-                value={newStore.nomorHp} onChange={e => setNewStore({...newStore, nomorHp: e.target.value})}
-                className="input-field text-xs" 
-              />
+              <div>
+                <label className="block text-[10px] font-bold text-slate-500 mb-1 uppercase tracking-wider">Nama Toko / Warung</label>
+                <input 
+                  type="text" placeholder="Contoh: Toko Berkah" required
+                  value={newStore.namaToko} onChange={e => setNewStore({...newStore, namaToko: e.target.value})}
+                  className="input-field text-xs" 
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] font-bold text-slate-500 mb-1 uppercase tracking-wider">Alamat Lengkap</label>
+                <textarea 
+                  placeholder="Nama jalan, RT/RW, Patokan..." required
+                  value={newStore.alamat} onChange={e => setNewStore({...newStore, alamat: e.target.value})}
+                  className="input-field text-xs h-20 resize-none custom-scrollbar" 
+                />
+              </div>
               <div className="space-y-1">
-                <label className="block text-xs font-medium text-slate-400 mb-1.5">Titik Koordinat (Lat, Lng)</label>
+                <label className="block text-[10px] font-bold text-slate-500 mb-1 uppercase tracking-wider">Titik Koordinat (Lat, Lng)</label>
                 <input 
                   type="text" placeholder="-7.9666, 112.6326" required
                   value={newStore.coordinates} 
@@ -284,7 +270,7 @@ export default function RetailMarketing() {
                   Klik pada peta untuk otomatis, atau paste dari Google Maps.
                 </p>
               </div>
-              <button type="submit" className="btn-primary w-full py-2 text-xs mt-2">
+              <button type="submit" className="btn-primary w-full py-3 text-xs mt-2 font-black uppercase tracking-widest">
                 {editingStoreId ? "Simpan Perubahan" : "Simpan Toko"}
               </button>
             </form>
