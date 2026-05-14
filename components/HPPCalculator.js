@@ -50,7 +50,8 @@ export default function HPPCalculator() {
   };
 
   const addComponent = () => {
-    setComponents([...components, { id: Date.now(), name: "Lain-lain", cost: 0 }]);
+    const newId = Math.max(0, ...components.map(c => c.id)) + 1;
+    setComponents([...components, { id: newId, name: "Lain-lain", cost: 0 }]);
   };
 
   const removeComponent = (id) => {
@@ -73,11 +74,11 @@ export default function HPPCalculator() {
     const totalSetoranNegara = totalCukai + sppr + ppnHt;
 
     const totalHPP = components.reduce((acc, c) => {
-      const cost = c.isPerStick ? (c.cost * isiPerPack) : c.cost;
-      return acc + (parseFloat(cost) || 0);
+      const costRaw = c.isPerStick ? (parseFloat(c.cost) || 0) * (parseInt(isiPerPack) || 0) : (parseFloat(c.cost) || 0);
+      return acc + costRaw;
     }, 0);
 
-    const idealPrice = totalHPP + totalSetoranNegara + parseFloat(targetProfit || 0);
+    const idealPrice = totalHPP + totalSetoranNegara + (parseFloat(targetProfit) || 0);
 
     return {
       cukaiPerBatang,
@@ -91,59 +92,69 @@ export default function HPPCalculator() {
   }, [selectedType, isiPerPack, hjePerBatang, components, targetProfit]);
 
   const handleExportPDF = () => {
-    const doc = new jsPDF();
-    const title = `Simulasi HPP Pabrik - ${selectedType}`;
-    
-    doc.setFontSize(18);
-    doc.text("DISTRILINK - FACTORY PRICING SIMULATOR", 14, 20);
-    doc.setFontSize(12);
-    doc.text(title, 14, 30);
-    doc.text(`Tanggal: ${new Date().toLocaleDateString('id-ID')}`, 14, 37);
+    try {
+      const doc = new jsPDF();
+      const title = `Simulasi HPP Pabrik - ${selectedType}`;
+      
+      doc.setFontSize(18);
+      doc.text("DISTRILINK - FACTORY PRICING SIMULATOR", 14, 20);
+      doc.setFontSize(10);
+      doc.text(title, 14, 30);
+      doc.text(`Tanggal: ${new Date().toLocaleDateString('id-ID')}`, 14, 37);
 
-    // Section A
-    doc.autoTable({
-      startY: 45,
-      head: [['Parameter Regulasi', 'Nilai']],
-      body: [
-        ['Jenis & Golongan', selectedType],
-        ['Isi per Pack', `${isiPerPack} Batang`],
-        ['HJE per Batang', formatRupiah(hjePerBatang)],
-        ['Tarif Cukai / Batang', formatRupiah(calculations.cukaiPerBatang)],
-      ],
-      theme: 'grid',
-    });
+      // Section A
+      doc.autoTable({
+        startY: 45,
+        head: [['Parameter Regulasi', 'Nilai']],
+        body: [
+          ['Jenis & Golongan', selectedType],
+          ['Isi per Pack', `${isiPerPack} Batang`],
+          ['HJE per Batang', formatRupiah(hjePerBatang)],
+          ['Tarif Cukai / Batang', formatRupiah(calculations.cukaiPerBatang)],
+        ],
+        theme: 'grid',
+        headStyles: { fillColor: [30, 41, 59] }
+      });
 
-    // Section B
-    const compBody = components.map(c => [
-      c.name, 
-      c.isPerStick ? `${formatRupiah(c.cost)}/btg` : formatRupiah(c.cost),
-      formatRupiah(c.isPerStick ? c.cost * isiPerPack : c.cost)
-    ]);
-    
-    doc.autoTable({
-      startY: doc.lastAutoTable.finalY + 10,
-      head: [['Komponen Biaya Produksi', 'Satuan', 'Total / Pack']],
-      body: compBody,
-      theme: 'grid',
-    });
+      // Section B
+      const compBody = components.map(c => [
+        c.name, 
+        c.isPerStick ? `${formatRupiah(c.cost)}/btg` : formatRupiah(c.cost),
+        formatRupiah(c.isPerStick ? c.cost * isiPerPack : c.cost)
+      ]);
+      
+      doc.autoTable({
+        startY: doc.lastAutoTable.finalY + 10,
+        head: [['Komponen Biaya Produksi', 'Satuan', 'Total / Pack']],
+        body: compBody,
+        theme: 'grid',
+        headStyles: { fillColor: [30, 41, 59] }
+      });
 
-    // Results
-    doc.autoTable({
-      startY: doc.lastAutoTable.finalY + 10,
-      head: [['Ringkasan Kalkulasi', 'Total (Rp)']],
-      body: [
-        ['Total HPP Produksi', formatRupiah(calculations.totalHPP)],
-        ['Total Cukai (CK-1)', formatRupiah(calculations.totalCukai)],
-        ['Pajak Rokok (SPPR)', formatRupiah(calculations.sppr)],
-        ['PPN Hasil Tembakau', formatRupiah(calculations.ppnHt)],
-        ['Total Setoran ke Negara', formatRupiah(calculations.totalSetoranNegara)],
-        ['Target Laba Pabrik', formatRupiah(targetProfit)],
-        [{ content: 'HARGA JUAL IDEAL KE DISTRIBUTOR', styles: { fontStyle: 'bold', fillColor: [52, 211, 153] } }, { content: formatRupiah(calculations.idealPrice), styles: { fontStyle: 'bold', fillColor: [52, 211, 153] } }],
-      ],
-      theme: 'striped',
-    });
+      // Results
+      doc.autoTable({
+        startY: doc.lastAutoTable.finalY + 10,
+        head: [['Ringkasan Kalkulasi', 'Total (Rp)']],
+        body: [
+          ['Total HPP Produksi', formatRupiah(calculations.totalHPP)],
+          ['Total Cukai (CK-1)', formatRupiah(calculations.totalCukai)],
+          ['Pajak Rokok (SPPR)', formatRupiah(calculations.sppr)],
+          ['PPN Hasil Tembakau', formatRupiah(calculations.ppnHt)],
+          ['Total Setoran ke Negara', formatRupiah(calculations.totalSetoranNegara)],
+          ['Target Laba Pabrik', formatRupiah(targetProfit)],
+          [
+            { content: 'HARGA JUAL IDEAL KE DISTRIBUTOR', styles: { fontStyle: 'bold', fillColor: [52, 211, 153], textColor: [0, 0, 0] } }, 
+            { content: formatRupiah(calculations.idealPrice), styles: { fontStyle: 'bold', fillColor: [52, 211, 153], textColor: [0, 0, 0] } }
+          ],
+        ],
+        theme: 'striped',
+      });
 
-    doc.save(`simulasi-hpp-${selectedType.toLowerCase().replace(/ /g, '-')}.pdf`);
+      doc.save(`simulasi-hpp-${selectedType.toLowerCase().replace(/[\s\/]+/g, '-')}.pdf`);
+    } catch (err) {
+      console.error("PDF Export Error:", err);
+      alert("Gagal mengekspor PDF: " + err.message);
+    }
   };
 
   return (
@@ -159,6 +170,7 @@ export default function HPPCalculator() {
           </div>
         </div>
         <button 
+          type="button"
           onClick={handleExportPDF}
           className="btn-emerald flex items-center gap-2"
         >
@@ -222,7 +234,11 @@ export default function HPPCalculator() {
               <h3 className="text-sm font-bold text-white flex items-center gap-2">
                 <span className="text-emerald-400">B.</span> Komponen Biaya Produksi (HPP)
               </h3>
-              <button onClick={addComponent} className="text-xs text-blue-400 hover:text-blue-300 flex items-center gap-1 font-bold">
+              <button 
+                type="button"
+                onClick={addComponent} 
+                className="text-xs text-blue-400 hover:text-blue-300 flex items-center gap-1 font-bold"
+              >
                 <HiOutlinePlus size={14} /> Tambah Item
               </button>
             </div>
