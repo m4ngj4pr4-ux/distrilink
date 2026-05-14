@@ -49,21 +49,30 @@ export default function ProfilPage() {
 
   const handleUpdateProfile = async (e) => {
     e.preventDefault();
+    if (!user?.id) return toast.error("Sesi berakhir, silakan login ulang");
+    
     setIsSaving(true);
     try {
-      let photoURL = profileData?.photoURL || user.photoURL;
+      let photoURL = profileData?.photoURL || user.photoURL || "";
       
       if (selectedFile) {
         toast.loading("Mengunggah foto...", { id: "upload" });
-        photoURL = await uploadProfilePicture(user.id, selectedFile);
-        toast.success("Foto berhasil diunggah!", { id: "upload" });
+        try {
+          photoURL = await uploadProfilePicture(user.id, selectedFile);
+          toast.success("Foto berhasil diunggah!", { id: "upload" });
+        } catch (uploadError) {
+          console.error("Upload error:", uploadError);
+          toast.error("Gagal mengunggah foto", { id: "upload" });
+          setIsSaving(false);
+          return;
+        }
       }
 
       const updatedData = {
-        name: editName,
-        pin: editPin,
-        phone: editPhone,
-        photoURL
+        name: editName || user.name,
+        pin: editPin || user.pin || "",
+        phone: editPhone || user.phone || "",
+        photoURL: photoURL || ""
       };
 
       await updateSalesTeam(user.id, updatedData);
@@ -77,9 +86,12 @@ export default function ProfilPage() {
       toast.success("Profil berhasil diperbarui!");
       setIsEditModalOpen(false);
       setSelectedFile(null);
+      
+      // Force refresh data to sync UI
+      getSalesProfile(user.id).then(setProfileData);
     } catch (error) {
-      console.error(error);
-      toast.error("Gagal memperbarui profil");
+      console.error("Update error:", error);
+      toast.error("Gagal memperbarui profil: " + (error.message || "Unknown error"));
     } finally {
       setIsSaving(false);
     }
