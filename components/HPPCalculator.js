@@ -10,7 +10,7 @@ import {
 } from "react-icons/hi";
 import { formatRupiah } from "@/lib/utils";
 import jsPDF from "jspdf";
-import "jspdf-autotable";
+import autoTable from "jspdf-autotable";
 
 const PMK_97_2024 = {
   "SKM Golongan I": { minHJE: 2375, cukai: 1231 },
@@ -103,7 +103,7 @@ export default function HPPCalculator() {
       doc.text(`Tanggal: ${new Date().toLocaleDateString('id-ID')}`, 14, 37);
 
       // Section A
-      doc.autoTable({
+      autoTable(doc, {
         startY: 45,
         head: [['Parameter Regulasi', 'Nilai']],
         body: [
@@ -123,7 +123,7 @@ export default function HPPCalculator() {
         formatRupiah(c.isPerStick ? c.cost * isiPerPack : c.cost)
       ]);
       
-      doc.autoTable({
+      autoTable(doc, {
         startY: doc.lastAutoTable.finalY + 10,
         head: [['Komponen Biaya Produksi', 'Satuan', 'Total / Pack']],
         body: compBody,
@@ -132,7 +132,7 @@ export default function HPPCalculator() {
       });
 
       // Results
-      doc.autoTable({
+      autoTable(doc, {
         startY: doc.lastAutoTable.finalY + 10,
         head: [['Ringkasan Kalkulasi', 'Total (Rp)']],
         body: [
