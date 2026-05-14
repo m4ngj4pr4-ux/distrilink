@@ -21,6 +21,7 @@ export default function TransaksiPage() {
   const [carriedBrands, setCarriedBrands] = useState({});
   const [selectedBrand, setSelectedBrand] = useState("");
   const [jumlahDrop, setJumlahDrop] = useState("");
+  const [hargaDrop, setHargaDrop] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isPrintEnabled, setIsPrintEnabled] = useState(true);
   
@@ -58,13 +59,24 @@ export default function TransaksiPage() {
     setJumlahDrop("");
     const brands = await getSalesCarriedBrands(user.id);
     setCarriedBrands(brands);
+    setHargaDrop("");
   };
+
+  // Auto-fill price when brand is selected
+  useEffect(() => {
+    if (selectedBrand && carriedBrands[selectedBrand]) {
+      setHargaDrop(carriedBrands[selectedBrand].sellingPrice?.toString() || "");
+    }
+  }, [selectedBrand, carriedBrands]);
 
   const handleDropSubmit = async (e) => {
     e.preventDefault();
-    const qty = parseInt(jumlahDrop);
+    const qty = parseInt(jumlahDrop) || 0;
+    const price = parseInt(hargaDrop) || 0;
+
     if (!selectedBrand) return toast.error("Pilih merek barang!");
-    if (!qty || qty <= 0) return toast.error("Masukkan jumlah yang valid!");
+    if (qty <= 0) return toast.error("Masukkan jumlah yang valid!");
+    if (price <= 0) return toast.error("Masukkan harga jual yang valid!");
     
     const brandData = carriedBrands[selectedBrand];
     if (!brandData) return toast.error("Merek tidak ditemukan!");
@@ -80,8 +92,8 @@ export default function TransaksiPage() {
         productId: brandData.productId,
         productName: selectedBrand,
         jumlahDrop: qty,
-        hargaJual: brandData.sellingPrice || 0,
-        total: qty * (brandData.sellingPrice || 0),
+        hargaJual: price,
+        total: qty * price,
         catatan: "Via Aplikasi Sales",
         waktu: { toDate: () => new Date() } // Mock for printing immediately
       };
@@ -266,6 +278,29 @@ export default function TransaksiPage() {
                 {selectedBrand && carriedBrands[selectedBrand] && (
                   <p className="text-[9px] text-slate-500 text-center mt-1">Maks: {carriedBrands[selectedBrand].sisa} Pk</p>
                 )}
+              </div>
+
+              <div className="mb-5">
+                <label className="block text-[10px] font-medium text-slate-400 mb-1.5 uppercase tracking-wider">Harga Jual per Pack (Rp)</label>
+                <div className="relative">
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 font-bold">Rp</span>
+                  <input 
+                    type="number" inputMode="numeric"
+                    value={hargaDrop}
+                    onChange={(e) => setHargaDrop(e.target.value)}
+                    className="w-full bg-dark-800 border border-slate-700 rounded-xl pl-12 pr-4 py-4 text-xl font-black text-emerald-400 focus:border-emerald-500 outline-none shadow-inner"
+                    placeholder="0"
+                    required
+                  />
+                </div>
+                <p className="text-[9px] text-slate-500 text-center mt-1 italic">Dapat diubah sesuai kesepakatan toko</p>
+              </div>
+
+              <div className="mb-6 bg-blue-900/10 border border-blue-500/20 p-4 rounded-xl text-center">
+                <p className="text-[10px] text-blue-400 uppercase font-black tracking-widest mb-1">Total Piutang Toko</p>
+                <p className="text-2xl font-black text-white">
+                  Rp {( (parseInt(jumlahDrop)||0) * (parseInt(hargaDrop)||0) ).toLocaleString('id-ID')}
+                </p>
               </div>
 
               <div className="mb-6 flex items-center justify-between bg-dark-800/50 p-3 rounded-xl border border-slate-700/50">
