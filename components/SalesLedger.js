@@ -11,7 +11,7 @@ import {
   HiOutlineEye,
   HiOutlineEyeOff,
 } from "react-icons/hi";
-import { formatRupiah, formatNumber, formatInputNumber, parseInputNumber } from "@/lib/utils";
+import { formatRupiah, formatNumber, formatInputNumber, parseInputNumber, parseRupiah } from "@/lib/utils";
 import {
   addDepositTransaction,
   subscribeDeposits,
@@ -695,6 +695,8 @@ export default function SalesLedger({ teams, products, purchases, allDistributio
                   {showPin ? <HiOutlineEyeOff size={20} /> : <HiOutlineEye size={20} />}
                 </button>
               </div>
+              <p className="text-[10px] text-slate-500 mt-1 text-center">PIN ini akan digunakan sales untuk login ke aplikasi HP.</p>
+            </div>
             <div className="mb-4">
               <label className="block text-xs font-medium text-slate-400 mb-1.5">No Telepon / WhatsApp</label>
               <input 
