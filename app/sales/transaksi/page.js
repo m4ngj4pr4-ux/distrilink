@@ -6,6 +6,8 @@ import {
 } from '@/lib/firestore';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
+import { printer } from '@/lib/printer';
+import { HiOutlinePrinter, HiCheckCircle, HiX } from 'react-icons/hi';
 
 export default function TransaksiPage() {
   const router = useRouter();
@@ -20,6 +22,10 @@ export default function TransaksiPage() {
   const [selectedBrand, setSelectedBrand] = useState("");
   const [jumlahDrop, setJumlahDrop] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // Success Modal for Printing
+  const [lastDropData, setLastDropData] = useState(null);
+  const [isPrinting, setIsPrinting] = useState(false);
 
   // Audit Modal State
   const [auditItem, setAuditItem] = useState(null);
@@ -65,7 +71,7 @@ export default function TransaksiPage() {
 
     setIsSubmitting(true);
     try {
-      await addDropTransaction({
+      const dropData = {
         teamId: user.id,
         namaSales: user.name,
         storeId: restockStore.storeId,
@@ -73,10 +79,15 @@ export default function TransaksiPage() {
         productId: brandData.productId,
         productName: selectedBrand,
         jumlahDrop: qty,
-        catatan: "Via Aplikasi Sales"
-      });
+        hargaJual: brandData.sellingPrice || 0,
+        total: qty * (brandData.sellingPrice || 0),
+        catatan: "Via Aplikasi Sales",
+        waktu: { toDate: () => new Date() } // Mock for printing immediately
+      };
+
+      await addDropTransaction(dropData);
       
-      toast.success(`Drop ${qty} Pk ${selectedBrand} ke ${restockStore.namaToko} berhasil!`);
+      setLastDropData(dropData);
       setRestockStore(null);
       await loadData(user.id);
     } catch (error) {
@@ -84,6 +95,23 @@ export default function TransaksiPage() {
       console.error(error);
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handlePrint = async () => {
+    if (!lastDropData) return;
+    setIsPrinting(true);
+    try {
+      toast.loading("Menghubungkan ke printer...", { id: "print-toast" });
+      await printer.connect();
+      toast.loading("Mencetak nota...", { id: "print-toast" });
+      await printer.printReceipt(lastDropData);
+      toast.success("Nota berhasil dicetak!", { id: "print-toast" });
+    } catch (error) {
+      console.error(error);
+      toast.error("Gagal cetak: " + error.message, { id: "print-toast" });
+    } finally {
+      setIsPrinting(false);
     }
   };
 
@@ -242,6 +270,46 @@ export default function TransaksiPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* ── MODAL SUCCESS (PRINT) ── */}
+      {lastDropData && (
+        <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-[110] p-4 backdrop-blur-md">
+          <div className="bg-dark-900 w-full max-w-sm rounded-3xl p-8 border border-slate-700 text-center animate-zoomIn shadow-2xl relative overflow-hidden">
+            {/* Glow background */}
+            <div className="absolute -top-24 -left-24 w-48 h-48 bg-emerald-500/10 rounded-full blur-3xl"></div>
+            
+            <div className="relative z-10">
+              <div className="w-20 h-20 bg-emerald-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
+                <HiCheckCircle className="text-emerald-500" size={50} />
+              </div>
+              
+              <h2 className="text-xl font-black text-white mb-2">Transaksi Berhasil!</h2>
+              <p className="text-xs text-slate-400 mb-8 leading-relaxed">
+                Drop <span className="text-white font-bold">{lastDropData.jumlahDrop} Pk {lastDropData.productName}</span> ke <span className="text-emerald-400 font-bold">{lastDropData.namaToko}</span> telah tercatat.
+              </p>
+              
+              <div className="flex flex-col gap-3">
+                <button 
+                  onClick={handlePrint}
+                  disabled={isPrinting}
+                  className="w-full py-4 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-dark-900 font-black text-sm transition-all active:scale-95 flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20 disabled:opacity-50"
+                >
+                  <HiOutlinePrinter size={20} />
+                  {isPrinting ? "Mencetak..." : "Cetak Nota Sekarang"}
+                </button>
+                <button 
+                  onClick={() => setLastDropData(null)}
+                  className="w-full py-4 rounded-2xl bg-dark-800 border border-slate-700 text-slate-400 font-bold text-sm hover:text-white transition-all active:scale-95"
+                >
+                  Selesai & Tutup
+                </button>
+              </div>
+              
+              <p className="text-[9px] text-slate-500 mt-6 uppercase tracking-widest font-black">Powered by DistriLink</p>
+            </div>
           </div>
         </div>
       )}
