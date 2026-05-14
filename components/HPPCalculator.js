@@ -69,8 +69,8 @@ export default function HPPCalculator() {
     const cukaiPerBatang = data.cukai;
     
     const totalCukai = cukaiPerBatang * isiPerPack;
-    const sppr = 0.1 * totalCukai;
-    const ppnHt = 0.099 * (hjePerBatang * isiPerPack);
+    const sppr = Math.ceil(0.1 * totalCukai);
+    const ppnHt = Math.ceil(0.099 * (hjePerBatang * isiPerPack));
     const totalSetoranNegara = totalCukai + sppr + ppnHt;
 
     const totalHPP = components.reduce((acc, c) => {
