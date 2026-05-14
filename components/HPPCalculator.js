@@ -39,6 +39,8 @@ const DEFAULT_COMPONENTS = [
 export default function HPPCalculator() {
   const [selectedType, setSelectedType] = useState("SKM Golongan II");
   const [isiPerPack, setIsiPerPack] = useState(12);
+  const [useCustomExcise, setUseCustomExcise] = useState(false);
+  const [isiPita, setIsiPita] = useState(12);
   const [hjePerBatang, setHjePerBatang] = useState(PMK_97_2024["SKM Golongan II"].minHJE);
   const [components, setComponents] = useState(DEFAULT_COMPONENTS);
   const [targetProfit, setTargetProfit] = useState(1000);
@@ -68,11 +70,14 @@ export default function HPPCalculator() {
     const data = PMK_97_2024[selectedType];
     const cukaiPerBatang = data.cukai;
     
-    const totalCukai = cukaiPerBatang * isiPerPack;
+    // Tax is calculated based on ISIPITA (official stamp)
+    const effectiveIsiPita = useCustomExcise ? (parseInt(isiPita) || 0) : (parseInt(isiPerPack) || 0);
+    const totalCukai = cukaiPerBatang * effectiveIsiPita;
     const sppr = Math.ceil(0.1 * totalCukai);
-    const ppnHt = Math.ceil(0.099 * (hjePerBatang * isiPerPack));
+    const ppnHt = Math.ceil(0.099 * (hjePerBatang * effectiveIsiPita));
     const totalSetoranNegara = totalCukai + sppr + ppnHt;
 
+    // Production costs are calculated based on ISIPERPACK (actual physical content)
     const totalHPP = components.reduce((acc, c) => {
       const costRaw = c.isPerStick ? (parseFloat(c.cost) || 0) * (parseInt(isiPerPack) || 0) : (parseFloat(c.cost) || 0);
       return acc + costRaw;
@@ -82,6 +87,7 @@ export default function HPPCalculator() {
 
     return {
       cukaiPerBatang,
+      effectiveIsiPita,
       totalCukai,
       sppr,
       ppnHt,
@@ -89,12 +95,12 @@ export default function HPPCalculator() {
       totalHPP,
       idealPrice
     };
-  }, [selectedType, isiPerPack, hjePerBatang, components, targetProfit]);
+  }, [selectedType, isiPerPack, useCustomExcise, isiPita, hjePerBatang, components, targetProfit]);
 
   const handleExportPDF = () => {
     try {
       const doc = new jsPDF();
-      const title = `Simulasi HPP Pabrik - ${selectedType}`;
+      const title = `Simulasi HPP Pabrik - ${selectedType} ${useCustomExcise ? '(Non-Resmi)' : ''}`;
       
       doc.setFontSize(18);
       doc.text("DISTRILINK - FACTORY PRICING SIMULATOR", 14, 20);
@@ -103,15 +109,24 @@ export default function HPPCalculator() {
       doc.text(`Tanggal: ${new Date().toLocaleDateString('id-ID')}`, 14, 37);
 
       // Section A
+      const paramBody = [
+        ['Jenis & Golongan', selectedType],
+        ['Isi Riil per Pack', `${isiPerPack} Batang`],
+      ];
+
+      if (useCustomExcise) {
+        paramBody.push(['Isi Pita Cukai (Pajak)', `${isiPita} Batang`]);
+      }
+
+      paramBody.push(
+        ['HJE per Batang', formatRupiah(hjePerBatang)],
+        ['Tarif Cukai / Batang', formatRupiah(calculations.cukaiPerBatang)]
+      );
+
       autoTable(doc, {
         startY: 45,
-        head: [['Parameter Regulasi', 'Nilai']],
-        body: [
-          ['Jenis & Golongan', selectedType],
-          ['Isi per Pack', `${isiPerPack} Batang`],
-          ['HJE per Batang', formatRupiah(hjePerBatang)],
-          ['Tarif Cukai / Batang', formatRupiah(calculations.cukaiPerBatang)],
-        ],
+        head: [['Parameter Simulasi', 'Nilai']],
+        body: paramBody,
         theme: 'grid',
         headStyles: { fillColor: [30, 41, 59] }
       });
@@ -137,7 +152,7 @@ export default function HPPCalculator() {
         head: [['Ringkasan Kalkulasi', 'Total (Rp)']],
         body: [
           ['Total HPP Produksi', formatRupiah(calculations.totalHPP)],
-          ['Total Cukai (CK-1)', formatRupiah(calculations.totalCukai)],
+          [`Cukai (${useCustomExcise ? 'Pita ' + isiPita : 'Pack ' + isiPerPack})`, formatRupiah(calculations.totalCukai)],
           ['Pajak Rokok (SPPR)', formatRupiah(calculations.sppr)],
           ['PPN Hasil Tembakau', formatRupiah(calculations.ppnHt)],
           ['Total Setoran ke Negara', formatRupiah(calculations.totalSetoranNegara)],
@@ -201,15 +216,47 @@ export default function HPPCalculator() {
                 </select>
               </div>
               <div>
-                <label className="block text-[10px] uppercase font-bold text-slate-500 mb-1.5">Isi per Pack (Batang)</label>
+                <label className="block text-[10px] uppercase font-bold text-slate-500 mb-1.5">Isi Riil per Pack (Batang)</label>
                 <input 
                   type="number"
                   value={isiPerPack}
                   onChange={(e) => setIsiPerPack(parseInt(e.target.value) || 0)}
-                  className="input-field w-full text-sm"
+                  className="input-field w-full text-sm font-bold text-blue-400"
                 />
               </div>
-              <div>
+
+              <div className="md:col-span-2 pt-2 pb-1">
+                <label className="flex items-center gap-3 cursor-pointer group">
+                  <div className="relative">
+                    <input 
+                      type="checkbox" 
+                      className="sr-only" 
+                      checked={useCustomExcise}
+                      onChange={(e) => setUseCustomExcise(e.target.checked)}
+                    />
+                    <div className={`w-10 h-5 rounded-full transition-colors ${useCustomExcise ? 'bg-amber-500' : 'bg-slate-700'}`}></div>
+                    <div className={`absolute top-1 left-1 w-3 h-3 rounded-full bg-white transition-transform ${useCustomExcise ? 'translate-x-5' : ''}`}></div>
+                  </div>
+                  <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 group-hover:text-slate-200 transition-colors">
+                    Gunakan Pengaturan Pita Kustom (Non-Resmi)
+                  </span>
+                </label>
+              </div>
+
+              {useCustomExcise && (
+                <div className="animate-slideDown">
+                  <label className="block text-[10px] uppercase font-bold text-amber-500 mb-1.5 underline decoration-amber-500/30 underline-offset-4">Isi Pita Cukai (Official)</label>
+                  <input 
+                    type="number"
+                    value={isiPita}
+                    onChange={(e) => setIsiPita(parseInt(e.target.value) || 0)}
+                    className="input-field w-full text-sm border-amber-500/50 text-amber-400 bg-amber-500/5"
+                  />
+                  <p className="text-[9px] text-amber-500/70 mt-1 italic">Pajak dihitung berdasarkan isi pita ini.</p>
+                </div>
+              )}
+
+              <div className={useCustomExcise ? "" : "md:col-start-1"}>
                 <label className="block text-[10px] uppercase font-bold text-slate-500 mb-1.5">HJE per Batang (Rp)</label>
                 <input 
                   type="number"
@@ -220,7 +267,7 @@ export default function HPPCalculator() {
                 <p className="text-[9px] text-slate-500 mt-1 italic">Min HJE: {formatRupiah(PMK_97_2024[selectedType].minHJE)}</p>
               </div>
               <div>
-                <label className="block text-[10px] uppercase font-bold text-slate-500 mb-1.5">Tarif Cukai per Batang</label>
+                <label className="block text-[10px] uppercase font-bold text-slate-500 mb-1.5">Tarif Cukai / Batang</label>
                 <div className="input-field w-full text-sm bg-dark-800 text-slate-400 font-mono">
                   {formatRupiah(calculations.cukaiPerBatang)}
                 </div>
@@ -310,7 +357,10 @@ export default function HPPCalculator() {
               </div>
               <div className="flex justify-between items-center border-b border-slate-700/30 pb-3">
                 <span className="text-[10px] text-slate-400 font-bold uppercase">Cukai + Pajak Rokok</span>
-                <span className="text-sm font-mono text-white">{formatRupiah(calculations.totalCukai + calculations.sppr)}</span>
+                <span className="text-sm font-mono text-white">
+                  {formatRupiah(calculations.totalCukai + calculations.sppr)}
+                  {useCustomExcise && <span className="text-[9px] text-amber-500 ml-2">(Pita {isiPita})</span>}
+                </span>
               </div>
               <div className="flex justify-between items-center border-b border-slate-700/30 pb-3">
                 <span className="text-[10px] text-slate-400 font-bold uppercase">PPN HT (9.9%)</span>
@@ -323,11 +373,11 @@ export default function HPPCalculator() {
 
               <div className="pt-6 mt-4">
                 <p className="text-[9px] text-slate-500 font-black uppercase tracking-widest text-center mb-2">Harga Jual Ideal ke Distributor</p>
-                <div className="bg-emerald-500 text-dark-900 rounded-2xl p-5 text-center shadow-lg shadow-emerald-500/20">
+                <div className={`rounded-2xl p-5 text-center shadow-lg ${useCustomExcise ? 'bg-amber-500 text-dark-900 shadow-amber-500/20' : 'bg-emerald-500 text-dark-900 shadow-emerald-500/20'}`}>
                   <p className="text-3xl font-black tracking-tighter">
                     {formatRupiah(calculations.idealPrice)}
                   </p>
-                  <p className="text-[10px] font-bold uppercase mt-1 opacity-70">Per Pack ({isiPerPack} Batang)</p>
+                  <p className="text-[10px] font-bold uppercase mt-1 opacity-70">Per Pack ({isiPerPack} Batang {useCustomExcise ? `vs Pita ${isiPita}` : ''})</p>
                 </div>
               </div>
             </div>
