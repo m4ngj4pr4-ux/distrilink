@@ -250,7 +250,8 @@ export default function HPPCalculator() {
                     type="text" 
                     value={comp.name}
                     onChange={(e) => updateComponent(comp.id, 'name', e.target.value)}
-                    className="flex-1 bg-transparent border-none text-xs text-slate-200 outline-none min-w-[150px]"
+                    className="flex-1 bg-dark-700/30 border-b border-transparent hover:border-slate-600 focus:border-blue-500 text-xs text-slate-200 px-2 py-1.5 rounded-lg transition-all outline-none min-w-[150px]"
+                    placeholder="Nama Komponen"
                   />
                   <div className="flex items-center gap-2 w-full md:w-auto">
                     <span className="text-[10px] text-slate-500 font-bold">Rp</span>
