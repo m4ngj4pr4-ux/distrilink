@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation';
 import { addSetoranDana, getRiwayatSetoran, getSalesProfile, getSalesHistory } from '@/lib/firestore';
 import toast from 'react-hot-toast';
 import { printer } from '@/lib/printer';
-import { HiOutlinePrinter, HiOutlineLogout, HiOutlineCash, HiOutlineShoppingBag } from 'react-icons/hi';
+import { HiOutlinePrinter, HiOutlineLogout, HiOutlineCash, HiOutlineShoppingBag, HiX } from 'react-icons/hi';
 
 export default function ProfilPage() {
   const router = useRouter();
