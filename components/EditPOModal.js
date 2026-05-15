@@ -72,6 +72,11 @@ export default function EditPOModal({ po, onClose, distributions }) {
     const oldSisaHutang = po.sisaHutang || 0;
     const deltaHutang = newSisaHutang - oldSisaHutang;
 
+    // VALIDASI: Jika Qty Terkunci, hanya boleh menambah (tidak boleh mengurangi stok yang sudah teralokasi)
+    if (isQtyLocked && deltaPacks < 0) {
+      return toast.error("Gagal: Tidak dapat mengurangi stok karena barang sudah didistribusikan ke sales.");
+    }
+
     const message = `Konfirmasi Perubahan:
 ${deltaPacks !== 0 ? `• Stok: ${deltaPacks > 0 ? "+" : ""}${deltaPacks.toLocaleString()} Pack` : "• Stok: Tidak berubah"}
 ${deltaHutang !== 0 ? `• Hutang: ${deltaHutang > 0 ? "+" : ""}${formatRupiah(deltaHutang)}` : "• Hutang: Tidak berubah"}
@@ -157,24 +162,35 @@ Lanjutkan pembaruan dan sinkronisasi data?`;
               />
               {isQtyLocked && (
                 <p className="text-[10px] text-amber-500 mt-1.5 flex items-center gap-1">
-                  <span>🔒</span> Qty dikunci karena barang sudah didistribusikan.
+                  <span>🔒</span> Qty Utama & Harga dikunci karena distribusi aktif.
                 </p>
               )}
             </div>
             <div>
               <label className="block text-xs font-medium text-slate-400 mb-1.5">Harga Beli / Pack</label>
-              <input type="number" value={form.hargaBeliPerPack} onChange={e => setForm({...form, hargaBeliPerPack: e.target.value})} className="input-field" />
+              <input 
+                type="number" 
+                value={form.hargaBeliPerPack} 
+                onChange={e => setForm({...form, hargaBeliPerPack: e.target.value})} 
+                disabled={isQtyLocked}
+                className={`input-field ${isQtyLocked ? "opacity-50 cursor-not-allowed bg-dark-800" : ""}`} 
+              />
             </div>
-            <div>
-              <label className="block text-xs font-medium text-amber-500 mb-1.5">Ekstra Slop / Karton</label>
+            <div className="col-span-2">
+              <label className="block text-xs font-medium text-amber-500 mb-1.5 flex items-center gap-2">
+                Ekstra Slop / Karton
+                <span className="text-[9px] bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20">Unlocked</span>
+              </label>
               <input 
                 type="number" 
                 value={form.ekstraSlopPerKarton} 
                 onChange={e => setForm({...form, ekstraSlopPerKarton: e.target.value})} 
-                disabled={isQtyLocked}
-                className={`input-field border-amber-500/30 focus:border-amber-500 text-amber-400 ${isQtyLocked ? "opacity-50 cursor-not-allowed bg-dark-800" : ""}`} 
+                className="input-field border-amber-500/30 focus:border-amber-500 text-amber-400 font-bold" 
                 placeholder="0"
               />
+              <p className="text-[9px] text-slate-500 mt-1.5 italic">
+                Anda masih dapat menambah jumlah slop ekstra meskipun Qty utama dikunci.
+              </p>
             </div>
           </div>
 
