@@ -15,12 +15,13 @@ export default function EditPOModal({ po, onClose, distributions }) {
     hargaBeliPerPack: "",
     targetHargaJual: "",
     biayaPengiriman: "",
-    uangMuka: ""
+    uangMuka: "",
+    ekstraSlopPerKarton: 0
   });
   const [saving, setSaving] = useState(false);
 
-  // LOGIKA KUNCI QTY: Cek apakah produk ini sudah pernah didistribusikan
-  const isQtyLocked = distributions?.some(d => d.productId === po.productId);
+  // LOGIKA KUNCI QTY: Cek apakah PO ini sudah pernah didistribusikan
+  const isQtyLocked = distributions?.some(d => d.poId === po.id);
 
   useEffect(() => {
     if (po) {
@@ -34,7 +35,8 @@ export default function EditPOModal({ po, onClose, distributions }) {
         hargaBeliPerPack: po.hargaBeliPerPack || "",
         targetHargaJual: po.targetHargaJual || "",
         biayaPengiriman: po.biayaPengiriman || "",
-        uangMuka: po.uangMuka || ""
+        uangMuka: po.uangMuka || "",
+        ekstraSlopPerKarton: po.conversion?.ekstraSlopPerKarton || 0
       });
     }
   }, [po]);
@@ -48,7 +50,8 @@ export default function EditPOModal({ po, onClose, distributions }) {
   const dp = parseFloat(form.uangMuka) || 0;
 
   const packsPerSlop = po.conversion?.packsPerSlop || 10;
-  const slopsPerKarton = (po.conversion?.slopsPerBall || 20) * (po.conversion?.ballsPerKarton || 5);
+  const extraSlop = parseInt(form.ekstraSlopPerKarton) || 0;
+  const slopsPerKarton = ((po.conversion?.slopsPerBall || 20) * (po.conversion?.ballsPerKarton || 5)) + extraSlop;
   const totalPacks = karton * slopsPerKarton * packsPerSlop;
   
   const totalBarang = totalPacks * hargaPack;
@@ -60,6 +63,23 @@ export default function EditPOModal({ po, onClose, distributions }) {
     if (!checkWritePermission("mengedit riwayat PO")) return;
     if (karton <= 0 || hargaPack <= 0) return toast.error("Jumlah & Harga harus valid!");
     
+    // Hitung Dampak untuk Konfirmasi
+    const oldPacksPerSlop = po.conversion?.packsPerSlop || 10;
+    const oldSlopsPerKarton = ((po.conversion?.slopsPerBall || 20) * (po.conversion?.ballsPerKarton || 5)) + (po.conversion?.ekstraSlopPerKarton || 0);
+    const oldPacks = (po.jumlahKarton || 0) * oldSlopsPerKarton * oldPacksPerSlop;
+    const deltaPacks = totalPacks - oldPacks;
+    
+    const oldSisaHutang = po.sisaHutang || 0;
+    const deltaHutang = newSisaHutang - oldSisaHutang;
+
+    const message = `Konfirmasi Perubahan:
+${deltaPacks !== 0 ? `• Stok: ${deltaPacks > 0 ? "+" : ""}${deltaPacks.toLocaleString()} Pack` : "• Stok: Tidak berubah"}
+${deltaHutang !== 0 ? `• Hutang: ${deltaHutang > 0 ? "+" : ""}${formatRupiah(deltaHutang)}` : "• Hutang: Tidak berubah"}
+
+Lanjutkan pembaruan dan sinkronisasi data?`;
+
+    if (!confirm(message)) return;
+
     setSaving(true);
     try {
       // Konversi string tanggal kembali ke Date object
@@ -80,7 +100,11 @@ export default function EditPOModal({ po, onClose, distributions }) {
         // Update rincian unit juga agar sinkron
         totalBall: karton * (po.conversion?.ballsPerKarton || 5),
         totalSlop: karton * slopsPerKarton,
-        totalPack: totalPacks
+        totalPack: totalPacks,
+        conversion: {
+          ...po.conversion,
+          ekstraSlopPerKarton: extraSlop
+        }
       });
       toast.success("Data PO berhasil diperbarui!");
       onClose();
@@ -140,6 +164,17 @@ export default function EditPOModal({ po, onClose, distributions }) {
             <div>
               <label className="block text-xs font-medium text-slate-400 mb-1.5">Harga Beli / Pack</label>
               <input type="number" value={form.hargaBeliPerPack} onChange={e => setForm({...form, hargaBeliPerPack: e.target.value})} className="input-field" />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-amber-500 mb-1.5">Ekstra Slop / Karton</label>
+              <input 
+                type="number" 
+                value={form.ekstraSlopPerKarton} 
+                onChange={e => setForm({...form, ekstraSlopPerKarton: e.target.value})} 
+                disabled={isQtyLocked}
+                className={`input-field border-amber-500/30 focus:border-amber-500 text-amber-400 ${isQtyLocked ? "opacity-50 cursor-not-allowed bg-dark-800" : ""}`} 
+                placeholder="0"
+              />
             </div>
           </div>
 

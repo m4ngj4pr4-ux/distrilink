@@ -15,6 +15,7 @@ export default function EditProductModal({ product, isOpen, onClose }) {
     packsPerSlop: "",
     slopsPerBall: "",
     ballsPerKarton: "",
+    ekstraSlopPerKarton: 0,
     imageUrl: ""
   });
   const [imageFile, setImageFile] = useState(null);
@@ -27,6 +28,7 @@ export default function EditProductModal({ product, isOpen, onClose }) {
         packsPerSlop: product.packsPerSlop || "",
         slopsPerBall: product.slopsPerBall || "",
         ballsPerKarton: product.ballsPerKarton || "",
+        ekstraSlopPerKarton: product.ekstraSlopPerKarton || 0,
         imageUrl: product.imageUrl || ""
       });
       setImageFile(null);
@@ -61,8 +63,9 @@ export default function EditProductModal({ product, isOpen, onClose }) {
       await updateProduct(product.id, {
         name: form.name.trim(),
         packsPerSlop: parseInt(form.packsPerSlop),
-        slopsPerBall: parseInt(form.slopsPerBall),
-        ballsPerKarton: parseInt(form.ballsPerKarton),
+        slopsPerBall: parseInt(form.slopsPerBall) || 0,
+        ballsPerKarton: parseInt(form.ballsPerKarton) || 0,
+        ekstraSlopPerKarton: parseInt(form.ekstraSlopPerKarton) || 0,
         imageUrl: finalImageUrl
       });
       toast.success("Produk berhasil diperbarui!");
@@ -98,19 +101,43 @@ export default function EditProductModal({ product, isOpen, onClose }) {
             />
           </div>
 
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <div>
-              <label className="block text-xs font-medium text-slate-400 mb-1.5">Pack/Slop</label>
-              <input type="number" value={form.packsPerSlop} onChange={e => setForm({...form, packsPerSlop: e.target.value})} className="input-field" />
+              <label className="block text-[10px] uppercase font-bold text-slate-500 mb-1.5">Pack/Slop</label>
+              <input type="number" value={form.packsPerSlop} onChange={e => setForm({...form, packsPerSlop: e.target.value})} className="input-field text-xs" />
             </div>
             <div>
-              <label className="block text-xs font-medium text-slate-400 mb-1.5">Slop/Ball</label>
-              <input type="number" value={form.slopsPerBall} onChange={e => setForm({...form, slopsPerBall: e.target.value})} className="input-field" />
+              <label className="block text-[10px] uppercase font-bold text-slate-500 mb-1.5">Slop/Ball</label>
+              <input type="number" value={form.slopsPerBall} onChange={e => setForm({...form, slopsPerBall: e.target.value})} className="input-field text-xs" />
             </div>
             <div>
-              <label className="block text-xs font-medium text-slate-400 mb-1.5">Ball/Karton</label>
-              <input type="number" value={form.ballsPerKarton} onChange={e => setForm({...form, ballsPerKarton: e.target.value})} className="input-field" />
+              <label className="block text-[10px] uppercase font-bold text-slate-500 mb-1.5">Ball/Karton</label>
+              <input type="number" value={form.ballsPerKarton} onChange={e => setForm({...form, ballsPerKarton: e.target.value})} className="input-field text-xs" />
             </div>
+            <div>
+              <label className="block text-[10px] uppercase font-bold text-amber-500 mb-1.5">Eks. Slop/Ktn</label>
+              <input 
+                type="number" 
+                value={form.ekstraSlopPerKarton} 
+                onChange={e => setForm({...form, ekstraSlopPerKarton: e.target.value})} 
+                className="input-field text-xs border-amber-500/30 focus:border-amber-500 text-amber-400" 
+                placeholder="0"
+              />
+            </div>
+          </div>
+
+          <div className="p-3 rounded-xl bg-dark-800/80 border border-slate-700/50">
+            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Preview Konversi</p>
+            <p className="text-xs text-white leading-relaxed">
+              1 Karton = {(parseInt(form.ballsPerKarton) || 0)} Ball 
+              {parseInt(form.ekstraSlopPerKarton) > 0 && ` + ${form.ekstraSlopPerKarton} Slop (Ekstra)`}
+              {" "}= <span className="text-emerald-400 font-bold">
+                {((parseInt(form.slopsPerBall) || 0) * (parseInt(form.ballsPerKarton) || 0)) + (parseInt(form.ekstraSlopPerKarton) || 0)} Slop
+              </span>
+              {" "}= <span className="text-emerald-400 font-bold">
+                {(((parseInt(form.slopsPerBall) || 0) * (parseInt(form.ballsPerKarton) || 0)) + (parseInt(form.ekstraSlopPerKarton) || 0)) * (parseInt(form.packsPerSlop) || 0)} Pack
+              </span>
+            </p>
           </div>
 
           <div>

@@ -30,6 +30,7 @@ export default function FactoryPOForm({ products }) {
     packsPerSlop: "",
     slopsPerBall: "",
     ballsPerKarton: "",
+    ekstraSlopPerKarton: 0,
     imageUrl: "",
   });
   const [imageFile, setImageFile] = useState(null);
@@ -53,15 +54,18 @@ export default function FactoryPOForm({ products }) {
   // Hitung konversi dari produk terpilih
   function getConversion(product) {
     if (!product) return null;
-    const packsPerSlop = product.packsPerSlop || 10;
     const slopsPerBall = product.slopsPerBall || 20;
     const ballsPerKarton = product.ballsPerKarton || 5;
+    const ekstraSlop = product.ekstraSlopPerKarton || 0;
     const packsPerBall = packsPerSlop * slopsPerBall;
-    const packsPerKarton = packsPerBall * ballsPerKarton;
+    const slopsPerKarton = (slopsPerBall * ballsPerKarton) + ekstraSlop;
+    const packsPerKarton = slopsPerKarton * packsPerSlop;
     return {
       packsPerSlop,
       slopsPerBall,
       ballsPerKarton,
+      ekstraSlopPerKarton: ekstraSlop,
+      slopsPerKarton,
       packsPerBall,
       packsPerKarton,
     };
@@ -111,7 +115,7 @@ export default function FactoryPOForm({ products }) {
     }
 
     const totalBall = jumlahKarton * conv.ballsPerKarton;
-    const totalSlop = totalBall * conv.slopsPerBall;
+    const totalSlop = jumlahKarton * conv.slopsPerKarton;
     const totalPack = jumlahKarton * conv.packsPerKarton;
     const totalPembelian = totalPack * hargaBeliPerPack;
     const ongkirPerPack = totalPack > 0 ? biayaPengiriman / totalPack : 0;
@@ -152,7 +156,7 @@ export default function FactoryPOForm({ products }) {
     try {
       // 1. Simpan data pembelian (Atomik: update Stok, Product, Summary, dan Finance Ledger otomatis)
       const packsPerSlop = selectedProduct?.packsPerSlop || 10;
-      const slopsPerKarton = (selectedProduct?.slopsPerBall || 20) * (selectedProduct?.ballsPerKarton || 5);
+      const slopsPerKarton = ((selectedProduct?.slopsPerBall || 20) * (selectedProduct?.ballsPerKarton || 5)) + (selectedProduct?.ekstraSlopPerKarton || 0);
       const totalPacksPurchased = result.jumlahKarton * slopsPerKarton * packsPerSlop;
 
       await addPurchaseAtomic({
@@ -234,6 +238,7 @@ export default function FactoryPOForm({ products }) {
         packsPerSlop: parseInt(packsPerSlop),
         slopsPerBall: parseInt(slopsPerBall),
         ballsPerKarton: parseInt(ballsPerKarton),
+        ekstraSlopPerKarton: parseInt(newProduct.ekstraSlopPerKarton) || 0,
         imageUrl: finalImageUrl,
       });
       toast.success(`Produk "${name.trim()}" berhasil ditambahkan!`);
@@ -242,6 +247,7 @@ export default function FactoryPOForm({ products }) {
         packsPerSlop: "",
         slopsPerBall: "",
         ballsPerKarton: "",
+        ekstraSlopPerKarton: 0,
         imageUrl: "",
       });
       setImageFile(null);
@@ -566,7 +572,7 @@ export default function FactoryPOForm({ products }) {
                 />
               </div>
 
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <div>
                   <label className="block text-xs font-medium text-slate-400 mb-1.5">
                     Pack / Slop
@@ -621,6 +627,37 @@ export default function FactoryPOForm({ products }) {
                     min="1"
                   />
                 </div>
+                <div>
+                  <label className="block text-xs font-medium text-amber-500 mb-1.5">
+                    Eks. Slop/Ktn
+                  </label>
+                  <input
+                    type="number"
+                    value={newProduct.ekstraSlopPerKarton}
+                    onChange={(e) =>
+                      setNewProduct({
+                        ...newProduct,
+                        ekstraSlopPerKarton: e.target.value,
+                      })
+                    }
+                    placeholder="0"
+                    className="input-field border-amber-500/30 focus:border-amber-500 text-amber-400"
+                  />
+                </div>
+              </div>
+
+              <div className="p-4 rounded-xl bg-dark-800 border border-slate-700/50">
+                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Preview Konversi</p>
+                <p className="text-xs text-white leading-relaxed">
+                  1 Karton = {(parseInt(newProduct.ballsPerKarton) || 0)} Ball 
+                  {parseInt(newProduct.ekstraSlopPerKarton) > 0 && ` + ${newProduct.ekstraSlopPerKarton} Slop (Ekstra)`}
+                  {" "}= <span className="text-emerald-400 font-bold">
+                    {((parseInt(newProduct.slopsPerBall) || 0) * (parseInt(newProduct.ballsPerKarton) || 0)) + (parseInt(newProduct.ekstraSlopPerKarton) || 0)} Slop
+                  </span>
+                  {" "}= <span className="text-emerald-400 font-bold">
+                    {(((parseInt(newProduct.slopsPerBall) || 0) * (parseInt(newProduct.ballsPerKarton) || 0)) + (parseInt(newProduct.ekstraSlopPerKarton) || 0)) * (parseInt(newProduct.packsPerSlop) || 0)} Pack
+                  </span>
+                </p>
               </div>
 
               {/* Preview konversi */}
