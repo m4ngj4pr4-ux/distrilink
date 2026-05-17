@@ -94,17 +94,54 @@ export default function SupplyChainRadar() {
     return Object.values(map).sort((a, b) => b.totalDrop - a.totalDrop);
   }, [transactions, retailStores]);
 
-  // ── WIDGET 2: RADAR KINERJA SALES ──
+  // ── WIDGET 2: RADAR KINERJA SALES (3-Tier: Admin → Captain → Sales → Toko) ──
   const salesPerformance = useMemo(() => {
     return salesTeams.map(team => {
-      const teamDists = distributions.filter(d => d.teamId === team.id);
-      const totalBawaan = teamDists.reduce((s, d) => s + (d.totalPacksDistributed || 0), 0);
-      const teamDrops = transactions.filter(tx => tx.tipe === 'drop' && tx.teamId === team.id);
-      const totalDrop = teamDrops.reduce((s, tx) => s + (tx.jumlahDrop || 0), 0);
-      const sisa = Math.max(0, totalBawaan - totalDrop);
-      const pct = totalBawaan > 0 ? (totalDrop / totalBawaan) * 100 : 0;
-      return { id: team.id, name: team.name, role: team.role, totalBawaan, totalDrop, sisa, pct };
-    }).sort((a, b) => b.totalDrop - a.totalDrop);
+      const isCaptain = team.role === 'captain';
+
+      if (isCaptain) {
+        // CAPTAIN FORMULA:
+        // Gross Received = semua distribusi dari Admin (source !== 'captain')
+        const fromAdmin = distributions.filter(d => d.teamId === team.id && d.source !== 'captain');
+        const grossReceived = fromAdmin.reduce((s, d) => s + (d.totalPacksDistributed || 0), 0);
+
+        // Dioper ke Tim = semua captain_distribute transactions (Captain → Sales)
+        const transferOut = transactions.filter(tx => tx.tipe === 'captain_distribute' && tx.teamId === team.id);
+        const totalDioper = transferOut.reduce((s, tx) => s + (tx.jumlahDrop || 0), 0);
+
+        // Bawaan Jual Netto (Stok Tas Lapangan) = Gross - Dioper
+        const bawaanNetto = Math.max(0, grossReceived - totalDioper);
+
+        // Terjual = hanya drop ke toko retail (tipe: 'drop')
+        const retailDrops = transactions.filter(tx => tx.tipe === 'drop' && tx.teamId === team.id);
+        const totalTerjual = retailDrops.reduce((s, tx) => s + (tx.jumlahDrop || 0), 0);
+
+        const sisa = Math.max(0, bawaanNetto - totalTerjual);
+        const pct = bawaanNetto > 0 ? (totalTerjual / bawaanNetto) * 100 : 0;
+
+        return {
+          id: team.id, name: team.name, role: team.role,
+          grossReceived, totalDioper, bawaanNetto, totalTerjual, sisa, pct
+        };
+      } else {
+        // REGULAR SALES FORMULA:
+        // Bawaan Netto = stok diterima dari Captain (source === 'captain')
+        const fromCaptain = distributions.filter(d => d.teamId === team.id && d.source === 'captain');
+        const bawaanNetto = fromCaptain.reduce((s, d) => s + (d.totalPacksDistributed || 0), 0);
+
+        // Terjual = drop ke toko retail
+        const retailDrops = transactions.filter(tx => tx.tipe === 'drop' && tx.teamId === team.id);
+        const totalTerjual = retailDrops.reduce((s, tx) => s + (tx.jumlahDrop || 0), 0);
+
+        const sisa = Math.max(0, bawaanNetto - totalTerjual);
+        const pct = bawaanNetto > 0 ? (totalTerjual / bawaanNetto) * 100 : 0;
+
+        return {
+          id: team.id, name: team.name, role: team.role,
+          grossReceived: 0, totalDioper: 0, bawaanNetto, totalTerjual, sisa, pct
+        };
+      }
+    }).sort((a, b) => b.totalTerjual - a.totalTerjual);
   }, [salesTeams, distributions, transactions]);
 
   const handleCleanup = async () => {
@@ -277,16 +314,20 @@ export default function SupplyChainRadar() {
           <span className="text-[10px] bg-blue-500/20 text-blue-400 px-2 py-1 rounded font-bold">{salesPerformance.length} Agen</span>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 p-4">
-          {salesPerformance.map(agent => (
-            <div key={agent.id} className="bg-dark-800/60 border border-slate-700/50 rounded-2xl p-4 hover:bg-dark-800 hover:border-slate-600 transition-all group">
+          {salesPerformance.map(agent => {
+            const isCaptain = agent.role === 'captain';
+            return (
+            <div key={agent.id} className={`bg-dark-800/60 border rounded-2xl p-4 hover:bg-dark-800 transition-all group ${isCaptain ? "border-amber-500/30 ring-1 ring-amber-500/10" : "border-slate-700/50 hover:border-slate-600"}`}>
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2.5">
-                  <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-500/20 to-emerald-500/10 flex items-center justify-center text-sm font-black text-blue-400">
+                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center text-sm font-black ${isCaptain ? "bg-gradient-to-br from-amber-500/20 to-amber-600/10 text-amber-400" : "bg-gradient-to-br from-blue-500/20 to-emerald-500/10 text-blue-400"}`}>
                     {agent.name?.charAt(0)?.toUpperCase() || "?"}
                   </div>
                   <div>
                     <p className="text-xs font-bold text-white group-hover:text-blue-400 transition-colors">{agent.name}</p>
-                    <p className="text-[9px] text-slate-500 uppercase font-bold tracking-wider">{agent.role || "sales"}</p>
+                    <p className={`text-[9px] uppercase font-bold tracking-wider ${isCaptain ? "text-amber-500" : "text-slate-500"}`}>
+                      {isCaptain ? "⭐ Captain" : "Sales"}
+                    </p>
                   </div>
                 </div>
                 <span className={`text-[9px] font-black px-2 py-0.5 rounded-md ${agent.pct >= 80 ? "bg-emerald-500/20 text-emerald-400" : agent.pct >= 40 ? "bg-blue-500/20 text-blue-400" : "bg-slate-700 text-slate-400"}`}>
@@ -294,8 +335,26 @@ export default function SupplyChainRadar() {
                 </span>
               </div>
 
-              {/* Progress Bar */}
+              {/* Captain Extra: Gudang & Dioper */}
+              {isCaptain && agent.grossReceived > 0 && (
+                <div className="grid grid-cols-2 gap-2 mb-2">
+                  <div className="bg-dark-900/60 rounded-lg p-1.5 text-center">
+                    <p className="text-[7px] text-blue-400 uppercase font-bold tracking-wider">Gudang (Gross)</p>
+                    <p className="text-[11px] font-black text-blue-300">{agent.grossReceived.toLocaleString("id-ID")}</p>
+                  </div>
+                  <div className="bg-dark-900/60 rounded-lg p-1.5 text-center">
+                    <p className="text-[7px] text-purple-400 uppercase font-bold tracking-wider">Dioper ke Tim</p>
+                    <p className="text-[11px] font-black text-purple-300">{agent.totalDioper.toLocaleString("id-ID")}</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Progress Bar: Terjual / Bawaan Netto */}
               <div className="mb-3">
+                <div className="flex justify-between text-[9px] mb-1">
+                  <span className="text-slate-500 font-bold">Retail Performance</span>
+                  <span className="text-slate-400">{agent.totalTerjual.toLocaleString("id-ID")} / {agent.bawaanNetto.toLocaleString("id-ID")} Pk</span>
+                </div>
                 <div className="w-full h-2 bg-dark-900 rounded-full overflow-hidden">
                   <div className={`h-full rounded-full transition-all duration-1000 ease-out ${agent.pct >= 80 ? "bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.4)]" : agent.pct >= 40 ? "bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.3)]" : "bg-slate-600"}`}
                     style={{ width: `${Math.min(100, agent.pct)}%` }} />
@@ -305,12 +364,12 @@ export default function SupplyChainRadar() {
               {/* Stats Row */}
               <div className="grid grid-cols-3 gap-2 text-center">
                 <div className="bg-dark-900/60 rounded-lg p-2">
-                  <p className="text-[8px] text-slate-500 uppercase font-bold tracking-wider">Bawaan</p>
-                  <p className="text-sm font-black text-white">{agent.totalBawaan.toLocaleString("id-ID")}</p>
+                  <p className="text-[8px] text-slate-500 uppercase font-bold tracking-wider">Bawaan Netto</p>
+                  <p className="text-sm font-black text-white">{agent.bawaanNetto.toLocaleString("id-ID")}</p>
                 </div>
                 <div className="bg-dark-900/60 rounded-lg p-2">
                   <p className="text-[8px] text-emerald-500 uppercase font-bold tracking-wider">Terjual</p>
-                  <p className="text-sm font-black text-emerald-400">{agent.totalDrop.toLocaleString("id-ID")}</p>
+                  <p className="text-sm font-black text-emerald-400">{agent.totalTerjual.toLocaleString("id-ID")}</p>
                 </div>
                 <div className="bg-dark-900/60 rounded-lg p-2">
                   <p className="text-[8px] text-amber-500 uppercase font-bold tracking-wider">Sisa</p>
@@ -318,7 +377,8 @@ export default function SupplyChainRadar() {
                 </div>
               </div>
             </div>
-          ))}
+            );
+          })}
           {salesPerformance.length === 0 && (
             <div className="col-span-full py-16 text-center opacity-30">
               <HiOutlineUserGroup size={40} className="text-slate-500 mx-auto mb-2" />
