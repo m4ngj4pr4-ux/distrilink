@@ -1,17 +1,23 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { 
-  subscribePurchases, 
-  subscribeAllDistributions, 
-  subscribeAllSalesTransactions, 
+import { useState, useEffect, useMemo } from "react";
+import {
+  subscribePurchases,
+  subscribeAllDistributions,
+  subscribeAllSalesTransactions,
   subscribeAllStoreInventory,
   subscribeProducts,
   subscribeRetailStores,
+  subscribeSalesTeams,
   deleteStoreInventoryRecord,
   cleanupOrphanStoreInventory
 } from "@/lib/firestore";
-import { HiOutlineDatabase, HiOutlineTruck, HiOutlineCube, HiOutlineExclamationCircle, HiOutlineChartPie, HiOutlineTrash, HiOutlineRefresh } from "react-icons/hi";
+import {
+  HiOutlineDatabase, HiOutlineTruck, HiOutlineCube,
+  HiOutlineExclamationCircle, HiOutlineChartPie,
+  HiOutlineTrash, HiOutlineRefresh, HiOutlineTrendingUp,
+  HiOutlineUserGroup, HiOutlineFire
+} from "react-icons/hi";
 import toast from "react-hot-toast";
 import { usePermissions } from "@/hooks/usePermissions";
 
@@ -20,13 +26,14 @@ export default function SupplyChainRadar() {
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [isCleaning, setIsCleaning] = useState(false);
-  
+
   const [products, setProducts] = useState([]);
   const [purchases, setPurchases] = useState([]);
   const [distributions, setDistributions] = useState([]);
   const [transactions, setTransactions] = useState([]);
   const [storeInventory, setStoreInventory] = useState([]);
   const [retailStores, setRetailStores] = useState([]);
+  const [salesTeams, setSalesTeams] = useState([]);
 
   useEffect(() => {
     const unsubs = [
@@ -35,111 +42,94 @@ export default function SupplyChainRadar() {
       subscribeAllDistributions(setDistributions),
       subscribeAllSalesTransactions(setTransactions),
       subscribeAllStoreInventory(setStoreInventory),
-      subscribeRetailStores(setRetailStores)
+      subscribeRetailStores(setRetailStores),
+      subscribeSalesTeams(setSalesTeams)
     ];
-    return () => unsubs.forEach(unsub => unsub());
+    return () => unsubs.forEach(u => u());
   }, []);
 
-  // Filter and Aggregate Logic
+  // ── SUPPLY CHAIN FUNNEL (existing logic, kept intact) ──
   const getRadarData = () => {
-    // 1. Get POs for the selected month
     const filteredPOs = purchases.filter(po => {
       if (!po.createdAt) return false;
-      const date = po.createdAt.toDate ? po.createdAt.toDate() : new Date(po.createdAt);
-      return date.getMonth() === selectedMonth && date.getFullYear() === selectedYear;
+      const d = po.createdAt.toDate ? po.createdAt.toDate() : new Date(po.createdAt);
+      return d.getMonth() === selectedMonth && d.getFullYear() === selectedYear;
     });
-
     const poIds = filteredPOs.map(po => po.id);
-    const productIdsInMonth = [...new Set(filteredPOs.map(po => po.productId))];
-
-    return productIdsInMonth.map(pid => {
+    const pids = [...new Set(filteredPOs.map(po => po.productId))];
+    return pids.map(pid => {
       const product = products.find(p => p.id === pid) || { name: "Produk Terhapus" };
       const productPOs = filteredPOs.filter(po => po.productId === pid);
-      
-      const totalPO = productPOs.reduce((sum, po) => sum + (po.totalPack || 0), 0);
-      
-      // Di Gudang: (Total PO) - (Distributions from those specific POs)
+      const totalPO = productPOs.reduce((s, po) => s + (po.totalPack || 0), 0);
       const productDists = distributions.filter(d => poIds.includes(d.poId) && d.productId === pid);
-      const totalDist = productDists.reduce((sum, d) => sum + (d.totalPacksDistributed || 0), 0);
+      const totalDist = productDists.reduce((s, d) => s + (d.totalPacksDistributed || 0), 0);
       const diGudang = Math.max(0, totalPO - totalDist);
-
-      // Di Perjalanan (Sales): (Distributions) - (Drops to Stores)
-      // Filter drops that occurred in the same month for this product
       const productDrops = transactions.filter(tx => {
         if (tx.tipe !== 'drop' || tx.productId !== pid || !tx.waktu) return false;
-        const date = tx.waktu.toDate ? tx.waktu.toDate() : new Date(tx.waktu);
-        return date.getMonth() === selectedMonth && date.getFullYear() === selectedYear;
+        const dt = tx.waktu.toDate ? tx.waktu.toDate() : new Date(tx.waktu);
+        return dt.getMonth() === selectedMonth && dt.getFullYear() === selectedYear;
       });
-      const totalDropped = productDrops.reduce((sum, tx) => sum + (tx.jumlahDrop || 0), 0);
+      const totalDropped = productDrops.reduce((s, tx) => s + (tx.jumlahDrop || 0), 0);
       const diPerjalanan = Math.max(0, totalDist - totalDropped);
-
-      // Di Etalase Toko: The LATEST audited stock from stores (all time, but only for this product)
-      const productShelves = storeInventory.filter(inv => inv.productName === product.name);
-      // Auto-filter orphans: only count stock for stores that still exist
-      const validShelves = productShelves.filter(inv => retailStores.some(s => s.id === inv.storeId));
-      const diEtalase = validShelves.reduce((sum, inv) => sum + (inv.currentStock || 0), 0);
-
-      // Ludes: (Total Dropped in month) - (Di Etalase currently)
-      // User Logic: (Total dropped to stores) - (Di Etalase Toko)
+      const validShelves = storeInventory.filter(inv => inv.productName === product.name && retailStores.some(s => s.id === inv.storeId));
+      const diEtalase = validShelves.reduce((s, inv) => s + (inv.currentStock || 0), 0);
       const ludes = Math.max(0, totalDropped - diEtalase);
-
-      return {
-        id: pid,
-        name: product.name,
-        totalPO,
-        diGudang,
-        diPerjalanan,
-        diEtalase,
-        ludes
-      };
+      return { id: pid, name: product.name, totalPO, diGudang, diPerjalanan, diEtalase, ludes };
     });
   };
-
   const radarData = getRadarData();
 
-  // Restock Warning List
-  const restockWarnings = storeInventory
-    .filter(inv => inv.currentStock <= 5) // Critical threshold
-    .filter(inv => retailStores.some(s => s.id === inv.storeId)) // Auto-filter orphans
-    .map(inv => {
-      const store = retailStores.find(s => s.id === inv.storeId);
-      return {
-        ...inv,
-        namaToko: store?.namaToko || "Toko Tidak Dikenal",
-        lastAuditDate: inv.lastAuditAt?.toDate ? inv.lastAuditAt.toDate().toLocaleDateString("id-ID") : "-"
-      };
-    })
-    .sort((a, b) => a.currentStock - b.currentStock);
+  // ── WIDGET 1: KLASEMEN PENJUALAN TOKO ──
+  const storeLeaderboard = useMemo(() => {
+    const activeStoreIds = new Set(retailStores.map(s => s.id));
+    const drops = transactions.filter(tx => tx.tipe === 'drop' && tx.storeId && activeStoreIds.has(tx.storeId));
+    const map = {};
+    drops.forEach(tx => {
+      const sid = tx.storeId;
+      if (!map[sid]) map[sid] = { storeId: sid, namaToko: tx.namaToko || "Toko", totalDrop: 0, brands: {} };
+      map[sid].totalDrop += (tx.jumlahDrop || 0);
+      const brand = tx.productName || "Lain";
+      map[sid].brands[brand] = (map[sid].brands[brand] || 0) + (tx.jumlahDrop || 0);
+    });
+    return Object.values(map).sort((a, b) => b.totalDrop - a.totalDrop);
+  }, [transactions, retailStores]);
+
+  // ── WIDGET 2: RADAR KINERJA SALES ──
+  const salesPerformance = useMemo(() => {
+    return salesTeams.map(team => {
+      const teamDists = distributions.filter(d => d.teamId === team.id);
+      const totalBawaan = teamDists.reduce((s, d) => s + (d.totalPacksDistributed || 0), 0);
+      const teamDrops = transactions.filter(tx => tx.tipe === 'drop' && tx.teamId === team.id);
+      const totalDrop = teamDrops.reduce((s, tx) => s + (tx.jumlahDrop || 0), 0);
+      const sisa = Math.max(0, totalBawaan - totalDrop);
+      const pct = totalBawaan > 0 ? (totalDrop / totalBawaan) * 100 : 0;
+      return { id: team.id, name: team.name, role: team.role, totalBawaan, totalDrop, sisa, pct };
+    }).sort((a, b) => b.totalDrop - a.totalDrop);
+  }, [salesTeams, distributions, transactions]);
 
   const handleCleanup = async () => {
     if (!checkWritePermission("membersihkan data hantu")) return;
     if (!confirm("Hapus semua data stok dari toko yang sudah tidak ada di database?")) return;
     setIsCleaning(true);
     try {
-      const storeIds = retailStores.map(s => s.id);
-      const count = await cleanupOrphanStoreInventory(storeIds);
+      const count = await cleanupOrphanStoreInventory(retailStores.map(s => s.id));
       toast.success(`${count} data hantu berhasil dibersihkan!`);
-    } catch (err) {
-      toast.error("Gagal membersihkan: " + err.message);
-    } finally {
-      setIsCleaning(false);
-    }
+    } catch (err) { toast.error("Gagal: " + err.message); }
+    finally { setIsCleaning(false); }
   };
 
-  const handleDeleteRecord = async (id, name) => {
-    if (!checkWritePermission("menghapus record inventory")) return;
-    if (!confirm(`Hapus catatan stok ${name} ini secara permanen?`)) return;
-    try {
-      await deleteStoreInventoryRecord(id);
-      toast.success("Catatan dihapus");
-    } catch (err) {
-      toast.error("Gagal: " + err.message);
-    }
+  const getTrend = (total, rank) => {
+    if (rank === 0) return { icon: "🏆", label: "Juara 1", color: "text-amber-400" };
+    if (rank === 1) return { icon: "🥈", label: "Juara 2", color: "text-slate-300" };
+    if (rank === 2) return { icon: "🥉", label: "Juara 3", color: "text-amber-600" };
+    if (total >= 100) return { icon: "🔥", label: "Top Seller", color: "text-rose-400" };
+    if (total >= 50) return { icon: "⚡", label: "Aktif", color: "text-blue-400" };
+    return { icon: "📊", label: "Berkembang", color: "text-slate-400" };
   };
 
   return (
     <div className="flex flex-col gap-6 animate-fadeIn pb-10">
-      {/* Month Filter */}
+      {/* ── HEADER + FILTER ── */}
       <div className="glass-card p-4 flex flex-col sm:flex-row items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 bg-emerald-500/10 rounded-xl flex items-center justify-center text-emerald-400">
@@ -150,116 +140,50 @@ export default function SupplyChainRadar() {
             <p className="text-[10px] text-slate-500 uppercase tracking-widest font-medium">Supply Chain & Market Absorption</p>
           </div>
         </div>
-        
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
-          <button 
-            onClick={handleCleanup}
-            disabled={isCleaning}
-            className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-dark-700 hover:bg-rose-500/10 text-slate-400 hover:text-rose-400 transition-all border border-slate-700 text-[10px] font-bold uppercase tracking-wider disabled:opacity-50"
-          >
+          <button onClick={handleCleanup} disabled={isCleaning}
+            className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-dark-700 hover:bg-rose-500/10 text-slate-400 hover:text-rose-400 transition-all border border-slate-700 text-[10px] font-bold uppercase tracking-wider disabled:opacity-50">
             <HiOutlineRefresh className={isCleaning ? "animate-spin" : ""} />
             <span>Bersihkan Data Hantu</span>
           </button>
-
-          <div className="hidden sm:block h-8 w-px bg-slate-700 mx-1"></div>
-
+          <div className="hidden sm:block h-8 w-px bg-slate-700 mx-1" />
           <div className="flex gap-2 w-full sm:w-auto">
-            <select 
-              value={selectedMonth} 
-              onChange={e => setSelectedMonth(parseInt(e.target.value))}
-              className="bg-dark-700 border border-slate-600 rounded-xl px-4 py-2.5 text-[11px] text-white outline-none focus:border-emerald-500 font-bold flex-1 sm:flex-none"
-            >
-              {["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"].map((m, i) => (
+            <select value={selectedMonth} onChange={e => setSelectedMonth(parseInt(e.target.value))}
+              className="bg-dark-700 border border-slate-600 rounded-xl px-4 py-2.5 text-[11px] text-white outline-none focus:border-emerald-500 font-bold flex-1 sm:flex-none">
+              {["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"].map((m,i) => (
                 <option key={i} value={i}>{m}</option>
               ))}
             </select>
-            <select 
-              value={selectedYear} 
-              onChange={e => setSelectedYear(parseInt(e.target.value))}
-              className="bg-dark-700 border border-slate-600 rounded-xl px-4 py-2.5 text-[11px] text-white outline-none focus:border-emerald-500 font-bold flex-1 sm:flex-none"
-            >
-              {[2024, 2025, 2026].map(y => (
-                <option key={y} value={y}>{y}</option>
-              ))}
+            <select value={selectedYear} onChange={e => setSelectedYear(parseInt(e.target.value))}
+              className="bg-dark-700 border border-slate-600 rounded-xl px-4 py-2.5 text-[11px] text-white outline-none focus:border-emerald-500 font-bold flex-1 sm:flex-none">
+              {[2024,2025,2026].map(y => <option key={y} value={y}>{y}</option>)}
             </select>
           </div>
         </div>
       </div>
 
-      {/* Funnel Section */}
+      {/* ── FUNNEL SECTION (existing) ── */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {radarData.map(item => (
           <div key={item.id} className="glass-card p-5 border-l-4 border-emerald-500 hover:bg-white/[0.02] transition-colors">
             <h3 className="font-black text-white mb-4 uppercase tracking-tight text-lg">{item.name}</h3>
-            
             <div className="space-y-5">
-              {/* Pipeline Step 1: Gudang */}
-              <div>
-                <div className="flex justify-between text-[10px] mb-1.5">
-                  <span className="text-slate-400 uppercase font-bold flex items-center gap-1.5">
-                    <HiOutlineDatabase size={14} className="text-blue-400" /> Di Gudang Admin
-                  </span>
-                  <span className="text-white font-mono">{item.diGudang} Pk <span className="text-slate-600">/ {item.totalPO}</span></span>
-                </div>
-                <div className="w-full h-2 bg-dark-900 rounded-full overflow-hidden">
-                  <div 
-                    className="h-full bg-blue-500 transition-all duration-1000 ease-out" 
-                    style={{ width: `${(item.diGudang / item.totalPO) * 100}%` }}
-                  />
-                </div>
-              </div>
-
-              {/* Pipeline Step 2: Sales */}
-              <div>
-                <div className="flex justify-between text-[10px] mb-1.5">
-                  <span className="text-slate-400 uppercase font-bold flex items-center gap-1.5">
-                    <HiOutlineTruck size={14} className="text-amber-400" /> Di Perjalanan (Sales)
-                  </span>
-                  <span className="text-white font-mono">{item.diPerjalanan} Pk</span>
-                </div>
-                <div className="w-full h-2 bg-dark-900 rounded-full overflow-hidden">
-                  <div 
-                    className="h-full bg-amber-500 transition-all duration-1000 ease-out" 
-                    style={{ width: `${(item.diPerjalanan / item.totalPO) * 100}%` }}
-                  />
-                </div>
-              </div>
-
-              {/* Pipeline Step 3: Etalase */}
-              <div>
-                <div className="flex justify-between text-[10px] mb-1.5">
-                  <span className="text-slate-400 uppercase font-bold flex items-center gap-1.5">
-                    <HiOutlineCube size={14} className="text-indigo-400" /> Di Etalase Toko
-                  </span>
-                  <span className="text-white font-mono">{item.diEtalase} Pk</span>
-                </div>
-                <div className="w-full h-2 bg-dark-900 rounded-full overflow-hidden">
-                  <div 
-                    className="h-full bg-indigo-500 transition-all duration-1000 ease-out" 
-                    style={{ width: `${(item.diEtalase / item.totalPO) * 100}%` }}
-                  />
-                </div>
-              </div>
-
-              {/* Pipeline Step 4: Ludes */}
+              <FunnelBar icon={<HiOutlineDatabase size={14} className="text-blue-400"/>} label="Di Gudang Admin" value={item.diGudang} total={item.totalPO} color="bg-blue-500" />
+              <FunnelBar icon={<HiOutlineTruck size={14} className="text-amber-400"/>} label="Di Perjalanan (Sales)" value={item.diPerjalanan} total={item.totalPO} color="bg-amber-500" />
+              <FunnelBar icon={<HiOutlineCube size={14} className="text-indigo-400"/>} label="Di Etalase Toko" value={item.diEtalase} total={item.totalPO} color="bg-indigo-500" />
               <div className="pt-2">
                 <div className="flex justify-between text-[11px] mb-2">
-                  <span className="text-emerald-400 uppercase font-black flex items-center gap-2">
-                    <span className="animate-bounce">🚀</span> Market Absorption (Ludes)
-                  </span>
+                  <span className="text-emerald-400 uppercase font-black flex items-center gap-2"><span className="animate-bounce">🚀</span> Market Absorption</span>
                   <span className="text-emerald-400 font-black">{Math.round((item.ludes / item.totalPO) * 100) || 0}%</span>
                 </div>
                 <div className="w-full h-3 bg-dark-900 rounded-full overflow-hidden shadow-inner p-0.5">
-                  <div 
-                    className="h-full bg-emerald-500 rounded-full transition-all duration-1000 ease-out shadow-[0_0_15px_rgba(16,185,129,0.4)]" 
-                    style={{ width: `${(item.ludes / item.totalPO) * 100}%` }}
-                  />
+                  <div className="h-full bg-emerald-500 rounded-full transition-all duration-1000 ease-out shadow-[0_0_15px_rgba(16,185,129,0.4)]"
+                    style={{ width: `${(item.ludes / item.totalPO) * 100}%` }} />
                 </div>
               </div>
             </div>
           </div>
         ))}
-
         {radarData.length === 0 && (
           <div className="col-span-full py-20 text-center glass-card border-dashed border-2 border-slate-700/50">
             <HiOutlineExclamationCircle className="mx-auto text-slate-600 mb-2" size={48} />
@@ -269,78 +193,155 @@ export default function SupplyChainRadar() {
         )}
       </div>
 
-      {/* Restock Warning Table */}
+      {/* ── WIDGET 1: KLASEMEN PENJUALAN TOKO ── */}
       <div className="glass-card overflow-hidden shadow-2xl border border-slate-700/30">
-        <div className="p-4 bg-slate-800/40 border-b border-slate-700 flex items-center justify-between">
+        <div className="p-4 bg-gradient-to-r from-amber-500/5 to-transparent border-b border-slate-700 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-rose-500/10 rounded-lg flex items-center justify-center">
-              <HiOutlineExclamationCircle className="text-rose-500" size={20} />
+            <div className="w-8 h-8 bg-amber-500/10 rounded-lg flex items-center justify-center">
+              <HiOutlineTrendingUp className="text-amber-400" size={20} />
             </div>
             <div>
-              <h3 className="font-bold text-white text-sm uppercase tracking-wider">Radar Toko Kosong</h3>
-              <p className="text-[10px] text-slate-500">Daftar retail yang membutuhkan restock segera (Stok ≤ 5)</p>
+              <h3 className="font-bold text-white text-sm uppercase tracking-wider">Klasemen Penjualan Toko</h3>
+              <p className="text-[10px] text-slate-500">Top Performers — Agregasi seluruh transaksi drop</p>
             </div>
           </div>
-          <span className="text-[10px] bg-rose-500/20 text-rose-400 px-2 py-1 rounded font-bold uppercase">Critical Area</span>
+          <span className="text-[10px] bg-amber-500/20 text-amber-400 px-2 py-1 rounded font-bold">{storeLeaderboard.length} Toko</span>
         </div>
         <div className="overflow-x-auto custom-scrollbar">
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-dark-900/40">
-                <th className="p-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Retail Store</th>
-                <th className="p-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Brand</th>
-                <th className="p-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest text-center">Shelf Stock</th>
-                <th className="p-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Last Audit</th>
-                <th className="p-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Pembina (Sales)</th>
-                <th className="p-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest text-center">Aksi</th>
+                <th className="p-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest w-10">#</th>
+                <th className="p-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Nama Toko</th>
+                <th className="p-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest text-center">Total Drop</th>
+                <th className="p-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Rincian per Merek</th>
+                <th className="p-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest text-center">Status</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800/50">
-              {restockWarnings.map((warn, i) => (
-                <tr key={i} className="hover:bg-white/[0.02] transition-colors group">
-                  <td className="p-4">
-                    <div className="flex flex-col">
-                      <span className="text-xs font-bold text-white group-hover:text-emerald-400 transition-colors">{warn.namaToko}</span>
-                      <span className="text-[9px] text-slate-500 mt-0.5">ID: {warn.storeId?.substring(0,8)}</span>
-                    </div>
-                  </td>
-                  <td className="p-4 text-xs text-slate-300 font-medium">{warn.productName}</td>
-                  <td className="p-4 text-center">
-                    <span className={`inline-block min-w-[50px] px-3 py-1 rounded-lg font-black text-xs ${warn.currentStock === 0 ? "bg-rose-500 text-white shadow-lg shadow-rose-900/40" : "bg-amber-500/20 text-amber-400"}`}>
-                      {warn.currentStock} Pk
-                    </span>
-                  </td>
-                  <td className="p-4 text-[11px] text-slate-400">{warn.lastAuditDate}</td>
-                  <td className="p-4">
-                    <span className="flex items-center gap-1.5 text-xs text-emerald-400 font-bold">
-                      <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
-                      {warn.lastAuditBy || warn.lastDropBy || "System"}
-                    </span>
-                  </td>
-                  <td className="p-4 text-center">
-                    <button 
-                      onClick={() => handleDeleteRecord(warn.id, warn.productName)}
-                      className="p-2 text-slate-600 hover:text-rose-500 transition-colors"
-                      title="Hapus Catatan Stok"
-                    >
-                      <HiOutlineTrash size={16} />
-                    </button>
-                  </td>
-                </tr>
-              ))}
-              {restockWarnings.length === 0 && (
-                <tr>
-                  <td colSpan="5" className="p-16 text-center">
-                    <div className="flex flex-col items-center gap-2 opacity-30">
-                      <HiOutlineCube size={40} className="text-slate-500" />
-                      <p className="italic text-xs font-medium">Semua toko masih memiliki stok yang mencukupi.</p>
-                    </div>
-                  </td>
-                </tr>
+              {storeLeaderboard.map((store, i) => {
+                const trend = getTrend(store.totalDrop, i);
+                return (
+                  <tr key={store.storeId} className="hover:bg-white/[0.02] transition-colors group">
+                    <td className="p-4 text-xs font-black text-slate-500">{i + 1}</td>
+                    <td className="p-4">
+                      <span className="text-xs font-bold text-white group-hover:text-emerald-400 transition-colors">{store.namaToko}</span>
+                    </td>
+                    <td className="p-4 text-center">
+                      <span className="inline-block min-w-[50px] px-3 py-1 rounded-lg font-black text-xs bg-emerald-500/20 text-emerald-400">
+                        {store.totalDrop.toLocaleString("id-ID")} Pk
+                      </span>
+                    </td>
+                    <td className="p-4">
+                      <div className="flex flex-wrap gap-1.5">
+                        {Object.entries(store.brands).sort((a,b) => b[1]-a[1]).map(([brand, qty]) => (
+                          <span key={brand} className="text-[9px] bg-dark-900/80 border border-slate-700/50 px-2 py-0.5 rounded-md text-slate-300">
+                            <span className="text-blue-400 font-bold">{brand}</span>: {qty}
+                          </span>
+                        ))}
+                      </div>
+                    </td>
+                    <td className="p-4 text-center">
+                      <span className={`text-[10px] font-bold ${trend.color} flex items-center justify-center gap-1`}>
+                        <span>{trend.icon}</span> {trend.label}
+                      </span>
+                    </td>
+                  </tr>
+                );
+              })}
+              {storeLeaderboard.length === 0 && (
+                <tr><td colSpan="5" className="p-16 text-center">
+                  <div className="flex flex-col items-center gap-2 opacity-30">
+                    <HiOutlineCube size={40} className="text-slate-500" />
+                    <p className="italic text-xs font-medium">Belum ada data transaksi drop.</p>
+                  </div>
+                </td></tr>
               )}
             </tbody>
           </table>
         </div>
+      </div>
+
+      {/* ── WIDGET 2: RADAR KINERJA & STOK SALES ── */}
+      <div className="glass-card overflow-hidden shadow-2xl border border-slate-700/30">
+        <div className="p-4 bg-gradient-to-r from-blue-500/5 to-transparent border-b border-slate-700 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 bg-blue-500/10 rounded-lg flex items-center justify-center">
+              <HiOutlineUserGroup className="text-blue-400" size={20} />
+            </div>
+            <div>
+              <h3 className="font-bold text-white text-sm uppercase tracking-wider">Radar Kinerja & Stok Sales</h3>
+              <p className="text-[10px] text-slate-500">Performa distribusi & sisa stok bawaan setiap agen</p>
+            </div>
+          </div>
+          <span className="text-[10px] bg-blue-500/20 text-blue-400 px-2 py-1 rounded font-bold">{salesPerformance.length} Agen</span>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 p-4">
+          {salesPerformance.map(agent => (
+            <div key={agent.id} className="bg-dark-800/60 border border-slate-700/50 rounded-2xl p-4 hover:bg-dark-800 hover:border-slate-600 transition-all group">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-500/20 to-emerald-500/10 flex items-center justify-center text-sm font-black text-blue-400">
+                    {agent.name?.charAt(0)?.toUpperCase() || "?"}
+                  </div>
+                  <div>
+                    <p className="text-xs font-bold text-white group-hover:text-blue-400 transition-colors">{agent.name}</p>
+                    <p className="text-[9px] text-slate-500 uppercase font-bold tracking-wider">{agent.role || "sales"}</p>
+                  </div>
+                </div>
+                <span className={`text-[9px] font-black px-2 py-0.5 rounded-md ${agent.pct >= 80 ? "bg-emerald-500/20 text-emerald-400" : agent.pct >= 40 ? "bg-blue-500/20 text-blue-400" : "bg-slate-700 text-slate-400"}`}>
+                  {Math.round(agent.pct)}%
+                </span>
+              </div>
+
+              {/* Progress Bar */}
+              <div className="mb-3">
+                <div className="w-full h-2 bg-dark-900 rounded-full overflow-hidden">
+                  <div className={`h-full rounded-full transition-all duration-1000 ease-out ${agent.pct >= 80 ? "bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.4)]" : agent.pct >= 40 ? "bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.3)]" : "bg-slate-600"}`}
+                    style={{ width: `${Math.min(100, agent.pct)}%` }} />
+                </div>
+              </div>
+
+              {/* Stats Row */}
+              <div className="grid grid-cols-3 gap-2 text-center">
+                <div className="bg-dark-900/60 rounded-lg p-2">
+                  <p className="text-[8px] text-slate-500 uppercase font-bold tracking-wider">Bawaan</p>
+                  <p className="text-sm font-black text-white">{agent.totalBawaan.toLocaleString("id-ID")}</p>
+                </div>
+                <div className="bg-dark-900/60 rounded-lg p-2">
+                  <p className="text-[8px] text-emerald-500 uppercase font-bold tracking-wider">Terjual</p>
+                  <p className="text-sm font-black text-emerald-400">{agent.totalDrop.toLocaleString("id-ID")}</p>
+                </div>
+                <div className="bg-dark-900/60 rounded-lg p-2">
+                  <p className="text-[8px] text-amber-500 uppercase font-bold tracking-wider">Sisa</p>
+                  <p className={`text-sm font-black ${agent.sisa > 0 ? "text-amber-400" : "text-slate-500"}`}>{agent.sisa.toLocaleString("id-ID")}</p>
+                </div>
+              </div>
+            </div>
+          ))}
+          {salesPerformance.length === 0 && (
+            <div className="col-span-full py-16 text-center opacity-30">
+              <HiOutlineUserGroup size={40} className="text-slate-500 mx-auto mb-2" />
+              <p className="italic text-xs font-medium">Belum ada data tim sales.</p>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Helper sub-component for funnel bars ──
+function FunnelBar({ icon, label, value, total, color }) {
+  return (
+    <div>
+      <div className="flex justify-between text-[10px] mb-1.5">
+        <span className="text-slate-400 uppercase font-bold flex items-center gap-1.5">{icon} {label}</span>
+        <span className="text-white font-mono">{value} Pk <span className="text-slate-600">/ {total}</span></span>
+      </div>
+      <div className="w-full h-2 bg-dark-900 rounded-full overflow-hidden">
+        <div className={`h-full ${color} transition-all duration-1000 ease-out`}
+          style={{ width: `${total > 0 ? (value / total) * 100 : 0}%` }} />
       </div>
     </div>
   );
