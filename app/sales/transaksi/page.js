@@ -116,12 +116,10 @@ export default function TransaksiPage() {
     }
   };
 
-  // Auto-fill price when brand is selected
-  useEffect(() => {
-    if (selectedBrand && carriedBrands[selectedBrand]) {
-      setHargaDrop(carriedBrands[selectedBrand].sellingPrice?.toString() || "");
-    }
-  }, [selectedBrand, carriedBrands]);
+  // Harga referensi dari distribusi (untuk info, bukan auto-fill)
+  const hargaReferensi = selectedBrand && carriedBrands[selectedBrand]
+    ? carriedBrands[selectedBrand].sellingPrice || 0
+    : 0;
 
   const handleDropSubmit = async (e) => {
     e.preventDefault();
@@ -347,7 +345,12 @@ export default function TransaksiPage() {
                     required
                   />
                 </div>
-                <p className="text-[9px] text-slate-500 text-center mt-1 italic">Dapat diubah sesuai kesepakatan toko</p>
+                <p className="text-[9px] text-slate-500 text-center mt-1 italic">
+                  {hargaReferensi > 0 
+                    ? <>Harga ambil barang: <span className="text-amber-400 font-bold not-italic">Rp {hargaReferensi.toLocaleString('id-ID')}</span> / Pack</>
+                    : 'Sesuaikan harga dengan kesepakatan toko'
+                  }
+                </p>
               </div>
 
               <div className="mb-6 bg-blue-900/10 border border-blue-500/20 p-4 rounded-xl text-center">
