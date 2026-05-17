@@ -25,7 +25,7 @@ export default function TransaksiPage() {
   const [jumlahDrop, setJumlahDrop] = useState("");
   const [hargaDrop, setHargaDrop] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isPrintEnabled, setIsPrintEnabled] = useState(true);
+  const [isPrintEnabled, setIsPrintEnabled] = useState(false);
   
   // Success Modal for Printing
   const [lastDropData, setLastDropData] = useState(null);
