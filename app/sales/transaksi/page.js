@@ -2,12 +2,14 @@
 import { useEffect, useState } from 'react';
 import { 
   getGroupedStoreInventory, getSalesCarriedBrands, 
-  addDropTransaction, updateStoreShelfStock, getSisaStokSales 
+  addDropTransaction, updateStoreShelfStock, getSisaStokSales,
+  updateRetailStore
 } from '@/lib/firestore';
+import { getCurrentLocation } from '@/lib/geolocation';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { printer } from '@/lib/printer';
-import { HiOutlinePrinter, HiCheckCircle, HiX } from 'react-icons/hi';
+import { HiOutlinePrinter, HiCheckCircle, HiX, HiOutlineLocationMarker } from 'react-icons/hi';
 
 export default function TransaksiPage() {
   const router = useRouter();
@@ -33,6 +35,10 @@ export default function TransaksiPage() {
   const [auditItem, setAuditItem] = useState(null);
   const [auditQty, setAuditQty] = useState("");
 
+  // GPS Prompt State
+  const [gpsPrompt, setGpsPrompt] = useState(null); // { storeId, namaToko, coords, status }
+  const [pendingStore, setPendingStore] = useState(null);
+
   useEffect(() => {
     const storedUser = localStorage.getItem('sales_user');
     if (!storedUser) return router.push('/sales/login');
@@ -54,12 +60,60 @@ export default function TransaksiPage() {
 
   // ── RESTOCK (DROP) HANDLER ──
   const handleOpenRestock = async (store) => {
+    const hasCoords = store.latitude != null && store.longitude != null 
+      && !(store.latitude === 0 && store.longitude === 0);
+
+    if (!hasCoords) {
+      // Simpan store yang mau di-restock, tunjukkan GPS prompt dulu
+      setPendingStore(store);
+      setGpsPrompt({ storeId: store.storeId, namaToko: store.namaToko, coords: null, status: 'loading' });
+
+      const loc = await getCurrentLocation(10000);
+      if (loc.status === 'OK') {
+        setGpsPrompt(prev => ({ ...prev, coords: { lat: loc.latitude, lng: loc.longitude }, status: 'ok' }));
+      } else {
+        setGpsPrompt(prev => ({ ...prev, status: 'failed' }));
+      }
+      return;
+    }
+
+    // Toko sudah punya koordinat — langsung buka modal restock
+    openRestockModal(store);
+  };
+
+  const openRestockModal = async (store) => {
     setRestockStore(store);
     setSelectedBrand("");
     setJumlahDrop("");
     const brands = await getSalesCarriedBrands(user.id);
     setCarriedBrands(brands);
     setHargaDrop("");
+  };
+
+  const handleGpsSave = async () => {
+    if (!gpsPrompt?.coords || !gpsPrompt?.storeId) return;
+    try {
+      await updateRetailStore(gpsPrompt.storeId, {
+        latitude: gpsPrompt.coords.lat,
+        longitude: gpsPrompt.coords.lng
+      });
+      toast.success("Koordinat toko berhasil disimpan!");
+    } catch (err) {
+      toast.error("Gagal simpan koordinat.");
+    }
+    setGpsPrompt(null);
+    if (pendingStore) {
+      openRestockModal(pendingStore);
+      setPendingStore(null);
+    }
+  };
+
+  const handleGpsSkip = () => {
+    setGpsPrompt(null);
+    if (pendingStore) {
+      openRestockModal(pendingStore);
+      setPendingStore(null);
+    }
   };
 
   // Auto-fill price when brand is selected
@@ -411,6 +465,77 @@ export default function TransaksiPage() {
               <button onClick={handleAuditSubmit} disabled={isSubmitting} className="flex-1 py-3.5 rounded-xl bg-amber-600 text-white text-xs font-bold active:scale-95 transition-all shadow-lg shadow-amber-900/30 disabled:opacity-50">
                 {isSubmitting ? "Menyimpan..." : "Simpan Audit"}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── GPS COORDINATE PROMPT MODAL ── */}
+      {gpsPrompt && (
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-[120] backdrop-blur-sm p-4">
+          <div className="bg-dark-900 w-full max-w-sm rounded-2xl p-5 border border-slate-700 animate-slideIn shadow-2xl">
+            <div className="flex items-center gap-3 mb-4">
+              <div className={`w-11 h-11 rounded-xl flex items-center justify-center ${
+                gpsPrompt.status === 'ok' ? 'bg-emerald-500/10' : gpsPrompt.status === 'failed' ? 'bg-amber-500/10' : 'bg-blue-500/10'
+              }`}>
+                <HiOutlineLocationMarker className={`${
+                  gpsPrompt.status === 'ok' ? 'text-emerald-400' : gpsPrompt.status === 'failed' ? 'text-amber-400' : 'text-blue-400 animate-pulse'
+                }`} size={24} />
+              </div>
+              <div>
+                <h3 className="text-sm font-bold text-white">Koordinat Belum Tersimpan</h3>
+                <p className="text-[10px] text-slate-400">{gpsPrompt.namaToko}</p>
+              </div>
+            </div>
+
+            <div className={`rounded-xl p-4 mb-4 border ${
+              gpsPrompt.status === 'ok' ? 'bg-emerald-500/5 border-emerald-500/20' 
+              : gpsPrompt.status === 'failed' ? 'bg-amber-500/5 border-amber-500/20' 
+              : 'bg-blue-500/5 border-blue-500/20'
+            }`}>
+              {gpsPrompt.status === 'loading' && (
+                <div className="flex items-center gap-3">
+                  <div className="w-5 h-5 border-2 border-blue-500/30 border-t-blue-500 rounded-full animate-spin shrink-0" />
+                  <div>
+                    <p className="text-xs text-blue-400 font-bold">Mendeteksi lokasi Anda...</p>
+                    <p className="text-[9px] text-slate-500 mt-0.5">Pastikan GPS aktif</p>
+                  </div>
+                </div>
+              )}
+
+              {gpsPrompt.status === 'ok' && gpsPrompt.coords && (
+                <div>
+                  <p className="text-[9px] text-emerald-500 uppercase font-bold tracking-wider mb-1">📍 Koordinat Terdeteksi</p>
+                  <p className="text-sm font-mono font-bold text-emerald-400">
+                    {gpsPrompt.coords.lat.toFixed(6)}, {gpsPrompt.coords.lng.toFixed(6)}
+                  </p>
+                  <p className="text-[9px] text-slate-500 mt-2">Simpan koordinat ini sebagai lokasi toko?</p>
+                </div>
+              )}
+
+              {gpsPrompt.status === 'failed' && (
+                <div>
+                  <p className="text-xs text-amber-400 font-bold">⚠️ GPS tidak dapat mendeteksi lokasi</p>
+                  <p className="text-[9px] text-slate-500 mt-1">Koordinat bisa diisi nanti. Anda tetap bisa lanjut drop barang.</p>
+                </div>
+              )}
+            </div>
+
+            <div className="flex gap-2">
+              <button 
+                onClick={handleGpsSkip}
+                className="flex-1 py-3 rounded-xl bg-dark-800 border border-slate-700 text-xs text-slate-400 font-bold active:scale-95 transition-all"
+              >
+                {gpsPrompt.status === 'failed' ? 'Lanjut Tanpa GPS' : 'Lewati'}
+              </button>
+              {gpsPrompt.status === 'ok' && gpsPrompt.coords && (
+                <button 
+                  onClick={handleGpsSave}
+                  className="flex-1 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold active:scale-95 transition-all shadow-lg shadow-emerald-900/30"
+                >
+                  ✅ Simpan Koordinat
+                </button>
+              )}
             </div>
           </div>
         </div>
