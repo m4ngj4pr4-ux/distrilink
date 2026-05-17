@@ -116,12 +116,17 @@ export default function SupplyChainRadar() {
         const retailDrops = transactions.filter(tx => tx.tipe === 'drop' && tx.teamId === team.id);
         const totalTerjual = retailDrops.reduce((s, tx) => s + (tx.jumlahDrop || 0), 0);
 
+        // Toko Binaan = unique storeId dari drop + toko terdaftar milik captain
+        const dropStoreIds = new Set(retailDrops.map(tx => tx.storeId).filter(Boolean));
+        const registeredStoreIds = new Set(retailStores.filter(s => s.teamId === team.id).map(s => s.id));
+        const tokoBinaan = new Set([...dropStoreIds, ...registeredStoreIds]).size;
+
         const sisa = Math.max(0, bawaanNetto - totalTerjual);
         const pct = bawaanNetto > 0 ? (totalTerjual / bawaanNetto) * 100 : 0;
 
         return {
           id: team.id, name: team.name, role: team.role,
-          grossReceived, totalDioper, bawaanNetto, totalTerjual, sisa, pct
+          grossReceived, totalDioper, bawaanNetto, totalTerjual, sisa, pct, tokoBinaan
         };
       } else {
         // REGULAR SALES FORMULA:
@@ -133,16 +138,21 @@ export default function SupplyChainRadar() {
         const retailDrops = transactions.filter(tx => tx.tipe === 'drop' && tx.teamId === team.id);
         const totalTerjual = retailDrops.reduce((s, tx) => s + (tx.jumlahDrop || 0), 0);
 
+        // Toko Binaan = unique storeId dari drop + toko terdaftar
+        const dropStoreIds = new Set(retailDrops.map(tx => tx.storeId).filter(Boolean));
+        const registeredStoreIds = new Set(retailStores.filter(s => s.teamId === team.id).map(s => s.id));
+        const tokoBinaan = new Set([...dropStoreIds, ...registeredStoreIds]).size;
+
         const sisa = Math.max(0, bawaanNetto - totalTerjual);
         const pct = bawaanNetto > 0 ? (totalTerjual / bawaanNetto) * 100 : 0;
 
         return {
           id: team.id, name: team.name, role: team.role,
-          grossReceived: 0, totalDioper: 0, bawaanNetto, totalTerjual, sisa, pct
+          grossReceived: 0, totalDioper: 0, bawaanNetto, totalTerjual, sisa, pct, tokoBinaan
         };
       }
     }).sort((a, b) => b.totalTerjual - a.totalTerjual);
-  }, [salesTeams, distributions, transactions]);
+  }, [salesTeams, distributions, transactions, retailStores]);
 
   const handleCleanup = async () => {
     if (!checkWritePermission("membersihkan data hantu")) return;
@@ -324,7 +334,14 @@ export default function SupplyChainRadar() {
                     {agent.name?.charAt(0)?.toUpperCase() || "?"}
                   </div>
                   <div>
-                    <p className="text-xs font-bold text-white group-hover:text-blue-400 transition-colors">{agent.name}</p>
+                    <div className="flex items-center gap-1.5">
+                      <p className="text-xs font-bold text-white group-hover:text-blue-400 transition-colors">{agent.name}</p>
+                      {agent.tokoBinaan > 0 && (
+                        <span className="text-[8px] bg-cyan-500/15 text-cyan-400 px-1.5 py-0.5 rounded border border-cyan-500/20 font-black">
+                          {agent.tokoBinaan} 🏪
+                        </span>
+                      )}
+                    </div>
                     <p className={`text-[9px] uppercase font-bold tracking-wider ${isCaptain ? "text-amber-500" : "text-slate-500"}`}>
                       {isCaptain ? "⭐ Captain" : "Sales"}
                     </p>
@@ -362,18 +379,22 @@ export default function SupplyChainRadar() {
               </div>
 
               {/* Stats Row */}
-              <div className="grid grid-cols-3 gap-2 text-center">
+              <div className="grid grid-cols-4 gap-2 text-center">
                 <div className="bg-dark-900/60 rounded-lg p-2">
-                  <p className="text-[8px] text-slate-500 uppercase font-bold tracking-wider">Bawaan Netto</p>
+                  <p className="text-[7px] text-slate-500 uppercase font-bold tracking-wider">Bawaan</p>
                   <p className="text-sm font-black text-white">{agent.bawaanNetto.toLocaleString("id-ID")}</p>
                 </div>
                 <div className="bg-dark-900/60 rounded-lg p-2">
-                  <p className="text-[8px] text-emerald-500 uppercase font-bold tracking-wider">Terjual</p>
+                  <p className="text-[7px] text-emerald-500 uppercase font-bold tracking-wider">Terjual</p>
                   <p className="text-sm font-black text-emerald-400">{agent.totalTerjual.toLocaleString("id-ID")}</p>
                 </div>
                 <div className="bg-dark-900/60 rounded-lg p-2">
-                  <p className="text-[8px] text-amber-500 uppercase font-bold tracking-wider">Sisa</p>
+                  <p className="text-[7px] text-amber-500 uppercase font-bold tracking-wider">Sisa</p>
                   <p className={`text-sm font-black ${agent.sisa > 0 ? "text-amber-400" : "text-slate-500"}`}>{agent.sisa.toLocaleString("id-ID")}</p>
+                </div>
+                <div className="bg-dark-900/60 rounded-lg p-2">
+                  <p className="text-[7px] text-cyan-400 uppercase font-bold tracking-wider">Toko</p>
+                  <p className="text-sm font-black text-cyan-400">{agent.tokoBinaan}</p>
                 </div>
               </div>
             </div>
