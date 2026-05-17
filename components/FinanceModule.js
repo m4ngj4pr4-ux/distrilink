@@ -12,7 +12,8 @@ import {
 import {
   subscribeInvestors, addInvestor, updateInvestor, deleteInvestor,
   subscribeFinanceLedger, addFinanceEntry, deleteFinanceEntry,
-  calcFinanceSummary, subscribeAllDistributions, subscribeSummary
+  calcFinanceSummary, subscribeAllDistributions, subscribeSummary,
+  syncFinancialBaseline
 } from "@/lib/firestore";
 import { formatRupiah } from "@/lib/utils";
 import toast from "react-hot-toast";
@@ -21,14 +22,22 @@ import { usePermissions } from "@/hooks/usePermissions";
 const ALL_TYPES = [
   { value: "modal_masuk", label: "Modal Masuk (Investment)", color: "text-emerald-400", sign: "+" },
   { value: "bagi_hasil", label: "Bagi Hasil (Dividend)", color: "text-purple-400", sign: "-" },
+  { value: "biaya_operasional", label: "Biaya Operasional (Ops)", color: "text-rose-500", sign: "-" },
+  // Auto-journal types (tampil di ledger, tidak bisa dipilih manual)
+  { value: "auto_bayar_po", label: "[Auto] Bayar Hutang PO", color: "text-cyan-400", sign: "-" },
+  { value: "auto_setoran_sales", label: "[Auto] Setoran Sales", color: "text-emerald-400", sign: "+" },
+  { value: "sync_baseline", label: "[Sync] Saldo Awal", color: "text-amber-400", sign: "" },
+  // Legacy types (tetap tampil di ledger lama)
   { value: "hutang_masuk", label: "Terima Pinjaman (Hutang)", color: "text-blue-400", sign: "+" },
   { value: "bayar_hutang", label: "Bayar Pinjaman (Lunas Hutang)", color: "text-cyan-400", sign: "-" },
   { value: "piutang_keluar", label: "Beri Pinjaman (Piutang)", color: "text-amber-400", sign: "-" },
   { value: "terima_piutang", label: "Terima Bayaran (Lunas Piutang)", color: "text-yellow-400", sign: "+" },
-  { value: "biaya_operasional", label: "Biaya Operasional (Ops)", color: "text-rose-500", sign: "-" },
 ];
 
-const TIPE_BUKU_OPTIONS = ALL_TYPES.filter(t => t.value !== "bagi_hasil");
+// Hanya 2 opsi manual yang tersedia untuk admin
+const TIPE_BUKU_OPTIONS = ALL_TYPES.filter(t => 
+  t.value === "modal_masuk" || t.value === "biaya_operasional"
+);
 
 const TIPE_MAP = {};
 ALL_TYPES.forEach(t => { TIPE_MAP[t.value] = t; });
@@ -231,6 +240,21 @@ export default function FinanceModule({ products = [], purchases = [] }) {
     }
   };
 
+  // ── One-Time Financial Sync ──
+  const handleSyncBaseline = async () => {
+    if (!checkWritePermission("sinkronisasi keuangan")) return;
+    if (!confirm("Sinkronisasi saldo awal keuangan?\n\nModal Aktif: Rp 72.000.000\nHutang Pabrik: Rp 97.979.505\n\nAksi ini hanya perlu dilakukan SEKALI.")) return;
+    setProcessing(true);
+    try {
+      await syncFinancialBaseline();
+      toast.success("Saldo awal berhasil disinkronkan!");
+    } catch (err) {
+      toast.error("Gagal: " + err.message);
+    } finally {
+      setProcessing(false);
+    }
+  };
+
   const handleDeleteEntry = async (entry) => {
     if (!checkWritePermission("menghapus entri keuangan")) return;
     if (!confirm(`Hapus entri "${entry.keterangan || entry.tipeBuku}"?`)) return;
@@ -262,13 +286,16 @@ export default function FinanceModule({ products = [], purchases = [] }) {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="glass-card p-5 relative overflow-hidden">
           <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500/10 rounded-full -mr-8 -mt-8 blur-xl"></div>
-          <p className="text-[10px] text-slate-500 uppercase tracking-wider font-bold mb-1">Total Modal Aktif</p>
-          <p className="text-2xl font-black text-emerald-400">{fmtRp(summary.totalModal)}</p>
+          <p className="text-[10px] text-slate-500 uppercase tracking-wider font-bold mb-1">Modal Aktif (Kas)</p>
+          <p className="text-2xl font-black text-emerald-400">{fmtRp(globalSummary?.modalAktif || 0)}</p>
+          {!globalSummary?.financeSyncedAt && (
+            <p className="text-[9px] text-amber-400 mt-1 animate-pulse">⚠ Belum disinkronkan</p>
+          )}
         </div>
         <div className="glass-card p-5 relative overflow-hidden">
           <div className="absolute top-0 right-0 w-24 h-24 bg-blue-500/10 rounded-full -mr-8 -mt-8 blur-xl"></div>
-          <p className="text-[10px] text-slate-500 uppercase tracking-wider font-bold mb-1">Total Hutang</p>
-          <p className={`text-2xl font-black ${summary.sisaHutang > 0 ? 'text-blue-400' : 'text-slate-500'}`}>{fmtRp(summary.sisaHutang)}</p>
+          <p className="text-[10px] text-slate-500 uppercase tracking-wider font-bold mb-1">Total Hutang Pabrik</p>
+          <p className={`text-2xl font-black ${(globalSummary?.factoryDebt || 0) > 0 ? 'text-blue-400' : 'text-slate-500'}`}>{fmtRp(globalSummary?.factoryDebt || 0)}</p>
         </div>
         <div className="glass-card p-5 relative overflow-hidden">
           <div className="absolute top-0 right-0 w-24 h-24 bg-rose-500/10 rounded-full -mr-8 -mt-8 blur-xl"></div>
@@ -369,9 +396,16 @@ export default function FinanceModule({ products = [], purchases = [] }) {
               <p className="text-xs text-slate-400">Seluruh transaksi modal, hutang, piutang, dan bagi hasil</p>
             </div>
           </div>
-          <button onClick={openTxModal} className="btn-primary text-sm flex items-center gap-1.5 px-4 py-2">
-            <HiOutlinePlus size={16} /> Catat Transaksi
-          </button>
+          <div className="flex items-center gap-2">
+            {!globalSummary?.financeSyncedAt && (
+              <button onClick={handleSyncBaseline} disabled={processing} className="text-[10px] bg-amber-500/10 border border-amber-500/20 text-amber-400 px-3 py-2 rounded-lg font-bold hover:bg-amber-500/20 transition-all disabled:opacity-50">
+                ⚡ Sync Saldo Awal
+              </button>
+            )}
+            <button onClick={openTxModal} className="btn-primary text-sm flex items-center gap-1.5 px-4 py-2">
+              <HiOutlinePlus size={16} /> Catat Transaksi
+            </button>
+          </div>
         </div>
 
         {ledger.length > 0 ? (
@@ -390,21 +424,30 @@ export default function FinanceModule({ products = [], purchases = [] }) {
                 {filteredLedger.map(entry => {
                   const meta = TIPE_MAP[entry.tipeBuku] || { label: entry.tipeBuku, color: "text-slate-400", sign: "" };
                   return (
-                    <tr key={entry.id} className="border-b border-slate-400/5 hover:bg-dark-700/30 transition-colors group">
+                    <tr key={entry.id} className={`border-b border-slate-400/5 hover:bg-dark-700/30 transition-colors group ${entry.isAutoJournal ? 'bg-dark-800/20' : ''}`}>
                       <td className="py-3 px-4 text-xs text-slate-400 whitespace-nowrap">
                         {entry.createdAt ? new Date(entry.createdAt.toDate()).toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "numeric" }) : "-"}
                       </td>
                       <td className="py-3 px-4">
-                        <span className={`text-[10px] font-bold uppercase tracking-wider ${meta.color}`}>{meta.label}</span>
+                        <div className="flex items-center gap-1.5">
+                          <span className={`text-[10px] font-bold uppercase tracking-wider ${meta.color}`}>{meta.label}</span>
+                          {entry.isAutoJournal && (
+                            <span className="text-[8px] bg-cyan-500/10 text-cyan-400 px-1.5 py-0.5 rounded border border-cyan-500/20 font-bold">🤖</span>
+                          )}
+                        </div>
                       </td>
                       <td className="py-3 px-4 text-sm text-slate-300 max-w-[250px] truncate">{entry.keterangan || "-"}</td>
-                      <td className={`py-3 px-4 text-right font-bold text-sm ${meta.sign === "+" ? "text-emerald-400" : "text-rose-400"}`}>
-                        {meta.sign}{fmtRp(entry.nominal)}
+                      <td className={`py-3 px-4 text-right font-bold text-sm ${meta.sign === "+" ? "text-emerald-400" : meta.sign === "-" ? "text-rose-400" : "text-amber-400"}`}>
+                        {meta.sign}{entry.nominal > 0 ? fmtRp(entry.nominal) : '-'}
                       </td>
                       <td className="py-3 px-4 text-center">
-                        <button onClick={() => handleDeleteEntry(entry)} className="opacity-0 group-hover:opacity-100 p-1.5 text-slate-500 hover:text-rose-400 transition-all">
-                          <HiOutlineTrash size={14} />
-                        </button>
+                        {!entry.isAutoJournal ? (
+                          <button onClick={() => handleDeleteEntry(entry)} className="opacity-0 group-hover:opacity-100 p-1.5 text-slate-500 hover:text-rose-400 transition-all">
+                            <HiOutlineTrash size={14} />
+                          </button>
+                        ) : (
+                          <span className="text-[9px] text-slate-600">🔒</span>
+                        )}
                       </td>
                     </tr>
                   );
