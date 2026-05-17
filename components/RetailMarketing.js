@@ -102,14 +102,19 @@ export default function RetailMarketing() {
   }
 
   function handleEdit(store) {
+    const hasCoords = store.latitude != null && store.longitude != null;
     setNewStore({
       namaToko: store.namaToko,
       alamat: store.alamat,
-      coordinates: `${store.latitude}, ${store.longitude}`
+      coordinates: hasCoords ? `${store.latitude}, ${store.longitude}` : ""
     });
     setEditingStoreId(store.id);
-    setTempCoords({ lat: parseFloat(store.latitude), lng: parseFloat(store.longitude) });
-    setMapCenter([parseFloat(store.latitude), parseFloat(store.longitude)]);
+    if (hasCoords) {
+      setTempCoords({ lat: parseFloat(store.latitude), lng: parseFloat(store.longitude) });
+      setMapCenter([parseFloat(store.latitude), parseFloat(store.longitude)]);
+    } else {
+      setTempCoords(null);
+    }
     setShowAddForm(true);
   }
 
@@ -183,7 +188,13 @@ export default function RetailMarketing() {
             {filteredStores.map((store) => (
               <div 
                 key={store.id}
-                onClick={() => setMapCenter([parseFloat(store.latitude), parseFloat(store.longitude)])}
+                onClick={() => {
+                  if (store.latitude != null && store.longitude != null) {
+                    setMapCenter([parseFloat(store.latitude), parseFloat(store.longitude)]);
+                  } else {
+                    toast("Toko ini belum memiliki koordinat GPS.", { icon: '📍' });
+                  }
+                }}
                 className="p-3 rounded-xl bg-dark-700/50 border border-slate-400/5 hover:border-blue-500/30 cursor-pointer group transition-all"
               >
                 <div className="flex justify-between items-start mb-1">
@@ -221,7 +232,11 @@ export default function RetailMarketing() {
         <RetailMap 
           stores={stores} 
           center={mapCenter} 
-          onMarkerClick={(s) => setMapCenter([parseFloat(s.latitude), parseFloat(s.longitude)])}
+          onMarkerClick={(s) => {
+            if (s.latitude != null && s.longitude != null) {
+              setMapCenter([parseFloat(s.latitude), parseFloat(s.longitude)]);
+            }
+          }}
           onMapClick={handleMapClick}
           tempMarker={tempCoords}
         />

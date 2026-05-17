@@ -33,7 +33,7 @@ function FitBounds({ stores }) {
     if (stores && stores.length > 0) {
       const latLngs = stores
         .map(s => [parseFloat(s.latitude), parseFloat(s.longitude)])
-        .filter(coord => !isNaN(coord[0]) && !isNaN(coord[1]));
+        .filter(coord => !isNaN(coord[0]) && !isNaN(coord[1]) && (coord[0] !== 0 || coord[1] !== 0));
       
       if (latLngs.length > 0) {
         const bounds = L.latLngBounds(latLngs);
@@ -88,7 +88,7 @@ export default function RetailMap({ stores, center, onMarkerClick, onMapClick, t
           const lat = parseFloat(store.latitude);
           const lng = parseFloat(store.longitude);
           
-          if (isNaN(lat) || isNaN(lng)) return null;
+          if (isNaN(lat) || isNaN(lng) || (lat === 0 && lng === 0)) return null;
 
           return (
             <Marker 
