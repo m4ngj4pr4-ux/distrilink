@@ -255,7 +255,7 @@ export default function RetailMarketing() {
               <div className="space-y-1">
                 <label className="block text-[10px] font-bold text-slate-500 mb-1 uppercase tracking-wider">Titik Koordinat (Lat, Lng)</label>
                 <input 
-                  type="text" placeholder="-7.9666, 112.6326" required
+                  type="text" placeholder="-7.9666, 112.6326"
                   value={newStore.coordinates} 
                   onChange={e => {
                     const val = e.target.value;
