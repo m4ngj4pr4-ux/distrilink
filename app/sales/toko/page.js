@@ -31,6 +31,7 @@ export default function SalesTokoPage() {
   const [editingStoreId, setEditingStoreId] = useState(null);
   const [formData, setFormData] = useState({ namaToko: "", alamat: "", koordinat: "" });
   const [isLocating, setIsLocating] = useState(false);
+  const [gpsStatus, setGpsStatus] = useState(null); // null | 'loading' | 'ok' | 'failed'
 
   useEffect(() => {
     const storedUser = localStorage.getItem('sales_user');
@@ -60,32 +61,62 @@ export default function SalesTokoPage() {
     }
   };
 
-  const handleGetLocation = async (e) => {
-    e.preventDefault();
+  // ── Auto-Fetch GPS saat modal baru dibuka (hanya untuk tambah, bukan edit) ──
+  useEffect(() => {
+    if (isModalOpen && !editingStoreId) {
+      fetchGPS(true);
+    }
+  }, [isModalOpen, editingStoreId]);
+
+  const fetchGPS = async (isAutoFetch = false) => {
     setIsLocating(true);
-    toast.loading("Mengunci lokasi...", { id: 'gps' });
+    setGpsStatus('loading');
+    if (!isAutoFetch) toast.loading("Mengunci lokasi...", { id: 'gps' });
 
     const loc = await getCurrentLocation(10000);
 
     if (loc.status === 'OK') {
       setFormData(prev => ({ ...prev, koordinat: `${loc.latitude}, ${loc.longitude}` }));
-      toast.success(getGPSStatusMessage(loc.status), { id: 'gps' });
-    } else if (loc.status === 'GPS_DENIED') {
-      toast.error(getGPSStatusMessage(loc.status), { id: 'gps' });
+      setGpsStatus('ok');
+      if (isAutoFetch) {
+        toast.success("Lokasi otomatis berhasil dikunci!", { id: 'gps-auto' });
+      } else {
+        toast.success(getGPSStatusMessage(loc.status), { id: 'gps' });
+      }
     } else {
-      // Timeout atau unavailable — biarkan user lanjut tanpa koordinat
-      toast(getGPSStatusMessage(loc.status), { id: 'gps', icon: '⚠️' });
+      setGpsStatus('failed');
+      if (!isAutoFetch) {
+        if (loc.status === 'GPS_DENIED') {
+          toast.error(getGPSStatusMessage(loc.status), { id: 'gps' });
+        } else {
+          toast(getGPSStatusMessage(loc.status), { id: 'gps', icon: '⚠️' });
+        }
+      }
     }
     setIsLocating(false);
+  };
+
+  const handleGetLocation = async (e) => {
+    e.preventDefault();
+    await fetchGPS(false);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
     try {
-      const koorArr = formData.koordinat.split(",");
-      const lat = parseFloat(koorArr[0]?.trim()) || 0;
-      const lng = parseFloat(koorArr[1]?.trim()) || 0;
+      // Graceful: jika koordinat kosong, simpan null (bukan 0)
+      let lat = null;
+      let lng = null;
+      if (formData.koordinat && formData.koordinat.trim()) {
+        const koorArr = formData.koordinat.split(",");
+        const parsedLat = parseFloat(koorArr[0]?.trim());
+        const parsedLng = parseFloat(koorArr[1]?.trim());
+        if (!isNaN(parsedLat) && !isNaN(parsedLng) && (parsedLat !== 0 || parsedLng !== 0)) {
+          lat = parsedLat;
+          lng = parsedLng;
+        }
+      }
 
       const data = {
         namaToko: formData.namaToko,
@@ -114,7 +145,9 @@ export default function SalesTokoPage() {
   const openAddModal = () => {
     setEditingStoreId(null);
     setFormData({ namaToko: "", alamat: "", koordinat: "" });
+    setGpsStatus(null);
     setIsModalOpen(true);
+    // Auto-fetch GPS dipicu oleh useEffect di atas
   };
 
   const openEditModal = (e, store) => {
@@ -125,6 +158,7 @@ export default function SalesTokoPage() {
       alamat: store.alamat, 
       koordinat: (store.latitude && store.longitude) ? `${store.latitude}, ${store.longitude}` : "" 
     });
+    setGpsStatus(store.latitude && store.longitude ? 'ok' : null);
     setIsModalOpen(true);
   };
 
@@ -132,6 +166,7 @@ export default function SalesTokoPage() {
     setIsModalOpen(false);
     setEditingStoreId(null);
     setFormData({ namaToko: "", alamat: "", koordinat: "" });
+    setGpsStatus(null);
   };
 
   return (
@@ -302,24 +337,44 @@ export default function SalesTokoPage() {
                 ></textarea>
               </div>
               
-              <div className="mb-6 bg-dark-800 p-3 rounded-xl border border-slate-700">
+              <div className={`mb-6 p-3 rounded-xl border transition-colors ${gpsStatus === 'ok' ? 'bg-emerald-500/5 border-emerald-500/30' : gpsStatus === 'failed' ? 'bg-amber-500/5 border-amber-500/20' : 'bg-dark-800 border-slate-700'}`}>
                 <div className="flex justify-between items-center mb-3">
-                  <label className="text-xs font-medium text-slate-400 flex items-center gap-1">📡 Titik Koordinat</label>
+                  <label className="text-xs font-medium text-slate-400 flex items-center gap-1.5">
+                    {gpsStatus === 'ok' ? '✅' : gpsStatus === 'loading' ? '🔄' : '📡'} Titik Koordinat
+                    {gpsStatus === 'loading' && (
+                      <span className="text-[9px] text-blue-400 animate-pulse font-bold">Mencari lokasi...</span>
+                    )}
+                  </label>
                   <button 
-                    onClick={handleGetLocation} type="button"
-                    className="text-[10px] bg-blue-500/10 border border-blue-500/20 text-blue-400 px-2 py-1.5 rounded font-bold hover:bg-blue-500/20 active:scale-95 transition-all"
+                    onClick={handleGetLocation} type="button" disabled={isLocating}
+                    className={`text-[10px] px-2 py-1.5 rounded font-bold active:scale-95 transition-all border disabled:opacity-50 ${
+                      gpsStatus === 'ok' 
+                        ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/20' 
+                        : 'bg-blue-500/10 border-blue-500/20 text-blue-400 hover:bg-blue-500/20'
+                    }`}
                   >
-                    {isLocating ? 'Mencari...' : '📍 Ambil GPS Saya'}
+                    {isLocating ? '⏳ Mencari...' : gpsStatus === 'ok' ? '🔄 Perbarui GPS' : '📍 Ambil GPS Saya'}
                   </button>
                 </div>
                 <div className="flex flex-col gap-1">
                   <input type="text" 
                     value={formData.koordinat} 
                     onChange={(e) => setFormData({...formData, koordinat: e.target.value})}
-                    placeholder="Contoh: -3.154722, 114.573095"
-                    className="w-full bg-dark-900 border border-slate-700/50 rounded-lg px-3 py-2 text-xs text-slate-200 outline-none focus:border-blue-500 transition-colors" 
+                    placeholder="Otomatis atau paste: -3.154722, 114.573095"
+                    className={`w-full bg-dark-900 rounded-lg px-3 py-2 text-xs outline-none transition-colors border ${
+                      gpsStatus === 'ok' ? 'border-emerald-500/30 text-emerald-300' : 'border-slate-700/50 text-slate-200 focus:border-blue-500'
+                    }`}
                   />
-                  <p className="text-[9px] text-slate-500 px-1">Otomatis dari tombol atau paste manual (Latitude, Longitude)</p>
+                  {gpsStatus === 'failed' && (
+                    <p className="text-[9px] text-amber-400 px-1 flex items-center gap-1">
+                      ⚠️ GPS gagal — toko tetap bisa disimpan tanpa lokasi peta.
+                    </p>
+                  )}
+                  {gpsStatus !== 'failed' && (
+                    <p className="text-[9px] text-slate-500 px-1">
+                      {gpsStatus === 'ok' ? 'Koordinat berhasil dikunci.' : 'Otomatis dari GPS atau paste manual (Lat, Lng)'}
+                    </p>
+                  )}
                 </div>
               </div>
 
