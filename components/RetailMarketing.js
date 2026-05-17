@@ -61,24 +61,26 @@ export default function RetailMarketing() {
     e.preventDefault();
     if (!checkWritePermission(editingStoreId ? "mengedit toko" : "menambah toko retail")) return;
     
-    // Parse Koordinat (Lat, Lng)
-    let lat = 0;
-    let lng = 0;
-    if (newStore.coordinates) {
+    // Parse Koordinat (Lat, Lng) — opsional
+    let lat = null;
+    let lng = null;
+    if (newStore.coordinates && newStore.coordinates.trim()) {
       const parts = newStore.coordinates.split(",");
       if (parts.length === 2) {
-        lat = parseFloat(parts[0].trim());
-        lng = parseFloat(parts[1].trim());
+        const parsedLat = parseFloat(parts[0].trim());
+        const parsedLng = parseFloat(parts[1].trim());
+        if (!isNaN(parsedLat) && !isNaN(parsedLng) && (parsedLat !== 0 || parsedLng !== 0)) {
+          lat = parsedLat;
+          lng = parsedLng;
+        }
       }
     }
-
-    if (!lat || !lng) return toast.error("Klik peta atau masukkan koordinat (Lat, Lng)");
 
     const storeData = {
       namaToko: newStore.namaToko,
       alamat: newStore.alamat,
-      latitude: lat, // Save as Number to match Sales app
-      longitude: lng // Save as Number to match Sales app
+      latitude: lat,
+      longitude: lng
     };
 
     try {
