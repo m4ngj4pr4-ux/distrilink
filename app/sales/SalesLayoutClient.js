@@ -54,7 +54,7 @@ export default function SalesLayoutClient({ children }) {
   const isLoginPage = pathname === '/sales/login';
 
   return (
-    <div className="bg-black min-h-screen flex justify-center overflow-x-hidden">
+    <div className="bg-black min-h-screen flex justify-center overflow-x-hidden sales-app">
       <div className="w-full max-w-md bg-dark-900 min-h-screen relative shadow-2xl pb-20 overflow-x-hidden border-x border-slate-800/30">
         
         {/* ── Offline Banner ── */}
@@ -87,29 +87,29 @@ export default function SalesLayoutClient({ children }) {
               className={`flex flex-col items-center transition-all active:scale-95 ${pathname === '/sales' ? 'text-emerald-500' : 'text-slate-400 hover:text-emerald-500'}`} 
               href="/sales"
             >
-              <HiOutlineHome size={22} />
-              <span className="text-[10px] mt-1 font-medium">Beranda</span>
+              <HiOutlineHome size={24} />
+              <span className="text-[11px] mt-1 font-medium">Beranda</span>
             </Link>
             <Link 
               className={`flex flex-col items-center transition-all active:scale-95 ${pathname === '/sales/toko' ? 'text-emerald-500' : 'text-slate-400 hover:text-emerald-500'}`} 
               href="/sales/toko"
             >
-              <HiOutlineMap size={22} />
-              <span className="text-[10px] mt-1 font-medium">Toko</span>
+              <HiOutlineMap size={24} />
+              <span className="text-[11px] mt-1 font-medium">Toko</span>
             </Link>
             <Link 
               className={`flex flex-col items-center transition-all active:scale-95 ${pathname === '/sales/transaksi' ? 'text-emerald-500' : 'text-slate-400 hover:text-emerald-500'}`} 
               href="/sales/transaksi"
             >
-              <HiOutlineClipboardList size={22} />
-              <span className="text-[10px] mt-1 font-medium">Rute</span>
+              <HiOutlineClipboardList size={24} />
+              <span className="text-[11px] mt-1 font-medium">Rute</span>
             </Link>
             <Link 
               className={`flex flex-col items-center transition-all active:scale-95 ${pathname.startsWith('/sales/profil') ? 'text-emerald-500' : 'text-slate-400 hover:text-emerald-500'}`} 
               href="/sales/profil"
             >
-              <HiOutlineUser size={22} />
-              <span className="text-[10px] mt-1 font-medium">Profil</span>
+              <HiOutlineUser size={24} />
+              <span className="text-[11px] mt-1 font-medium">Profil</span>
             </Link>
           </nav>
         )}
