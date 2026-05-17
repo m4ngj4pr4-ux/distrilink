@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from 'react';
 import { getRetailStoresList, addRetailStore, updateRetailStore } from '@/lib/firestore';
+import { getCurrentLocation, getGPSStatusMessage } from '@/lib/geolocation';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import dynamic from 'next/dynamic';
@@ -59,19 +60,23 @@ export default function SalesTokoPage() {
     }
   };
 
-  const handleGetLocation = (e) => {
+  const handleGetLocation = async (e) => {
     e.preventDefault();
-    if (!navigator.geolocation) return toast.error("Browser tidak mendukung GPS.");
     setIsLocating(true);
     toast.loading("Mengunci lokasi...", { id: 'gps' });
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        setFormData(prev => ({ ...prev, koordinat: `${pos.coords.latitude}, ${pos.coords.longitude}` }));
-        setIsLocating(false);
-        toast.success("Lokasi berhasil dikunci!", { id: 'gps' });
-      },
-      () => { setIsLocating(false); toast.error("Gagal mengambil lokasi.", { id: 'gps' }); }
-    );
+
+    const loc = await getCurrentLocation(10000);
+
+    if (loc.status === 'OK') {
+      setFormData(prev => ({ ...prev, koordinat: `${loc.latitude}, ${loc.longitude}` }));
+      toast.success(getGPSStatusMessage(loc.status), { id: 'gps' });
+    } else if (loc.status === 'GPS_DENIED') {
+      toast.error(getGPSStatusMessage(loc.status), { id: 'gps' });
+    } else {
+      // Timeout atau unavailable — biarkan user lanjut tanpa koordinat
+      toast(getGPSStatusMessage(loc.status), { id: 'gps', icon: '⚠️' });
+    }
+    setIsLocating(false);
   };
 
   const handleSubmit = async (e) => {

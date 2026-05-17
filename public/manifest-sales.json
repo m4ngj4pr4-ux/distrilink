@@ -1,17 +1,26 @@
 {
-  "name": "DistriLink",
+  "name": "DistriLink Sales",
   "short_name": "DistriLink",
-  "description": "DistriLink Sales Field App",
+  "description": "DistriLink Sales Field App — Offline-ready",
   "start_url": "/sales",
+  "scope": "/sales",
   "display": "standalone",
+  "orientation": "portrait",
   "background_color": "#0b0f19",
   "theme_color": "#10b981",
+  "categories": ["business", "productivity"],
   "icons": [
     {
-      "src": "/icon.png",
+      "src": "/icon-sales.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
+    },
+    {
+      "src": "/icon.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
     }
   ]
 }
