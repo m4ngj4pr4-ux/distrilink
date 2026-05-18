@@ -70,7 +70,21 @@ export default function SupplyChainRadar() {
         return dt.getMonth() === selectedMonth && dt.getFullYear() === selectedYear;
       });
       const totalDropped = productDrops.reduce((s, tx) => s + (tx.jumlahDrop || 0), 0);
-      const diPerjalanan = Math.max(0, totalDist - totalDropped);
+
+      // Sync Market Radar with 3-Tier Distribution Logic (Phase 37)
+      // Total Released to Field = Sum of all qty where type === 'admin_to_sales' (source !== 'captain') for this specific product (all-time)
+      const totalReleasedToField = distributions
+        .filter(d => d.productId === pid && d.source !== "captain")
+        .reduce((sum, d) => sum + (d.totalPacksDistributed || 0), 0);
+
+      // Total Dropped to Retail = Sum of all qty where type === 'drop_toko' (tipe === 'drop') for this specific product (all-time)
+      const totalDroppedToRetail = transactions
+        .filter(tx => tx.tipe === "drop" && tx.productId === pid)
+        .reduce((sum, tx) => sum + (tx.jumlahDrop || 0), 0);
+
+      // DI PERJALANAN (SALES) = (Total Released to Field) - (Total Dropped to Retail)
+      // This represents the sum of all "Sisa" stock currently held by the Captain and Sales agents combined.
+      const diPerjalanan = Math.max(0, totalReleasedToField - totalDroppedToRetail);
       const validShelves = storeInventory.filter(inv => inv.productName === product.name && retailStores.some(s => s.id === inv.storeId));
       const diEtalase = validShelves.reduce((s, inv) => s + (inv.currentStock || 0), 0);
       const ludes = Math.max(0, totalDropped - diEtalase);
@@ -216,7 +230,7 @@ export default function SupplyChainRadar() {
             <h3 className="font-black text-white mb-4 uppercase tracking-tight text-lg">{item.name}</h3>
             <div className="space-y-5">
               <FunnelBar icon={<HiOutlineDatabase size={14} className="text-blue-400"/>} label="Di Gudang Admin" value={item.diGudang} total={item.totalPO} color="bg-blue-500" />
-              <FunnelBar icon={<HiOutlineTruck size={14} className="text-amber-400"/>} label="Di Perjalanan (Sales)" value={item.diPerjalanan} total={item.totalPO} color="bg-amber-500" />
+              <FunnelBar icon={<HiOutlineTruck size={14} className="text-amber-400"/>} label="DI PERJALANAN (SALES)" value={item.diPerjalanan} total={item.totalPO} color="bg-amber-500" />
               <FunnelBar icon={<HiOutlineCube size={14} className="text-indigo-400"/>} label="Di Etalase Toko" value={item.diEtalase} total={item.totalPO} color="bg-indigo-500" />
               <div className="pt-2">
                 <div className="flex justify-between text-[11px] mb-2">
@@ -422,7 +436,7 @@ function FunnelBar({ icon, label, value, total, color }) {
       </div>
       <div className="w-full h-2 bg-dark-900 rounded-full overflow-hidden">
         <div className={`h-full ${color} transition-all duration-1000 ease-out`}
-          style={{ width: `${total > 0 ? (value / total) * 100 : 0}%` }} />
+          style={{ width: `${total > 0 ? Math.min(100, (value / total) * 100) : 0}%` }} />
       </div>
     </div>
   );
