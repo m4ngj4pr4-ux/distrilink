@@ -194,15 +194,42 @@ export default function ProfilPage() {
         </div>
         
         {profileData && (
-          <div className="mt-8 pt-6 border-t border-slate-700/50 flex justify-between items-end relative z-10">
-            <div>
-              <p className="text-[9px] text-slate-500 font-black uppercase tracking-widest mb-1.5">Tagihan Berjalan</p>
-              <p className={`text-2xl font-black tracking-tight ${hutang > 0 ? "text-amber-400" : "text-emerald-400"}`}>
-                Rp {hutang.toLocaleString('id-ID')}
-              </p>
+          <div className="mt-8 pt-6 border-t border-slate-700/50 space-y-4 relative z-10">
+            {/* Tagihan & Status */}
+            <div className="flex justify-between items-end">
+              <div>
+                <p className="text-[9px] text-slate-500 font-black uppercase tracking-widest mb-1.5">Tagihan Berjalan</p>
+                <p className={`text-2xl font-black tracking-tight ${hutang > 0 ? "text-amber-400" : "text-emerald-400"}`}>
+                  Rp {hutang.toLocaleString('id-ID')}
+                </p>
+              </div>
+              <div className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest ${hutang > 0 ? "bg-amber-500/10 text-amber-500" : "bg-emerald-500/10 text-emerald-400"}`}>
+                {hutang > 0 ? "Belum Lunas" : "Lunas"}
+              </div>
             </div>
-            <div className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest ${hutang > 0 ? "bg-amber-500/10 text-amber-500" : "bg-emerald-500/10 text-emerald-400"}`}>
-              {hutang > 0 ? "Belum Lunas" : "Lunas"}
+
+            {/* Poin & Reward Info */}
+            <div className="pt-4 border-t border-slate-700/30 flex justify-between items-center bg-dark-900/40 p-3 rounded-2xl">
+              <div>
+                <p className="text-[9px] text-slate-500 font-black uppercase tracking-widest mb-1">Poin Reward Anda</p>
+                <p className="text-xl font-black text-blue-400">
+                  {Math.floor(riwayatPenjualan.filter(tx => tx.tipe === 'drop').reduce((s, tx) => s + (tx.jumlahDrop || 0), 0) / 10) % 200} <span className="text-xs text-slate-400 font-bold uppercase ml-1">Poin</span>
+                </p>
+                <p className="text-[9px] text-slate-500 mt-1 font-medium">1 Poin per 1 Slop (10 Pk) terjual</p>
+              </div>
+              {Math.max(0, Math.floor(Math.floor(riwayatPenjualan.filter(tx => tx.tipe === 'drop').reduce((s, tx) => s + (tx.jumlahDrop || 0), 0) / 10) / 200) - (profileData.claimedRewards || 0)) > 0 ? (
+                <div className="bg-rose-500/20 border border-rose-500/30 text-rose-400 text-[10px] font-black px-2.5 py-1.5 rounded-xl flex items-center gap-1.5 animate-pulse">
+                  <span>🎁</span>
+                  <span>{Math.max(0, Math.floor(Math.floor(riwayatPenjualan.filter(tx => tx.tipe === 'drop').reduce((s, tx) => s + (tx.jumlahDrop || 0), 0) / 10) / 200) - (profileData.claimedRewards || 0))} Token Listrik</span>
+                </div>
+              ) : (
+                <div className="text-right">
+                  <p className="text-[8px] text-slate-600 font-bold uppercase">Milestone</p>
+                  <p className="text-[10px] text-slate-400 font-medium">
+                    {Math.floor(riwayatPenjualan.filter(tx => tx.tipe === 'drop').reduce((s, tx) => s + (tx.jumlahDrop || 0), 0) / 10) % 200}/200 Poin
+                  </p>
+                </div>
+              )}
             </div>
           </div>
         )}

@@ -139,9 +139,9 @@ export default function SupplyChainRadar() {
         const sisa = Math.max(0, bawaanNetto - totalTerjual);
         const pct = bawaanNetto > 0 ? (totalTerjual / bawaanNetto) * 100 : 0;
 
-        const totalEarnedPoints = (totalTerjual || 0) * 50;
-        const activePoints = totalEarnedPoints % 100000;
-        const unclaimedRewards = Math.max(0, Math.floor(totalEarnedPoints / 100000) - (team.claimedRewards || 0));
+        const totalEarnedPoints = Math.floor((totalTerjual || 0) / 10);
+        const activePoints = totalEarnedPoints % 200;
+        const unclaimedRewards = Math.max(0, Math.floor(totalEarnedPoints / 200) - (team.claimedRewards || 0));
 
         return {
           id: team.id, name: team.name, role: team.role,
@@ -166,9 +166,9 @@ export default function SupplyChainRadar() {
         const sisa = Math.max(0, bawaanNetto - totalTerjual);
         const pct = bawaanNetto > 0 ? (totalTerjual / bawaanNetto) * 100 : 0;
 
-        const totalEarnedPoints = (totalTerjual || 0) * 50;
-        const activePoints = totalEarnedPoints % 100000;
-        const unclaimedRewards = Math.max(0, Math.floor(totalEarnedPoints / 100000) - (team.claimedRewards || 0));
+        const totalEarnedPoints = Math.floor((totalTerjual || 0) / 10);
+        const activePoints = totalEarnedPoints % 200;
+        const unclaimedRewards = Math.max(0, Math.floor(totalEarnedPoints / 200) - (team.claimedRewards || 0));
 
         return {
           id: team.id, name: team.name, role: team.role,
