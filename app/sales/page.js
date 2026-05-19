@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { HiOutlineExclamationCircle, HiOutlineCube, HiOutlineUserGroup, HiOutlineShieldCheck, HiOutlineClipboardList, HiOutlineCash } from 'react-icons/hi';
-import { getSisaStokSales, getSalesStockBreakdown, getTeamPendingSetoran } from '@/lib/firestore';
+import { getSisaStokSales, getSalesStockBreakdown, getTeamPendingSetoran, getAgentPerformanceData } from '@/lib/firestore';
 import { formatRupiah } from '@/lib/utils';
 
 export default function SalesDashboard() {
@@ -10,6 +10,7 @@ export default function SalesDashboard() {
   const [stokBawaan, setStokBawaan] = useState(0);
   const [stockBreakdown, setStockBreakdown] = useState([]);
   const [pendingVerifCount, setPendingVerifCount] = useState(0);
+  const [agentPerformance, setAgentPerformance] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   
   const router = useRouter();
@@ -22,16 +23,20 @@ export default function SalesDashboard() {
       
       const fetchData = async () => {
         try {
-          const [stok, breakdown, pending] = await Promise.all([
+          const [stok, breakdown, pending, performance] = await Promise.all([
             getSisaStokSales(parsedUser.id),
             getSalesStockBreakdown(parsedUser.id),
-            parsedUser.role === 'captain' ? getTeamPendingSetoran() : Promise.resolve([])
+            parsedUser.role === 'captain' ? getTeamPendingSetoran() : Promise.resolve([]),
+            getAgentPerformanceData(parsedUser.id, parsedUser.role)
           ]);
           
           setStokBawaan(stok);
           setStockBreakdown(breakdown);
           if (parsedUser.role === 'captain') {
             setPendingVerifCount(pending.length);
+          }
+          if (performance) {
+            setAgentPerformance(performance);
           }
         } catch (error) {
           console.error("Gagal memuat data dashboard:", error);
@@ -108,6 +113,85 @@ export default function SalesDashboard() {
         </div>
       </div>
       
+      {/* Kinerja Saya Card */}
+      {agentPerformance && (
+        <section className="mb-8">
+          <div className="flex items-center justify-between mb-4 px-1">
+            <div className="flex items-center gap-2">
+              <div className="w-1.5 h-6 bg-blue-500 rounded-full"></div>
+              <h3 className="font-black text-white text-sm uppercase tracking-wider">Kinerja Saya</h3>
+            </div>
+            <span className="text-[9px] bg-blue-500/10 text-blue-400 px-2 py-0.5 rounded-full font-black uppercase">Statistik Poin</span>
+          </div>
+
+          <div className="bg-dark-800/60 border border-slate-700/50 rounded-3xl p-5 shadow-2xl relative overflow-hidden group">
+            {user.role === 'captain' && <div className="absolute inset-0 bg-amber-500/5 rounded-3xl pointer-events-none"></div>}
+            
+            <div className="flex items-center gap-3 mb-4 relative z-10">
+              <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-xl font-black ${user.role === 'captain' ? "bg-gradient-to-br from-amber-500/20 to-amber-600/10 text-amber-400 border border-amber-500/20" : "bg-gradient-to-br from-blue-500/20 to-emerald-500/10 text-blue-400 border border-blue-500/20"}`}>
+                {user.name.charAt(0).toUpperCase()}
+              </div>
+              <div>
+                <p className="text-sm font-bold text-white group-hover:text-blue-400 transition-colors">{user.name}</p>
+                <p className={`text-[10px] uppercase font-black tracking-wider ${user.role === 'captain' ? "text-amber-500" : "text-slate-500"}`}>
+                  {user.role === 'captain' ? "⭐ Captain" : "Sales"}
+                </p>
+              </div>
+            </div>
+
+            {/* Progress Bar */}
+            <div className="mb-4 relative z-10">
+              <div className="flex justify-between text-[10px] mb-1.5">
+                <span className="text-slate-500 font-black uppercase tracking-wider">Retail Performance</span>
+                <span className="text-slate-400 font-bold">{agentPerformance.totalTerjual.toLocaleString("id-ID")} / {agentPerformance.bawaanNetto.toLocaleString("id-ID")} Pk</span>
+              </div>
+              <div className="w-full h-2.5 bg-dark-900 rounded-full overflow-hidden shadow-inner">
+                <div className={`h-full rounded-full transition-all duration-1000 ease-out ${agentPerformance.pct >= 80 ? "bg-emerald-500 shadow-[0_0_12px_rgba(16,185,129,0.5)]" : agentPerformance.pct >= 40 ? "bg-blue-500 shadow-[0_0_12px_rgba(59,130,246,0.5)]" : "bg-slate-600"}`}
+                  style={{ width: `${Math.min(100, agentPerformance.pct)}%` }} />
+              </div>
+            </div>
+
+            {/* Stats Row Grid (5 columns) */}
+            <div className="grid grid-cols-5 gap-2 text-center relative z-10">
+              <div className="bg-dark-900/60 rounded-xl p-2.5 border border-slate-800/50">
+                <p className="text-[8px] text-slate-500 uppercase font-black tracking-widest mb-0.5">Bawaan</p>
+                <p className="text-sm font-black text-white">{agentPerformance.bawaanNetto.toLocaleString("id-ID")}</p>
+              </div>
+              <div className="bg-dark-900/60 rounded-xl p-2.5 border border-slate-800/50">
+                <p className="text-[8px] text-emerald-500 uppercase font-black tracking-widest mb-0.5">Terjual</p>
+                <p className="text-sm font-black text-emerald-400">{agentPerformance.totalTerjual.toLocaleString("id-ID")}</p>
+              </div>
+              <div className="bg-dark-900/60 rounded-xl p-2.5 border border-slate-800/50">
+                <p className="text-[8px] text-amber-500 uppercase font-black tracking-widest mb-0.5">Sisa</p>
+                <p className={`text-sm font-black ${agentPerformance.sisa > 0 ? "text-amber-400" : "text-slate-500"}`}>{agentPerformance.sisa.toLocaleString("id-ID")}</p>
+              </div>
+              <div className="bg-dark-900/60 rounded-xl p-2.5 border border-slate-800/50">
+                <p className="text-[8px] text-cyan-400 uppercase font-black tracking-widest mb-0.5">Toko</p>
+                <p className="text-sm font-black text-cyan-400">{agentPerformance.tokoBinaan}</p>
+              </div>
+              <div className="bg-dark-900/60 rounded-xl p-2.5 ring-1 ring-blue-500/30 bg-blue-500/5 shadow-inner">
+                <p className="text-[8px] text-blue-400 uppercase font-black tracking-widest mb-0.5">Poin</p>
+                <p className="text-sm font-black text-blue-400">{agentPerformance.activePoints.toLocaleString("id-ID")}</p>
+              </div>
+            </div>
+
+            {/* Glowing Reward Celebration Banner */}
+            {agentPerformance.unclaimedRewards > 0 && (
+              <div className="mt-4 p-3 rounded-2xl border border-rose-500/30 bg-rose-500/10 flex items-center justify-between animate-pulse relative z-10 shadow-[0_0_15px_rgba(244,63,94,0.15)]">
+                <div className="flex items-center gap-2.5">
+                  <span className="text-xl filter drop-shadow-md">🎁</span>
+                  <div>
+                    <span className="text-[11px] font-black text-rose-400 block tracking-wide">
+                      {agentPerformance.unclaimedRewards} Token Listrik Siap Diklaim!
+                    </span>
+                    <span className="text-[8px] text-rose-500/80 uppercase font-bold tracking-widest block mt-0.5">Tunjukkan ke Admin</span>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </section>
+      )}
       {/* Monitor Stok Terkini Section */}
       <section className="mb-8">
         <div className="flex items-center justify-between mb-4 px-1">
