@@ -10,7 +10,8 @@ import {
   subscribeRetailStores,
   subscribeSalesTeams,
   deleteStoreInventoryRecord,
-  cleanupOrphanStoreInventory
+  cleanupOrphanStoreInventory,
+  updateSalesTeam
 } from "@/lib/firestore";
 import {
   HiOutlineDatabase, HiOutlineTruck, HiOutlineCube,
@@ -138,9 +139,14 @@ export default function SupplyChainRadar() {
         const sisa = Math.max(0, bawaanNetto - totalTerjual);
         const pct = bawaanNetto > 0 ? (totalTerjual / bawaanNetto) * 100 : 0;
 
+        const totalEarnedPoints = (totalTerjual || 0) * 50;
+        const activePoints = totalEarnedPoints % 100000;
+        const unclaimedRewards = Math.max(0, Math.floor(totalEarnedPoints / 100000) - (team.claimedRewards || 0));
+
         return {
           id: team.id, name: team.name, role: team.role,
-          grossReceived, totalDioper, bawaanNetto, totalTerjual, sisa, pct, tokoBinaan
+          grossReceived, totalDioper, bawaanNetto, totalTerjual, sisa, pct, tokoBinaan,
+          totalEarnedPoints, activePoints, unclaimedRewards, claimedRewards: team.claimedRewards || 0
         };
       } else {
         // REGULAR SALES FORMULA:
@@ -160,13 +166,35 @@ export default function SupplyChainRadar() {
         const sisa = Math.max(0, bawaanNetto - totalTerjual);
         const pct = bawaanNetto > 0 ? (totalTerjual / bawaanNetto) * 100 : 0;
 
+        const totalEarnedPoints = (totalTerjual || 0) * 50;
+        const activePoints = totalEarnedPoints % 100000;
+        const unclaimedRewards = Math.max(0, Math.floor(totalEarnedPoints / 100000) - (team.claimedRewards || 0));
+
         return {
           id: team.id, name: team.name, role: team.role,
-          grossReceived: 0, totalDioper: 0, bawaanNetto, totalTerjual, sisa, pct, tokoBinaan
+          grossReceived: 0, totalDioper: 0, bawaanNetto, totalTerjual, sisa, pct, tokoBinaan,
+          totalEarnedPoints, activePoints, unclaimedRewards, claimedRewards: team.claimedRewards || 0
         };
       }
     }).sort((a, b) => b.totalTerjual - a.totalTerjual);
   }, [salesTeams, distributions, transactions, retailStores]);
+
+  const handleClaimReward = async (agent) => {
+    if (!checkWritePermission("klaim reward token")) return;
+    const confirmMessage = `Tandai 1 Token Listrik diserahkan ke ${agent.name}?\n\n` +
+      `Token Siap Diklaim saat ini: ${agent.unclaimedRewards}\n` +
+      `Total yang sudah diserahkan: ${agent.claimedRewards || 0}`;
+    
+    if (confirm(confirmMessage)) {
+      try {
+        const nextClaimed = (agent.claimedRewards || 0) + 1;
+        await updateSalesTeam(agent.id, { claimedRewards: nextClaimed });
+        toast.success(`Berhasil memperbarui reward untuk ${agent.name}!`);
+      } catch (err) {
+        toast.error("Gagal memperbarui: " + err.message);
+      }
+    }
+  };
 
   const handleCleanup = async () => {
     if (!checkWritePermission("membersihkan data hantu")) return;
@@ -393,7 +421,7 @@ export default function SupplyChainRadar() {
               </div>
 
               {/* Stats Row */}
-              <div className="grid grid-cols-4 gap-2 text-center">
+              <div className="grid grid-cols-5 gap-2 text-center">
                 <div className="bg-dark-900/60 rounded-lg p-2">
                   <p className="text-[7px] text-slate-500 uppercase font-bold tracking-wider">Bawaan</p>
                   <p className="text-sm font-black text-white">{agent.bawaanNetto.toLocaleString("id-ID")}</p>
@@ -410,7 +438,29 @@ export default function SupplyChainRadar() {
                   <p className="text-[7px] text-cyan-400 uppercase font-bold tracking-wider">Toko</p>
                   <p className="text-sm font-black text-cyan-400">{agent.tokoBinaan}</p>
                 </div>
+                <div className="bg-dark-900/60 rounded-lg p-2 ring-1 ring-blue-500/20 bg-blue-950/20">
+                  <p className="text-[7px] text-blue-400 uppercase font-bold tracking-wider">Poin</p>
+                  <p className="text-sm font-black text-blue-400">{agent.activePoints.toLocaleString("id-ID")}</p>
+                </div>
               </div>
+
+              {/* Rewards Badge & Admin Claim Action */}
+              {agent.unclaimedRewards > 0 && (
+                <div className="mt-3 p-2.5 rounded-xl border border-rose-500/20 bg-rose-500/5 flex items-center justify-between animate-pulse">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm">🎁</span>
+                    <span className="text-[10px] font-bold text-rose-400">
+                      {agent.unclaimedRewards} Token Listrik Siap Diklaim!
+                    </span>
+                  </div>
+                  <button
+                    onClick={() => handleClaimReward(agent)}
+                    className="px-2.5 py-1 rounded bg-rose-500 hover:bg-rose-400 text-white text-[9px] font-bold uppercase tracking-wide transition-all active:scale-95 whitespace-nowrap shadow-lg shadow-rose-950/50"
+                  >
+                    Tandai 1 Token Diserahkan
+                  </button>
+                </div>
+              )}
             </div>
             );
           })}
