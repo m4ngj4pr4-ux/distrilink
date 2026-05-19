@@ -30,7 +30,7 @@ const ALL_NAV_ITEMS = [
   { icon: HiOutlineUserGroup, label: "Buku Penjualan", id: "sales", roles: ["owner", "admin", "investor"] },
   { icon: HiOutlineLocationMarker, label: "Pemasaran Retail", id: "retail", roles: ["owner", "admin", "investor"] },
   { icon: HiOutlineReply, label: "Retur Barang", id: "returns", roles: ["owner", "investor"] },
-  { icon: HiOutlineCalculator, label: "Kalkulator HPP", id: "kalkulator", roles: ["owner", "admin"] },
+  { icon: HiOutlineCalculator, label: "Kalkulator HPP", id: "kalkulator", roles: ["owner", "admin", "investor"] },
   { icon: HiOutlineCog, label: "Pengaturan", id: "settings", roles: ["owner"] },
 ];
 
