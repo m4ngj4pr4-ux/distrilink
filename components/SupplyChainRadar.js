@@ -296,10 +296,10 @@ export default function SupplyChainRadar() {
           </div>
           <span className="text-[10px] bg-amber-500/20 text-amber-400 px-2 py-1 rounded font-bold">{storeLeaderboard.length} Toko</span>
         </div>
-        <div className="overflow-x-auto custom-scrollbar">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="bg-dark-900/40">
+        <div className="max-h-[450px] overflow-auto custom-scrollbar">
+          <table className="w-full text-left border-collapse relative">
+            <thead className="sticky top-0 z-10">
+              <tr className="bg-dark-900 shadow-md">
                 <th className="p-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest w-10">#</th>
                 <th className="p-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Nama Toko</th>
                 <th className="p-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest text-center">Total Drop</th>
