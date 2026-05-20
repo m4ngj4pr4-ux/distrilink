@@ -17,7 +17,7 @@ import {
   HiOutlineDatabase, HiOutlineTruck, HiOutlineCube,
   HiOutlineExclamationCircle, HiOutlineChartPie,
   HiOutlineTrash, HiOutlineRefresh, HiOutlineTrendingUp,
-  HiOutlineUserGroup, HiOutlineFire
+  HiOutlineUserGroup, HiOutlineFire, HiOutlineSearch
 } from "react-icons/hi";
 import toast from "react-hot-toast";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -27,6 +27,7 @@ export default function SupplyChainRadar() {
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [isCleaning, setIsCleaning] = useState(false);
+  const [searchStore, setSearchStore] = useState("");
 
   const [products, setProducts] = useState([]);
   const [purchases, setPurchases] = useState([]);
@@ -108,6 +109,13 @@ export default function SupplyChainRadar() {
     });
     return Object.values(map).sort((a, b) => b.totalDrop - a.totalDrop);
   }, [transactions, retailStores]);
+
+  const filteredStoreLeaderboard = useMemo(() => {
+    if (!searchStore.trim()) return storeLeaderboard;
+    return storeLeaderboard.filter(store => 
+      store.namaToko.toLowerCase().includes(searchStore.toLowerCase())
+    );
+  }, [storeLeaderboard, searchStore]);
 
   // ── WIDGET 2: RADAR KINERJA SALES (3-Tier: Admin → Captain → Sales → Toko) ──
   const salesPerformance = useMemo(() => {
@@ -284,17 +292,29 @@ export default function SupplyChainRadar() {
 
       {/* ── WIDGET 1: KLASEMEN PENJUALAN TOKO ── */}
       <div className="glass-card overflow-hidden shadow-2xl border border-slate-700/30">
-        <div className="p-4 bg-gradient-to-r from-amber-500/5 to-transparent border-b border-slate-700 flex items-center justify-between">
+        <div className="p-4 bg-gradient-to-r from-amber-500/5 to-transparent border-b border-slate-700 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-amber-500/10 rounded-lg flex items-center justify-center">
+            <div className="w-8 h-8 bg-amber-500/10 rounded-lg flex items-center justify-center shrink-0">
               <HiOutlineTrendingUp className="text-amber-400" size={20} />
             </div>
             <div>
-              <h3 className="font-bold text-white text-sm uppercase tracking-wider">Klasemen Penjualan Toko</h3>
+              <div className="flex items-center gap-2">
+                <h3 className="font-bold text-white text-sm uppercase tracking-wider">Klasemen Penjualan Toko</h3>
+                <span className="text-[9px] bg-amber-500/20 text-amber-400 px-1.5 py-0.5 rounded font-bold">{filteredStoreLeaderboard.length} Toko</span>
+              </div>
               <p className="text-[10px] text-slate-500">Top Performers — Agregasi seluruh transaksi drop</p>
             </div>
           </div>
-          <span className="text-[10px] bg-amber-500/20 text-amber-400 px-2 py-1 rounded font-bold">{storeLeaderboard.length} Toko</span>
+          <div className="relative w-full sm:w-64">
+            <input 
+              type="text" 
+              placeholder="Cari toko..." 
+              value={searchStore}
+              onChange={(e) => setSearchStore(e.target.value)}
+              className="w-full bg-dark-900 border border-slate-700 rounded-lg px-3 py-2 pl-9 text-xs text-white focus:border-amber-500 outline-none"
+            />
+            <HiOutlineSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+          </div>
         </div>
         <div className="max-h-[450px] overflow-auto custom-scrollbar">
           <table className="w-full text-left border-collapse relative">
@@ -308,8 +328,9 @@ export default function SupplyChainRadar() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800/50">
-              {storeLeaderboard.map((store, i) => {
-                const trend = getTrend(store.totalDrop, i);
+              {filteredStoreLeaderboard.map((store) => {
+                const globalRank = storeLeaderboard.findIndex(s => s.storeId === store.storeId);
+                const trend = getTrend(store.totalDrop, globalRank);
                 return (
                   <tr key={store.storeId} className="hover:bg-white/[0.02] transition-colors group">
                     <td className="p-4 text-xs font-black text-slate-500">{i + 1}</td>
@@ -338,11 +359,13 @@ export default function SupplyChainRadar() {
                   </tr>
                 );
               })}
-              {storeLeaderboard.length === 0 && (
+              {filteredStoreLeaderboard.length === 0 && (
                 <tr><td colSpan="5" className="p-16 text-center">
                   <div className="flex flex-col items-center gap-2 opacity-30">
                     <HiOutlineCube size={40} className="text-slate-500" />
-                    <p className="italic text-xs font-medium">Belum ada data transaksi drop.</p>
+                    <p className="italic text-xs font-medium">
+                      {searchStore ? "Tidak ada toko yang cocok dengan pencarian." : "Belum ada data transaksi drop."}
+                    </p>
                   </div>
                 </td></tr>
               )}
