@@ -111,10 +111,11 @@ export default function SupplyChainRadar() {
   }, [transactions, retailStores]);
 
   const filteredStoreLeaderboard = useMemo(() => {
-    if (!searchStore.trim()) return storeLeaderboard;
-    return storeLeaderboard.filter(store => 
-      store.namaToko.toLowerCase().includes(searchStore.toLowerCase())
-    );
+    if (!searchStore || typeof searchStore !== 'string' || !searchStore.trim()) return storeLeaderboard;
+    return storeLeaderboard.filter(store => {
+      const nama = store?.namaToko || "";
+      return String(nama).toLowerCase().includes(searchStore.toLowerCase());
+    });
   }, [storeLeaderboard, searchStore]);
 
   // ── WIDGET 2: RADAR KINERJA SALES (3-Tier: Admin → Captain → Sales → Toko) ──
