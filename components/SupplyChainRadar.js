@@ -334,7 +334,7 @@ export default function SupplyChainRadar() {
                 const trend = getTrend(store.totalDrop, globalRank);
                 return (
                   <tr key={store.storeId} className="hover:bg-white/[0.02] transition-colors group">
-                    <td className="p-4 text-xs font-black text-slate-500">{i + 1}</td>
+                    <td className="p-4 text-xs font-black text-slate-500">{globalRank + 1}</td>
                     <td className="p-4">
                       <span className="text-xs font-bold text-white group-hover:text-emerald-400 transition-colors">{store.namaToko}</span>
                     </td>
