@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { 
   getGroupedStoreInventory, getSalesCarriedBrands, 
   addDropTransaction, updateStoreShelfStock, getSisaStokSales,
@@ -9,7 +9,7 @@ import { getCurrentLocation } from '@/lib/geolocation';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { printer } from '@/lib/printer';
-import { HiOutlinePrinter, HiCheckCircle, HiX, HiOutlineLocationMarker } from 'react-icons/hi';
+import { HiOutlinePrinter, HiCheckCircle, HiX, HiOutlineLocationMarker, HiOutlineSearch } from 'react-icons/hi';
 
 export default function TransaksiPage() {
   const router = useRouter();
@@ -17,6 +17,13 @@ export default function TransaksiPage() {
   const [groupedStores, setGroupedStores] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [sisaStok, setSisaStok] = useState(0);
+
+  // Search State
+  const [searchTerm, setSearchTerm] = useState("");
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [highlightedIndex, setHighlightedIndex] = useState(-1);
+  const searchRef = useRef(null);
+  const storeRefs = useRef({});
 
   // Drop (Restock) Modal State
   const [restockStore, setRestockStore] = useState(null);
@@ -38,6 +45,79 @@ export default function TransaksiPage() {
   // GPS Prompt State
   const [gpsPrompt, setGpsPrompt] = useState(null); // { storeId, namaToko, coords, status }
   const [pendingStore, setPendingStore] = useState(null);
+
+  // Close suggestions when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (searchRef.current && !searchRef.current.contains(e.target)) {
+        setShowSuggestions(false);
+        setHighlightedIndex(-1);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('touchstart', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
+    };
+  }, []);
+
+  // Filtered stores based on search term
+  const filteredStores = groupedStores.filter(store =>
+    store.namaToko?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  // Suggestions for the dropdown (limited to 8 results for performance)
+  const suggestions = searchTerm.trim().length > 0
+    ? groupedStores
+        .filter(store => store.namaToko?.toLowerCase().includes(searchTerm.toLowerCase()))
+        .slice(0, 8)
+    : [];
+
+  const handleSearchChange = (e) => {
+    const value = e.target.value;
+    setSearchTerm(value);
+    setShowSuggestions(value.trim().length > 0);
+    setHighlightedIndex(-1);
+  };
+
+  const handleSuggestionClick = (store) => {
+    setSearchTerm(store.namaToko);
+    setShowSuggestions(false);
+    setHighlightedIndex(-1);
+    // Scroll to the store card
+    setTimeout(() => {
+      const el = storeRefs.current[store.storeId];
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        el.classList.add('ring-2', 'ring-emerald-500/50');
+        setTimeout(() => el.classList.remove('ring-2', 'ring-emerald-500/50'), 2000);
+      }
+    }, 100);
+  };
+
+  const handleSearchKeyDown = (e) => {
+    if (!showSuggestions || suggestions.length === 0) return;
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setHighlightedIndex(prev => (prev < suggestions.length - 1 ? prev + 1 : 0));
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setHighlightedIndex(prev => (prev > 0 ? prev - 1 : suggestions.length - 1));
+    } else if (e.key === 'Enter' && highlightedIndex >= 0) {
+      e.preventDefault();
+      handleSuggestionClick(suggestions[highlightedIndex]);
+    } else if (e.key === 'Escape') {
+      setShowSuggestions(false);
+      setHighlightedIndex(-1);
+    }
+  };
+
+  const clearSearch = () => {
+    setSearchTerm("");
+    setShowSuggestions(false);
+    setHighlightedIndex(-1);
+  };
 
   useEffect(() => {
     const storedUser = localStorage.getItem('sales_user');
@@ -217,15 +297,104 @@ export default function TransaksiPage() {
         </p>
       </header>
 
+      {/* Search Bar with Autocomplete */}
+      <div className="mb-5 relative" ref={searchRef}>
+        <div className="relative">
+          <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none z-10">
+            <HiOutlineSearch size={18} />
+          </div>
+          <input 
+            type="text"
+            placeholder="Cari nama toko..."
+            value={searchTerm}
+            onChange={handleSearchChange}
+            onKeyDown={handleSearchKeyDown}
+            onFocus={() => { if (searchTerm.trim().length > 0) setShowSuggestions(true); }}
+            className="w-full bg-dark-800 border border-slate-700 rounded-xl px-4 py-3 pl-10 pr-10 text-sm text-slate-200 focus:border-emerald-500 outline-none shadow-inner transition-colors placeholder:text-slate-600"
+            autoComplete="off"
+          />
+          {searchTerm && (
+            <button 
+              onClick={clearSearch}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors p-1 z-10"
+            >
+              <HiX size={16} />
+            </button>
+          )}
+        </div>
+
+        {/* Suggestion Dropdown */}
+        {showSuggestions && suggestions.length > 0 && (
+          <div className="absolute top-full left-0 right-0 mt-1.5 bg-dark-800 border border-slate-700 rounded-xl shadow-2xl shadow-black/40 z-50 overflow-hidden animate-fadeIn">
+            <div className="py-1 max-h-64 overflow-y-auto custom-scrollbar">
+              {suggestions.map((store, idx) => {
+                // Highlight the matching part of the store name
+                const name = store.namaToko || "";
+                const matchIdx = name.toLowerCase().indexOf(searchTerm.toLowerCase());
+                const before = name.slice(0, matchIdx);
+                const match = name.slice(matchIdx, matchIdx + searchTerm.length);
+                const after = name.slice(matchIdx + searchTerm.length);
+
+                return (
+                  <button
+                    key={store.storeId}
+                    onClick={() => handleSuggestionClick(store)}
+                    className={`w-full text-left px-4 py-3 flex items-center gap-3 transition-all ${
+                      idx === highlightedIndex 
+                        ? 'bg-emerald-500/10 border-l-2 border-emerald-500' 
+                        : 'hover:bg-slate-700/50 border-l-2 border-transparent'
+                    }`}
+                  >
+                    <div className="w-8 h-8 bg-emerald-500/10 rounded-lg flex items-center justify-center text-sm shrink-0">
+                      🏪
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm text-slate-200 truncate">
+                        {before}<span className="text-emerald-400 font-bold">{match}</span>{after}
+                      </p>
+                      <p className="text-[9px] text-slate-500 mt-0.5">
+                        {store.products?.length || 0} produk · Drop: {Math.abs(store.totalDropped || 0)} Pk
+                      </p>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+            {suggestions.length < groupedStores.filter(s => s.namaToko?.toLowerCase().includes(searchTerm.toLowerCase())).length && (
+              <div className="px-4 py-2 border-t border-slate-700/50 text-[9px] text-slate-500 text-center">
+                Menampilkan {suggestions.length} dari {groupedStores.filter(s => s.namaToko?.toLowerCase().includes(searchTerm.toLowerCase())).length} hasil
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* No results hint */}
+        {showSuggestions && searchTerm.trim().length > 0 && suggestions.length === 0 && (
+          <div className="absolute top-full left-0 right-0 mt-1.5 bg-dark-800 border border-slate-700 rounded-xl shadow-2xl shadow-black/40 z-50 overflow-hidden animate-fadeIn">
+            <div className="px-4 py-4 text-center">
+              <span className="text-2xl mb-1 block">🔍</span>
+              <p className="text-xs text-slate-500">Tidak ada toko dengan nama &ldquo;<span className="text-slate-400">{searchTerm}</span>&rdquo;</p>
+            </div>
+          </div>
+        )}
+
+        {/* Search result count badge */}
+        {searchTerm.trim().length > 0 && !showSuggestions && (
+          <p className="text-[10px] text-slate-500 mt-2 px-1">
+            Menampilkan <span className="text-emerald-400 font-bold">{filteredStores.length}</span> dari {groupedStores.length} toko
+          </p>
+        )}
+      </div>
+
       {isLoading ? (
         <div className="flex flex-col items-center justify-center py-20 gap-3">
           <div className="w-8 h-8 border-4 border-emerald-500/30 border-t-emerald-500 rounded-full animate-spin"></div>
           <p className="text-xs text-slate-500">Memuat data toko...</p>
         </div>
-      ) : groupedStores.length > 0 ? (
+      ) : filteredStores.length > 0 ? (
         <div className="flex flex-col gap-4">
-          {groupedStores.map(store => (
-            <div key={store.storeId} className="bg-dark-800 border border-slate-700 rounded-2xl overflow-hidden shadow-sm">
+          {filteredStores.map(store => (
+            <div key={store.storeId} ref={el => storeRefs.current[store.storeId] = el} className="bg-dark-800 border border-slate-700 rounded-2xl overflow-hidden shadow-sm transition-all duration-500">
               {/* Store Header */}
               <div className="flex justify-between items-center p-4 pb-3 border-b border-slate-700/50">
                 <div className="flex items-center gap-3">
@@ -281,9 +450,21 @@ export default function TransaksiPage() {
         </div>
       ) : (
         <div className="text-center py-20 opacity-50">
-          <span className="text-5xl mb-4 block">📦</span>
-          <p className="text-sm text-slate-500 font-medium">Belum ada aktivitas drop.</p>
-          <p className="text-[10px] text-slate-600 mt-1">Mulai drop barang ke toko dari menu "Daftar Toko".</p>
+          {searchTerm.trim().length > 0 ? (
+            <>
+              <span className="text-5xl mb-4 block">🔍</span>
+              <p className="text-sm text-slate-500 font-medium">Tidak ada toko bernama &ldquo;{searchTerm}&rdquo;</p>
+              <button onClick={clearSearch} className="text-[10px] text-emerald-400 mt-2 underline underline-offset-2 hover:text-emerald-300 transition-colors">
+                Hapus pencarian
+              </button>
+            </>
+          ) : (
+            <>
+              <span className="text-5xl mb-4 block">📦</span>
+              <p className="text-sm text-slate-500 font-medium">Belum ada aktivitas drop.</p>
+              <p className="text-[10px] text-slate-600 mt-1">Mulai drop barang ke toko dari menu &quot;Daftar Toko&quot;.</p>
+            </>
+          )}
         </div>
       )}
 
