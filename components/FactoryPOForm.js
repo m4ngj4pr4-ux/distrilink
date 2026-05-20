@@ -54,6 +54,7 @@ export default function FactoryPOForm({ products }) {
   // Hitung konversi dari produk terpilih
   function getConversion(product) {
     if (!product) return null;
+    const packsPerSlop = product.packsPerSlop || 10;
     const slopsPerBall = product.slopsPerBall || 20;
     const ballsPerKarton = product.ballsPerKarton || 5;
     const ekstraSlop = product.ekstraSlopPerKarton || 0;
