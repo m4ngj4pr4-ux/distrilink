@@ -26,6 +26,7 @@ export default function RetailMarketing() {
   const [tempCoords, setTempCoords] = useState(null);
   const [editingStoreId, setEditingStoreId] = useState(null);
   const [activeTab, setActiveTab] = useState("map"); // "map" or "radar"
+  const [gpsFilter, setGpsFilter] = useState("all"); // "all", "withGps", "withoutGps"
   const { checkWritePermission } = usePermissions();
   
   // Form State
@@ -40,10 +41,17 @@ export default function RetailMarketing() {
     return () => unsub();
   }, []);
 
-  const filteredStores = stores.filter(s => 
-    s.namaToko?.toLowerCase().includes(search.toLowerCase()) ||
-    s.alamat?.toLowerCase().includes(search.toLowerCase())
-  );
+  const filteredStores = stores.filter(s => {
+    const matchesSearch = s.namaToko?.toLowerCase().includes(search.toLowerCase()) ||
+                          s.alamat?.toLowerCase().includes(search.toLowerCase());
+    const hasGps = s.latitude != null && s.longitude != null;
+    
+    if (!matchesSearch) return false;
+    if (gpsFilter === "withGps" && !hasGps) return false;
+    if (gpsFilter === "withoutGps" && hasGps) return false;
+    
+    return true;
+  });
 
   const handleMapClick = (latlng) => {
     if (showAddForm) {
@@ -173,7 +181,7 @@ export default function RetailMarketing() {
           </div>
 
           {/* ... (Search input and list remain same) ... */}
-          <div className="relative mb-4">
+          <div className="relative mb-3">
             <HiOutlineSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
             <input 
               type="text" 
@@ -182,6 +190,28 @@ export default function RetailMarketing() {
               onChange={(e) => setSearch(e.target.value)}
               className="input-field pl-10 text-sm"
             />
+          </div>
+
+          {/* GPS Filter */}
+          <div className="flex bg-dark-800 p-1 rounded-xl border border-slate-700 shadow-inner mb-4">
+            <button 
+              onClick={() => setGpsFilter("all")}
+              className={`flex-1 py-1.5 text-[10px] font-bold rounded-lg transition-all ${gpsFilter === "all" ? 'bg-slate-700 text-white' : 'text-slate-400'}`}
+            >
+              Semua
+            </button>
+            <button 
+              onClick={() => setGpsFilter("withGps")}
+              className={`flex-1 py-1.5 text-[10px] font-bold rounded-lg transition-all flex items-center justify-center gap-1 ${gpsFilter === "withGps" ? 'bg-blue-600 text-white' : 'text-slate-400'}`}
+            >
+              <HiOutlineLocationMarker size={12}/> GPS Aktif
+            </button>
+            <button 
+              onClick={() => setGpsFilter("withoutGps")}
+              className={`flex-1 py-1.5 text-[10px] font-bold rounded-lg transition-all flex items-center justify-center gap-1 ${gpsFilter === "withoutGps" ? 'bg-rose-600 text-white' : 'text-slate-400'}`}
+            >
+              Non-GPS
+            </button>
           </div>
 
           <div className="flex-1 overflow-y-auto space-y-2 pr-2 custom-scrollbar">
