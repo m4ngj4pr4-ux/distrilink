@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import { HiOutlineX, HiOutlineSave, HiOutlineCalculator } from "react-icons/hi";
 import { updatePO } from "@/lib/firestore";
-import { deleteField } from "firebase/firestore";
 import { formatRupiah } from "@/lib/utils";
 import toast from "react-hot-toast";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -101,6 +100,14 @@ Lanjutkan pembaruan dan sinkronisasi data?`;
       // Tambahkan jam sekarang agar tidak mentok di jam 00:00 jika perlu, 
       // tapi biasanya tanggal saja cukup untuk urutan harian.
       
+      // Hapus key lama dari object conversion agar tidak menyebabkan error nested deleteField
+      const newConversion = {
+        ...po.conversion,
+        ekstraSlop: extraSlop,
+        isExtraPerKarton: isExtraPerKarton
+      };
+      delete newConversion.ekstraSlopPerKarton;
+
       await updatePO(po.id, {
         createdAt: newDate, // Update tanggal transaksi
         jumlahKarton: karton,
@@ -115,13 +122,7 @@ Lanjutkan pembaruan dan sinkronisasi data?`;
         totalBall: karton * (po.conversion?.ballsPerKarton || 5),
         totalSlop: totalSlops,
         totalPack: totalPacks,
-        conversion: {
-          ...po.conversion,
-          ekstraSlop: extraSlop,
-          isExtraPerKarton: isExtraPerKarton,
-          // Hapus key lama jika ada untuk menghindari kebingungan
-          ekstraSlopPerKarton: deleteField ? deleteField() : undefined 
-        }
+        conversion: newConversion
       });
       toast.success("Data PO berhasil diperbarui!");
       onClose();
