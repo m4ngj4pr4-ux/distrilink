@@ -40,14 +40,14 @@ export default function SalesTokoPage() {
     getRetailStoresList().then(setStores);
   }, [router]);
 
-  const myStoresCount = stores.filter(s => s.diinputOleh === user?.name).length;
+  const myStoresCount = stores.filter(s => s.teamId === user?.id).length;
 
   const displayedStores = stores.filter(store => {
     const matchesSearch = 
       store.namaToko?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       store.alamat?.toLowerCase().includes(searchTerm.toLowerCase());
     if (filterTab === "saya") {
-      return matchesSearch && store.diinputOleh === user?.name;
+      return matchesSearch && store.teamId === user?.id;
     }
     return matchesSearch;
   });
@@ -235,7 +235,7 @@ export default function SalesTokoPage() {
         {/* Store List (Scrollable if in Map View) */}
         <div className={`${viewTab === "map" ? "h-[300px] overflow-y-auto pr-1 custom-scrollbar shrink-0" : "flex flex-col gap-3"}`}>
           {displayedStores.map(store => {
-            const isMine = store.diinputOleh === user?.name;
+            const isMine = store.teamId === user?.id;
             return (
               <div 
                 key={store.id} 
