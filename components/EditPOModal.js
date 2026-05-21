@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { HiOutlineX, HiOutlineSave, HiOutlineCalculator } from "react-icons/hi";
 import { updatePO } from "@/lib/firestore";
+import { deleteField } from "firebase/firestore";
 import { formatRupiah } from "@/lib/utils";
 import toast from "react-hot-toast";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -16,8 +17,9 @@ export default function EditPOModal({ po, onClose, distributions }) {
     targetHargaJual: "",
     biayaPengiriman: "",
     uangMuka: "",
-    ekstraSlopPerKarton: 0
+    ekstraSlop: 0
   });
+  const [isExtraPerKarton, setIsExtraPerKarton] = useState(false);
   const [saving, setSaving] = useState(false);
 
   // LOGIKA KUNCI QTY: Cek apakah PO ini sudah pernah didistribusikan
@@ -36,8 +38,9 @@ export default function EditPOModal({ po, onClose, distributions }) {
         targetHargaJual: po.targetHargaJual || "",
         biayaPengiriman: po.biayaPengiriman || "",
         uangMuka: po.uangMuka || "",
-        ekstraSlopPerKarton: po.conversion?.ekstraSlopPerKarton || 0
+        ekstraSlop: po.conversion?.ekstraSlop || po.conversion?.ekstraSlopPerKarton || 0
       });
+      setIsExtraPerKarton(po.conversion?.isExtraPerKarton || false);
     }
   }, [po]);
 
@@ -50,9 +53,12 @@ export default function EditPOModal({ po, onClose, distributions }) {
   const dp = parseFloat(form.uangMuka) || 0;
 
   const packsPerSlop = po.conversion?.packsPerSlop || 10;
-  const extraSlop = parseInt(form.ekstraSlopPerKarton) || 0;
-  const slopsPerKarton = ((po.conversion?.slopsPerBall || 20) * (po.conversion?.ballsPerKarton || 5)) + extraSlop;
-  const totalPacks = karton * slopsPerKarton * packsPerSlop;
+  const extraSlop = parseInt(form.ekstraSlop) || 0;
+  
+  const baseSlopsPerKarton = (po.conversion?.slopsPerBall || 20) * (po.conversion?.ballsPerKarton || 5);
+  const totalExtraSlops = isExtraPerKarton ? (extraSlop * karton) : extraSlop;
+  const totalSlops = (karton * baseSlopsPerKarton) + totalExtraSlops;
+  const totalPacks = totalSlops * packsPerSlop;
   
   const totalBarang = totalPacks * hargaPack;
   const totalFaktur = totalBarang + ongkir;
@@ -65,8 +71,11 @@ export default function EditPOModal({ po, onClose, distributions }) {
     
     // Hitung Dampak untuk Konfirmasi
     const oldPacksPerSlop = po.conversion?.packsPerSlop || 10;
-    const oldSlopsPerKarton = ((po.conversion?.slopsPerBall || 20) * (po.conversion?.ballsPerKarton || 5)) + (po.conversion?.ekstraSlopPerKarton || 0);
-    const oldPacks = (po.jumlahKarton || 0) * oldSlopsPerKarton * oldPacksPerSlop;
+    const oldBaseSlopsPerKarton = (po.conversion?.slopsPerBall || 20) * (po.conversion?.ballsPerKarton || 5);
+    const oldExtraSlop = po.conversion?.ekstraSlop || po.conversion?.ekstraSlopPerKarton || 0;
+    const oldTotalExtraSlops = (po.conversion?.isExtraPerKarton || po.conversion?.ekstraSlopPerKarton) ? (oldExtraSlop * (po.jumlahKarton || 0)) : oldExtraSlop;
+    const oldSlops = ((po.jumlahKarton || 0) * oldBaseSlopsPerKarton) + oldTotalExtraSlops;
+    const oldPacks = oldSlops * oldPacksPerSlop;
     const deltaPacks = totalPacks - oldPacks;
     
     const oldSisaHutang = po.sisaHutang || 0;
@@ -104,11 +113,14 @@ Lanjutkan pembaruan dan sinkronisasi data?`;
         sisaHutang: newSisaHutang,
         // Update rincian unit juga agar sinkron
         totalBall: karton * (po.conversion?.ballsPerKarton || 5),
-        totalSlop: karton * slopsPerKarton,
+        totalSlop: totalSlops,
         totalPack: totalPacks,
         conversion: {
           ...po.conversion,
-          ekstraSlopPerKarton: extraSlop
+          ekstraSlop: extraSlop,
+          isExtraPerKarton: isExtraPerKarton,
+          // Hapus key lama jika ada untuk menghindari kebingungan
+          ekstraSlopPerKarton: deleteField ? deleteField() : undefined 
         }
       });
       toast.success("Data PO berhasil diperbarui!");
@@ -177,19 +189,35 @@ Lanjutkan pembaruan dan sinkronisasi data?`;
               />
             </div>
             <div className="col-span-2">
-              <label className="block text-xs font-medium text-amber-500 mb-1.5 flex items-center gap-2">
-                Ekstra Slop / Karton
-                <span className="text-[9px] bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20">Unlocked</span>
-              </label>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="text-xs font-medium text-amber-500 flex items-center gap-2">
+                  Ekstra Slop
+                  <span className="text-[9px] bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20">Unlocked</span>
+                </label>
+                
+                {/* Toggle Per Karton vs Total */}
+                <div className="flex items-center gap-2 text-[10px] text-slate-400">
+                  <span className={!isExtraPerKarton ? "text-amber-400 font-bold" : ""}>Total PO</span>
+                  <button 
+                    type="button"
+                    onClick={() => setIsExtraPerKarton(!isExtraPerKarton)}
+                    className={`w-8 h-4 rounded-full relative transition-colors ${isExtraPerKarton ? "bg-amber-500" : "bg-slate-600"}`}
+                  >
+                    <div className={`absolute top-0.5 left-0.5 w-3 h-3 bg-white rounded-full transition-transform ${isExtraPerKarton ? "translate-x-4" : ""}`} />
+                  </button>
+                  <span className={isExtraPerKarton ? "text-amber-400 font-bold" : ""}>Per Karton</span>
+                </div>
+              </div>
+
               <input 
                 type="number" 
-                value={form.ekstraSlopPerKarton} 
-                onChange={e => setForm({...form, ekstraSlopPerKarton: e.target.value})} 
+                value={form.ekstraSlop} 
+                onChange={e => setForm({...form, ekstraSlop: e.target.value})} 
                 className="input-field border-amber-500/30 focus:border-amber-500 text-amber-400 font-bold" 
                 placeholder="0"
               />
               <p className="text-[9px] text-slate-500 mt-1.5 italic">
-                Anda masih dapat menambah jumlah slop ekstra meskipun Qty utama dikunci.
+                Anda masih dapat menambah jumlah slop ekstra meskipun Qty utama dikunci. Saat ini menambah total <span className="text-emerald-400 font-bold">{totalExtraSlops} Slop</span>.
               </p>
             </div>
           </div>
