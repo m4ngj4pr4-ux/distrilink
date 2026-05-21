@@ -161,7 +161,7 @@ export default function DashboardPage() {
               </div>
             )}
             <SummaryCards summary={summary} products={products} />
-            <DashboardWidgets products={products} teams={teams} />
+            <DashboardWidgets products={products} teams={teams} allDistributions={allDistributions} purchases={purchases} />
           </div>
         );
       case "po":

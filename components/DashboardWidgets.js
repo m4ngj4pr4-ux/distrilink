@@ -1,17 +1,83 @@
 "use client";
 
-import { HiOutlineStar, HiOutlineExclamationCircle } from "react-icons/hi";
+import { HiOutlineStar, HiOutlineExclamationCircle, HiOutlineLightningBolt, HiOutlineCash, HiOutlineClock, HiOutlineTrendingUp } from "react-icons/hi";
 import { formatRupiah } from "@/lib/utils";
 
-export default function DashboardWidgets({ products, teams }) {
-  // Ambil 10 tim dengan distribusi terbanyak
+export default function DashboardWidgets({ products, teams, allDistributions, purchases }) {
+  // ─── Widget 1: Top 10 Performa Tim ───
   const topTeams = [...(teams || [])]
     .sort((a, b) => (b.goodsDropped || 0) - (a.goodsDropped || 0))
     .slice(0, 10);
 
-  // Monitor Stok Terkini: Tampilkan semua produk, urutkan dari stok terendah
+  // ─── Widget 2: Monitor Stok Terkini ───
   const monitorProducts = [...(products || [])]
     .sort((a, b) => (a.totalPacks || 0) - (b.totalPacks || 0));
+
+  // ─── Widget 3: Aktivitas Distribusi Terbaru ───
+  const recentDistributions = [...(allDistributions || [])]
+    .sort((a, b) => (b.createdAt?.toMillis?.() || 0) - (a.createdAt?.toMillis?.() || 0))
+    .slice(0, 8);
+
+  // ─── Widget 4: Top 5 Piutang Terbesar ───
+  const piutangRanking = [...(teams || [])]
+    .map(t => ({
+      ...t,
+      piutang: Math.max(0, (t.goodsDropped || 0) - (t.totalDeposited || 0))
+    }))
+    .filter(t => t.piutang > 0)
+    .sort((a, b) => b.piutang - a.piutang)
+    .slice(0, 5);
+  
+  const totalPiutangSales = piutangRanking.reduce((sum, t) => sum + t.piutang, 0);
+
+  // Hutang Pabrik yang belum lunas
+  const hutangPabrik = (purchases || [])
+    .filter(p => (p.sisaHutang || 0) > 0)
+    .sort((a, b) => (b.sisaHutang || 0) - (a.sisaHutang || 0))
+    .slice(0, 3);
+  
+  const totalHutangPabrik = hutangPabrik.reduce((sum, p) => sum + (p.sisaHutang || 0), 0);
+
+  // ─── Widget 5: Setoran Hari Ini ───
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  
+  const todayDistributions = (allDistributions || []).filter(d => {
+    const ts = d.createdAt?.toMillis?.();
+    return ts && ts >= today.getTime();
+  });
+
+  const totalDistribusiHariIni = todayDistributions.reduce((sum, d) => sum + (d.amount || 0), 0);
+  const jumlahTransaksiHariIni = todayDistributions.length;
+
+  // ─── Widget 6: Sales Terbaik Hari Ini ───
+  const todayByTeam = {};
+  todayDistributions.forEach(d => {
+    const name = d.teamName || d.salesName || "Unknown";
+    const teamId = d.teamId;
+    if (!todayByTeam[teamId]) {
+      todayByTeam[teamId] = { name, total: 0, count: 0 };
+    }
+    todayByTeam[teamId].total += (d.amount || 0);
+    todayByTeam[teamId].count += 1;
+  });
+
+  const topSalesToday = Object.values(todayByTeam)
+    .sort((a, b) => b.total - a.total)
+    .slice(0, 5);
+
+  // Helper: format waktu relatif
+  function timeAgo(timestamp) {
+    if (!timestamp?.toMillis) return "-";
+    const diff = Date.now() - timestamp.toMillis();
+    const mins = Math.floor(diff / 60000);
+    if (mins < 1) return "Baru saja";
+    if (mins < 60) return `${mins} menit lalu`;
+    const hours = Math.floor(mins / 60);
+    if (hours < 24) return `${hours} jam lalu`;
+    const days = Math.floor(hours / 24);
+    return `${days} hari lalu`;
+  }
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8 animate-fadeIn">
@@ -137,6 +203,202 @@ export default function DashboardWidgets({ products, teams }) {
             </div>
           )}
         </div>
+      </div>
+
+      {/* Widget 3: Aktivitas Distribusi Terbaru */}
+      <div className="glass-card p-6 border-t-4 border-blue-500 flex flex-col max-h-[400px]">
+        <div className="flex items-center justify-between mb-6 shrink-0">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center">
+              <HiOutlineLightningBolt className="text-blue-400" size={22} />
+            </div>
+            <div>
+              <h3 className="text-base font-bold text-white">Aktivitas Distribusi</h3>
+              <p className="text-xs text-slate-400">Riwayat distribusi terbaru ke sales</p>
+            </div>
+          </div>
+          <span className="bg-blue-500/20 text-blue-400 text-[10px] px-2 py-1 rounded-md font-bold uppercase tracking-wider animate-pulse">Live</span>
+        </div>
+
+        <div className="flex-1 overflow-y-auto pr-1 custom-scrollbar">
+          {recentDistributions.length === 0 ? (
+            <p className="text-center py-10 text-slate-500 italic text-sm">Belum ada aktivitas distribusi.</p>
+          ) : (
+            <div className="flex flex-col gap-2">
+              {recentDistributions.map((dist, idx) => (
+                <div key={dist.id || idx} className="flex items-center gap-3 p-3 rounded-xl bg-dark-800/50 border border-slate-400/5 hover:border-blue-500/20 transition-all group">
+                  <div className="w-9 h-9 rounded-lg bg-blue-500/10 flex items-center justify-center shrink-0 group-hover:bg-blue-500/20 transition-colors">
+                    <span className="text-sm">📦</span>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs font-bold text-white truncate">{dist.teamName || dist.salesName || "Sales"}</p>
+                      <span className="text-[10px] font-black text-blue-400 font-mono shrink-0 ml-2">{formatRupiah(dist.amount || 0)}</span>
+                    </div>
+                    <div className="flex items-center justify-between mt-1">
+                      <p className="text-[10px] text-slate-500 truncate">
+                        {dist.productName || "Produk"} • {dist.totalPacksDistributed || 0} pck
+                      </p>
+                      <span className="text-[9px] text-slate-600 shrink-0 ml-2">{timeAgo(dist.createdAt)}</span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Widget 4: Ringkasan Hutang & Piutang */}
+      <div className="glass-card p-6 border-t-4 border-amber-500 flex flex-col max-h-[400px]">
+        <div className="flex items-center gap-3 mb-6 shrink-0">
+          <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center">
+            <HiOutlineCash className="text-amber-400" size={22} />
+          </div>
+          <div>
+            <h3 className="text-base font-bold text-white">Hutang & Piutang</h3>
+            <p className="text-xs text-slate-400">Ringkasan kewajiban yang belum lunas</p>
+          </div>
+        </div>
+
+        <div className="flex-1 overflow-y-auto pr-1 custom-scrollbar">
+          {/* Piutang Sales */}
+          <div className="mb-4">
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-[10px] font-bold text-rose-400 uppercase tracking-wider">Piutang Sales</p>
+              <span className="text-[10px] font-black text-rose-400 font-mono">{formatRupiah(totalPiutangSales)}</span>
+            </div>
+            {piutangRanking.length === 0 ? (
+              <p className="text-center py-3 text-slate-600 italic text-[11px]">Tidak ada piutang.</p>
+            ) : (
+              <div className="flex flex-col gap-1.5">
+                {piutangRanking.map((t, idx) => (
+                  <div key={t.id} className="flex items-center justify-between p-2.5 rounded-lg bg-rose-500/5 border border-rose-500/10 hover:border-rose-500/30 transition-all">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <div className="w-5 h-5 rounded bg-rose-500/20 flex items-center justify-center text-[9px] font-black text-rose-400 shrink-0">{idx + 1}</div>
+                      <span className="text-xs font-bold text-slate-300 truncate">{t.name}</span>
+                    </div>
+                    <span className="text-[11px] font-black text-rose-400 font-mono shrink-0">{formatRupiah(t.piutang)}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+          
+          {/* Divider */}
+          <div className="border-t border-slate-700/50 my-3"></div>
+
+          {/* Hutang Pabrik */}
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-[10px] font-bold text-amber-400 uppercase tracking-wider">Hutang Pabrik</p>
+              <span className="text-[10px] font-black text-amber-400 font-mono">{formatRupiah(totalHutangPabrik)}</span>
+            </div>
+            {hutangPabrik.length === 0 ? (
+              <p className="text-center py-3 text-slate-600 italic text-[11px]">Tidak ada hutang pabrik.</p>
+            ) : (
+              <div className="flex flex-col gap-1.5">
+                {hutangPabrik.map((po) => (
+                  <div key={po.id} className="flex items-center justify-between p-2.5 rounded-lg bg-amber-500/5 border border-amber-500/10 hover:border-amber-500/30 transition-all">
+                    <div className="min-w-0">
+                      <p className="text-xs font-bold text-slate-300 truncate">PO #{(po.id || "").slice(-6).toUpperCase()}</p>
+                      <p className="text-[9px] text-slate-500">{po.productName || "Produk"}</p>
+                    </div>
+                    <span className="text-[11px] font-black text-amber-400 font-mono shrink-0">{formatRupiah(po.sisaHutang || 0)}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Widget 5: Ringkasan Distribusi Hari Ini */}
+      <div className="glass-card p-6 border-t-4 border-cyan-500 flex flex-col">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="w-10 h-10 rounded-xl bg-cyan-500/10 flex items-center justify-center">
+            <HiOutlineClock className="text-cyan-400" size={22} />
+          </div>
+          <div>
+            <h3 className="text-base font-bold text-white">Distribusi Hari Ini</h3>
+            <p className="text-xs text-slate-400">Performa distribusi real-time hari ini</p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4 mb-5">
+          <div className="bg-dark-800/60 rounded-xl p-4 border border-slate-700/30 text-center">
+            <p className="text-[10px] text-slate-500 uppercase tracking-wider font-bold mb-1">Total Nilai</p>
+            <p className="text-lg font-black text-cyan-400 font-mono">{formatRupiah(totalDistribusiHariIni)}</p>
+          </div>
+          <div className="bg-dark-800/60 rounded-xl p-4 border border-slate-700/30 text-center">
+            <p className="text-[10px] text-slate-500 uppercase tracking-wider font-bold mb-1">Transaksi</p>
+            <p className="text-lg font-black text-white">{jumlahTransaksiHariIni}</p>
+            <p className="text-[9px] text-slate-500">distribusi</p>
+          </div>
+        </div>
+
+        {jumlahTransaksiHariIni === 0 ? (
+          <div className="text-center py-4">
+            <p className="text-2xl mb-2">😴</p>
+            <p className="text-xs text-slate-500 italic">Belum ada aktivitas distribusi hari ini.</p>
+          </div>
+        ) : (
+          <div className="bg-dark-800/40 rounded-xl p-3 border border-cyan-500/10">
+            <p className="text-[9px] text-slate-500 uppercase tracking-wider font-bold mb-1">Rata-rata per Transaksi</p>
+            <p className="text-sm font-black text-cyan-400 font-mono">
+              {formatRupiah(Math.round(totalDistribusiHariIni / jumlahTransaksiHariIni))}
+            </p>
+          </div>
+        )}
+      </div>
+
+      {/* Widget 6: Sales Terbaik Hari Ini */}
+      <div className="glass-card p-6 border-t-4 border-yellow-500 flex flex-col">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="w-10 h-10 rounded-xl bg-yellow-500/10 flex items-center justify-center">
+            <HiOutlineTrendingUp className="text-yellow-400" size={22} />
+          </div>
+          <div>
+            <h3 className="text-base font-bold text-white">🏆 Sales Terbaik Hari Ini</h3>
+            <p className="text-xs text-slate-400">Berdasarkan nilai distribusi hari ini</p>
+          </div>
+        </div>
+
+        {topSalesToday.length === 0 ? (
+          <div className="text-center py-6 flex-1 flex flex-col items-center justify-center">
+            <p className="text-3xl mb-2">🏁</p>
+            <p className="text-xs text-slate-500 italic">Belum ada distribusi hari ini.</p>
+            <p className="text-[10px] text-slate-600 mt-1">Siapa yang akan memimpin hari ini?</p>
+          </div>
+        ) : (
+          <div className="flex flex-col gap-2">
+            {topSalesToday.map((s, idx) => (
+              <div key={idx} className={`flex items-center justify-between p-3 rounded-xl border transition-all ${
+                idx === 0 
+                  ? 'bg-yellow-500/5 border-yellow-500/20 hover:border-yellow-500/40 shadow-[inset_0_0_15px_rgba(234,179,8,0.03)]' 
+                  : 'bg-dark-800/50 border-slate-400/5 hover:border-slate-500/20'
+              }`}>
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-black text-xs shrink-0 ${
+                    idx === 0 ? 'bg-yellow-500 text-dark-900 shadow-[0_0_12px_rgba(234,179,8,0.3)]' :
+                    idx === 1 ? 'bg-slate-300 text-dark-900' :
+                    idx === 2 ? 'bg-orange-700 text-white' :
+                    'bg-slate-700 text-slate-300'
+                  }`}>
+                    {idx === 0 ? '👑' : idx + 1}
+                  </div>
+                  <div className="min-w-0">
+                    <p className={`text-sm font-bold truncate ${idx === 0 ? 'text-yellow-400' : 'text-slate-200'}`}>{s.name}</p>
+                    <p className="text-[9px] text-slate-500">{s.count} transaksi</p>
+                  </div>
+                </div>
+                <span className={`text-xs font-black font-mono shrink-0 ml-2 ${idx === 0 ? 'text-yellow-400' : 'text-slate-300'}`}>
+                  {formatRupiah(s.total)}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
     </div>
