@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import dynamic from "next/dynamic";
 import { HiOutlineSearch, HiOutlineLocationMarker, HiOutlinePlus, HiOutlinePhone, HiOutlineUser, HiOutlineTrash, HiOutlinePencilAlt, HiOutlineChartPie, HiOutlineArrowsExpand, HiOutlineX } from "react-icons/hi";
 import { subscribeRetailStores, addRetailStore, deleteRetailStore, updateRetailStore } from "@/lib/firestore";
@@ -260,19 +261,15 @@ export default function RetailMarketing() {
         </div>
       </div>
 
-      {/* Map Area */}
-      <div className={`relative border border-slate-400/5 rounded-2xl overflow-hidden shadow-2xl ${
-        isMapFullscreen 
-          ? 'fixed inset-0 z-[9999] rounded-none border-none h-screen w-screen' 
-          : 'h-[450px] lg:h-full lg:flex-1'
-      }`}>
+      {/* Map Area — Normal */}
+      <div className="h-[450px] lg:h-full lg:flex-1 relative border border-slate-400/5 rounded-2xl overflow-hidden shadow-2xl">
         {/* Fullscreen Toggle Button */}
         <button
-          onClick={() => setIsMapFullscreen(!isMapFullscreen)}
+          onClick={() => setIsMapFullscreen(true)}
           className="absolute top-3 left-3 z-[1001] p-2.5 bg-dark-800/90 backdrop-blur-sm text-white rounded-xl border border-slate-600 shadow-lg hover:bg-dark-700 active:scale-90 transition-all"
-          title={isMapFullscreen ? "Keluar Fullscreen" : "Buka Fullscreen"}
+          title="Buka Fullscreen"
         >
-          {isMapFullscreen ? <HiOutlineX size={18} /> : <HiOutlineArrowsExpand size={18} />}
+          <HiOutlineArrowsExpand size={18} />
         </button>
 
         <RetailMap 
@@ -287,7 +284,7 @@ export default function RetailMarketing() {
           }}
           onMapClick={handleMapClick}
           tempMarker={tempCoords}
-          isFullscreen={isMapFullscreen}
+          isFullscreen={false}
         />
 
         {/* Floating Add Form */}
@@ -346,6 +343,35 @@ export default function RetailMarketing() {
           </div>
         )}
       </div>
+
+      {/* Fullscreen Map — Portal to body */}
+      {isMapFullscreen && typeof document !== 'undefined' && createPortal(
+        <div className="fixed inset-0 z-[99999] bg-black" style={{ width: '100vw', height: '100vh' }}>
+          {/* Close Fullscreen Button */}
+          <button
+            onClick={() => setIsMapFullscreen(false)}
+            className="absolute top-4 left-4 z-[100000] px-3 py-2.5 bg-dark-800/95 backdrop-blur-md text-white rounded-xl border border-slate-500 shadow-2xl hover:bg-red-600 active:scale-90 transition-all flex items-center gap-2"
+          >
+            <HiOutlineX size={18} />
+            <span className="text-xs font-bold">Tutup</span>
+          </button>
+          <RetailMap 
+            stores={stores} 
+            center={mapCenter}
+            selectedStoreId={selectedStoreId}
+            onMarkerClick={(s) => {
+              if (s.latitude != null && s.longitude != null) {
+                setSelectedStoreId(s.id);
+                setMapCenter([parseFloat(s.latitude), parseFloat(s.longitude)]);
+              }
+            }}
+            onMapClick={handleMapClick}
+            tempMarker={tempCoords}
+            isFullscreen={true}
+          />
+        </div>,
+        document.body
+      )}
     </div>
     ) : (
       <SupplyChainRadar />
