@@ -27,6 +27,7 @@ export default function RetailMarketing() {
   const [editingStoreId, setEditingStoreId] = useState(null);
   const [activeTab, setActiveTab] = useState("map"); // "map" or "radar"
   const [gpsFilter, setGpsFilter] = useState("all"); // "all", "withGps", "withoutGps"
+  const [selectedStoreId, setSelectedStoreId] = useState(null);
   const { checkWritePermission } = usePermissions();
   
   // Form State
@@ -220,12 +221,13 @@ export default function RetailMarketing() {
                 key={store.id}
                 onClick={() => {
                   if (store.latitude != null && store.longitude != null) {
+                    setSelectedStoreId(store.id);
                     setMapCenter([parseFloat(store.latitude), parseFloat(store.longitude)]);
                   } else {
                     toast("Toko ini belum memiliki koordinat GPS.", { icon: '📍' });
                   }
                 }}
-                className="p-3 rounded-xl bg-dark-700/50 border border-slate-400/5 hover:border-blue-500/30 cursor-pointer group transition-all"
+                className={`p-3 rounded-xl bg-dark-700/50 border cursor-pointer group transition-all ${selectedStoreId === store.id ? 'border-blue-500/60 bg-blue-500/5 ring-1 ring-blue-500/20' : 'border-slate-400/5 hover:border-blue-500/30'}`}
               >
                 <div className="flex justify-between items-start mb-1">
                   <h4 className="font-bold text-white text-sm group-hover:text-blue-400 transition-colors">{store.namaToko}</h4>
@@ -261,9 +263,11 @@ export default function RetailMarketing() {
       <div className="h-[450px] lg:h-full lg:flex-1 relative border border-slate-400/5 rounded-2xl overflow-hidden shadow-2xl">
         <RetailMap 
           stores={stores} 
-          center={mapCenter} 
+          center={mapCenter}
+          selectedStoreId={selectedStoreId}
           onMarkerClick={(s) => {
             if (s.latitude != null && s.longitude != null) {
+              setSelectedStoreId(s.id);
               setMapCenter([parseFloat(s.latitude), parseFloat(s.longitude)]);
             }
           }}
