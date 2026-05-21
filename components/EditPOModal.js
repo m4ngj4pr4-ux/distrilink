@@ -241,6 +241,13 @@ Lanjutkan pembaruan dan sinkronisasi data?`;
 
           {/* Ringkasan Hasil Kalkulasi Ulang */}
           <div className="p-4 rounded-xl bg-dark-800 border border-slate-700 space-y-2">
+            <div className="flex justify-between text-xs mb-2 pb-2 border-b border-slate-700/50">
+              <span className="text-slate-500">Total Stok Keseluruhan:</span>
+              <span className="text-emerald-400 font-bold text-right">
+                {Math.floor(totalSlops / (po.conversion?.slopsPerBall || 20))} Bal - {totalSlops % (po.conversion?.slopsPerBall || 20)} Slop
+                <div className="text-[10px] text-slate-500 mt-0.5">= {totalPacks.toLocaleString("id-ID")} Pack</div>
+              </span>
+            </div>
             <div className="flex justify-between text-xs">
               <span className="text-slate-500">Total Faktur Baru:</span>
               <span className="text-white font-bold">{formatRupiah(totalFaktur)}</span>
