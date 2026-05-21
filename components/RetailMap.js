@@ -59,6 +59,18 @@ function FitBounds({ stores }) {
   return null;
 }
 
+// Force Leaflet to recalculate container size on fullscreen toggle
+function InvalidateSize({ isFullscreen }) {
+  const map = useMap();
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      map.invalidateSize();
+    }, 200);
+    return () => clearTimeout(timer);
+  }, [isFullscreen, map]);
+  return null;
+}
+
 // Marker that auto-opens popup when selected
 function StoreMarker({ store, isSelected, onMarkerClick }) {
   const markerRef = useRef(null);
@@ -118,7 +130,7 @@ function StoreMarker({ store, isSelected, onMarkerClick }) {
   );
 }
 
-export default function RetailMap({ stores, center, onMarkerClick, onMapClick, tempMarker, selectedStoreId }) {
+export default function RetailMap({ stores, center, onMarkerClick, onMapClick, tempMarker, selectedStoreId, isFullscreen }) {
   useEffect(() => {
     // Fix for Leaflet icon issues in Next.js (Only on Client)
     const DefaultIcon = L.icon({
@@ -150,6 +162,7 @@ export default function RetailMap({ stores, center, onMarkerClick, onMapClick, t
         <ChangeView center={center} selectedStoreId={selectedStoreId} />
         <MapClickHandler onMapClick={onMapClick} />
         <FitBounds stores={stores} />
+        <InvalidateSize isFullscreen={isFullscreen} />
 
         {/* Temp Marker for adding new store */}
         {tempMarker && (

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
-import { HiOutlineSearch, HiOutlineLocationMarker, HiOutlinePlus, HiOutlinePhone, HiOutlineUser, HiOutlineTrash, HiOutlinePencilAlt, HiOutlineChartPie } from "react-icons/hi";
+import { HiOutlineSearch, HiOutlineLocationMarker, HiOutlinePlus, HiOutlinePhone, HiOutlineUser, HiOutlineTrash, HiOutlinePencilAlt, HiOutlineChartPie, HiOutlineArrowsExpand, HiOutlineX } from "react-icons/hi";
 import { subscribeRetailStores, addRetailStore, deleteRetailStore, updateRetailStore } from "@/lib/firestore";
 import SupplyChainRadar from "@/components/SupplyChainRadar";
 import toast from "react-hot-toast";
@@ -28,6 +28,7 @@ export default function RetailMarketing() {
   const [activeTab, setActiveTab] = useState("map"); // "map" or "radar"
   const [gpsFilter, setGpsFilter] = useState("all"); // "all", "withGps", "withoutGps"
   const [selectedStoreId, setSelectedStoreId] = useState(null);
+  const [isMapFullscreen, setIsMapFullscreen] = useState(false);
   const { checkWritePermission } = usePermissions();
   
   // Form State
@@ -260,7 +261,20 @@ export default function RetailMarketing() {
       </div>
 
       {/* Map Area */}
-      <div className="h-[450px] lg:h-full lg:flex-1 relative border border-slate-400/5 rounded-2xl overflow-hidden shadow-2xl">
+      <div className={`relative border border-slate-400/5 rounded-2xl overflow-hidden shadow-2xl ${
+        isMapFullscreen 
+          ? 'fixed inset-0 z-[9999] rounded-none border-none h-screen w-screen' 
+          : 'h-[450px] lg:h-full lg:flex-1'
+      }`}>
+        {/* Fullscreen Toggle Button */}
+        <button
+          onClick={() => setIsMapFullscreen(!isMapFullscreen)}
+          className="absolute top-3 left-3 z-[1001] p-2.5 bg-dark-800/90 backdrop-blur-sm text-white rounded-xl border border-slate-600 shadow-lg hover:bg-dark-700 active:scale-90 transition-all"
+          title={isMapFullscreen ? "Keluar Fullscreen" : "Buka Fullscreen"}
+        >
+          {isMapFullscreen ? <HiOutlineX size={18} /> : <HiOutlineArrowsExpand size={18} />}
+        </button>
+
         <RetailMap 
           stores={stores} 
           center={mapCenter}
@@ -273,6 +287,7 @@ export default function RetailMarketing() {
           }}
           onMapClick={handleMapClick}
           tempMarker={tempCoords}
+          isFullscreen={isMapFullscreen}
         />
 
         {/* Floating Add Form */}
