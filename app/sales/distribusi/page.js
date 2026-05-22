@@ -10,6 +10,7 @@ export default function CaptainDistribusiPage() {
   const [teamMembers, setTeamMembers] = useState([]);
   const [carriedBrands, setCarriedBrands] = useState({});
   const [history, setHistory] = useState([]);
+  const [historyFilter, setHistoryFilter] = useState("");
   const [isLoading, setIsLoading] = useState(true);
 
   // Form
@@ -258,12 +259,27 @@ export default function CaptainDistribusiPage() {
 
           {/* History Distributions */}
           <div className="mt-6">
-            <h2 className="text-sm font-bold text-white mb-3 tracking-tight">📜 Riwayat Distribusi</h2>
+            <div className="flex justify-between items-center mb-3">
+              <h2 className="text-sm font-bold text-white tracking-tight">📜 Riwayat Distribusi</h2>
+              {history.length > 0 && (
+                <select 
+                  value={historyFilter} 
+                  onChange={(e) => setHistoryFilter(e.target.value)}
+                  className="bg-dark-800 border border-slate-700 rounded-lg px-2 py-1 text-[10px] text-white outline-none focus:border-amber-500 max-w-[120px]"
+                >
+                  <option value="">Semua Merek</option>
+                  {[...new Set(history.map(h => h.productName))].map(brand => (
+                    <option key={brand} value={brand}>{brand}</option>
+                  ))}
+                </select>
+              )}
+            </div>
+            
             {history.length === 0 ? (
               <p className="text-xs text-slate-500 italic bg-dark-800 p-4 rounded-xl border border-slate-700/50 text-center">Belum ada riwayat distribusi ke tim.</p>
             ) : (
               <div className="space-y-3">
-                {history.map(item => (
+                {history.filter(item => !historyFilter || item.productName === historyFilter).map(item => (
                   <div key={item.id} className="bg-dark-800 rounded-xl p-3 border border-slate-700/50 flex flex-col gap-1.5">
                     <div className="flex justify-between items-start">
                       <p className="text-[11px] font-bold text-slate-300">Kepada: <span className="text-amber-400">{item.teamName}</span></p>
