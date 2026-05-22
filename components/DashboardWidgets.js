@@ -1,9 +1,12 @@
 "use client";
 
-import { HiOutlineStar, HiOutlineExclamationCircle, HiOutlineLightningBolt, HiOutlineCash, HiOutlineClock, HiOutlineTrendingUp } from "react-icons/hi";
+import { useState } from "react";
+import { HiOutlineStar, HiOutlineExclamationCircle, HiOutlineLightningBolt, HiOutlineCash, HiOutlineClock, HiOutlineTrendingUp, HiOutlineChevronLeft, HiOutlineChevronRight } from "react-icons/hi";
 import { formatRupiah } from "@/lib/utils";
 
 export default function DashboardWidgets({ products, teams, allDistributions, purchases }) {
+  const [dayOffset, setDayOffset] = useState(0);
+
   // ─── Widget 1: Top 10 Performa Tim ───
   const topTeams = [...(teams || [])]
     .sort((a, b) => (b.goodsDropped || 0) - (a.goodsDropped || 0))
@@ -38,21 +41,25 @@ export default function DashboardWidgets({ products, teams, allDistributions, pu
   
   const totalHutangPabrik = hutangPabrik.reduce((sum, p) => sum + (p.sisaHutang || 0), 0);
 
-  // ─── Widget 5: Setoran Hari Ini ───
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  // ─── Widget 5: Setoran Hari Ini / Terpilih ───
+  const selectedDate = new Date();
+  selectedDate.setDate(selectedDate.getDate() + dayOffset);
+  selectedDate.setHours(0, 0, 0, 0);
+
+  const nextDate = new Date(selectedDate);
+  nextDate.setDate(nextDate.getDate() + 1);
   
-  const todayDistributions = (allDistributions || []).filter(d => {
+  const dailyDistributions = (allDistributions || []).filter(d => {
     const ts = d.createdAt?.toMillis?.();
-    return ts && ts >= today.getTime();
+    return ts && ts >= selectedDate.getTime() && ts < nextDate.getTime();
   });
 
-  const totalDistribusiHariIni = todayDistributions.reduce((sum, d) => sum + (d.amount || 0), 0);
-  const jumlahTransaksiHariIni = todayDistributions.length;
+  const totalDistribusiHariIni = dailyDistributions.reduce((sum, d) => sum + (d.amount || 0), 0);
+  const jumlahTransaksiHariIni = dailyDistributions.length;
 
-  // ─── Widget 6: Sales Terbaik Hari Ini ───
+  // ─── Widget 6: Sales Terbaik Hari Ini / Terpilih ───
   const todayByTeam = {};
-  todayDistributions.forEach(d => {
+  dailyDistributions.forEach(d => {
     const name = d.teamName || d.salesName || "Unknown";
     const teamId = d.teamId;
     if (!todayByTeam[teamId]) {
@@ -79,8 +86,16 @@ export default function DashboardWidgets({ products, teams, allDistributions, pu
     return `${days} hari lalu`;
   }
 
+  // Format Label Tanggal
+  const getDateLabel = () => {
+    if (dayOffset === 0) return "Hari Ini";
+    if (dayOffset === -1) return "Kemarin";
+    return selectedDate.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' });
+  };
+  const dateLabel = getDateLabel();
+
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8 animate-fadeIn">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8 animate-fadeIn">
       
       {/* Widget 1: Top Sales Teams */}
       <div className="glass-card p-6 border-t-4 border-violet-500 flex flex-col">
@@ -313,15 +328,37 @@ export default function DashboardWidgets({ products, teams, allDistributions, pu
         </div>
       </div>
 
-      {/* Widget 5: Ringkasan Distribusi Hari Ini */}
-      <div className="glass-card p-6 border-t-4 border-cyan-500 flex flex-col">
-        <div className="flex items-center gap-3 mb-6">
-          <div className="w-10 h-10 rounded-xl bg-cyan-500/10 flex items-center justify-center">
+      {/* Widget 5: Ringkasan Distribusi Harian */}
+      <div className="glass-card p-6 border-t-4 border-cyan-500 flex flex-col relative">
+        {/* Navigasi Tanggal */}
+        <div className="absolute top-4 right-4 flex items-center bg-dark-800/80 rounded-lg p-1 border border-slate-700/50">
+          <button 
+            onClick={() => setDayOffset(prev => prev - 1)}
+            className="p-1 hover:bg-slate-700/50 rounded-md text-slate-400 hover:text-white transition-colors"
+            title="Hari Sebelumnya"
+          >
+            <HiOutlineChevronLeft size={16} />
+          </button>
+          <span className="text-[10px] font-bold px-2 text-cyan-400 min-w-[60px] text-center">
+            {dateLabel}
+          </span>
+          <button 
+            onClick={() => setDayOffset(prev => Math.min(0, prev + 1))}
+            disabled={dayOffset === 0}
+            className="p-1 hover:bg-slate-700/50 rounded-md text-slate-400 hover:text-white transition-colors disabled:opacity-30 disabled:hover:bg-transparent"
+            title="Hari Berikutnya"
+          >
+            <HiOutlineChevronRight size={16} />
+          </button>
+        </div>
+
+        <div className="flex items-center gap-3 mb-6 pr-24">
+          <div className="w-10 h-10 rounded-xl bg-cyan-500/10 flex items-center justify-center shrink-0">
             <HiOutlineClock className="text-cyan-400" size={22} />
           </div>
           <div>
-            <h3 className="text-base font-bold text-white">Distribusi Hari Ini</h3>
-            <p className="text-xs text-slate-400">Performa distribusi real-time hari ini</p>
+            <h3 className="text-base font-bold text-white leading-tight">Distribusi <span className="text-cyan-400">{dateLabel}</span></h3>
+            <p className="text-[10px] text-slate-400 mt-0.5">Performa distribusi tim harian</p>
           </div>
         </div>
 
@@ -340,7 +377,7 @@ export default function DashboardWidgets({ products, teams, allDistributions, pu
         {jumlahTransaksiHariIni === 0 ? (
           <div className="text-center py-4">
             <p className="text-2xl mb-2">😴</p>
-            <p className="text-xs text-slate-500 italic">Belum ada aktivitas distribusi hari ini.</p>
+            <p className="text-xs text-slate-500 italic">Belum ada aktivitas distribusi {dateLabel.toLowerCase()}.</p>
           </div>
         ) : (
           <div className="bg-dark-800/40 rounded-xl p-3 border border-cyan-500/10">
@@ -352,23 +389,43 @@ export default function DashboardWidgets({ products, teams, allDistributions, pu
         )}
       </div>
 
-      {/* Widget 6: Sales Terbaik Hari Ini */}
-      <div className="glass-card p-6 border-t-4 border-yellow-500 flex flex-col">
-        <div className="flex items-center gap-3 mb-6">
-          <div className="w-10 h-10 rounded-xl bg-yellow-500/10 flex items-center justify-center">
+      {/* Widget 6: Sales Terbaik */}
+      <div className="glass-card p-6 border-t-4 border-yellow-500 flex flex-col relative">
+        {/* Navigasi Tanggal (Sinkron dengan sebelahnya) */}
+        <div className="absolute top-4 right-4 flex items-center bg-dark-800/80 rounded-lg p-1 border border-slate-700/50">
+          <button 
+            onClick={() => setDayOffset(prev => prev - 1)}
+            className="p-1 hover:bg-slate-700/50 rounded-md text-slate-400 hover:text-white transition-colors"
+          >
+            <HiOutlineChevronLeft size={16} />
+          </button>
+          <span className="text-[10px] font-bold px-2 text-yellow-400 min-w-[60px] text-center">
+            {dateLabel}
+          </span>
+          <button 
+            onClick={() => setDayOffset(prev => Math.min(0, prev + 1))}
+            disabled={dayOffset === 0}
+            className="p-1 hover:bg-slate-700/50 rounded-md text-slate-400 hover:text-white transition-colors disabled:opacity-30 disabled:hover:bg-transparent"
+          >
+            <HiOutlineChevronRight size={16} />
+          </button>
+        </div>
+
+        <div className="flex items-center gap-3 mb-6 pr-24">
+          <div className="w-10 h-10 rounded-xl bg-yellow-500/10 flex items-center justify-center shrink-0">
             <HiOutlineTrendingUp className="text-yellow-400" size={22} />
           </div>
           <div>
-            <h3 className="text-base font-bold text-white">🏆 Sales Terbaik Hari Ini</h3>
-            <p className="text-xs text-slate-400">Berdasarkan nilai distribusi hari ini</p>
+            <h3 className="text-base font-bold text-white leading-tight">🏆 Sales <span className="text-yellow-400">{dateLabel}</span></h3>
+            <p className="text-[10px] text-slate-400 mt-0.5">Berdasarkan nilai distribusi harian</p>
           </div>
         </div>
 
         {topSalesToday.length === 0 ? (
           <div className="text-center py-6 flex-1 flex flex-col items-center justify-center">
             <p className="text-3xl mb-2">🏁</p>
-            <p className="text-xs text-slate-500 italic">Belum ada distribusi hari ini.</p>
-            <p className="text-[10px] text-slate-600 mt-1">Siapa yang akan memimpin hari ini?</p>
+            <p className="text-xs text-slate-500 italic">Belum ada distribusi {dateLabel.toLowerCase()}.</p>
+            <p className="text-[10px] text-slate-600 mt-1">Siapa yang memimpin {dateLabel.toLowerCase()}?</p>
           </div>
         ) : (
           <div className="flex flex-col gap-2">
