@@ -14,7 +14,12 @@ export default function DashboardWidgets({ products, teams, allDistributions, pu
 
   // ─── Widget 2: Monitor Stok Terkini ───
   const monitorProducts = [...(products || [])]
-    .sort((a, b) => (a.totalPacks || 0) - (b.totalPacks || 0));
+    .map(p => {
+      const totalPurchased = (purchases || []).filter(po => po.productId === p.id).reduce((sum, po) => sum + (po.totalPack || 0), 0);
+      const actualPacks = Math.max(0, totalPurchased - (p.adminDistributedPacks || 0));
+      return { ...p, actualPacks };
+    })
+    .sort((a, b) => (a.actualPacks || 0) - (b.actualPacks || 0));
 
   // ─── Widget 3: Aktivitas Distribusi Terbaru ───
   const recentDistributions = [...(allDistributions || [])]
@@ -191,7 +196,7 @@ export default function DashboardWidgets({ products, teams, allDistributions, pu
             <div className="flex flex-col gap-2.5 pb-2">
               {monitorProducts.map((p) => {
                 const packsPerSlop = p.packsPerSlop || 10;
-                const totalSlops = Math.floor((p.totalPacks || 0) / packsPerSlop);
+                const totalSlops = Math.floor((p.actualPacks || 0) / packsPerSlop);
                 const fullBals = Math.floor(totalSlops / 10);
                 const remainingSlops = totalSlops % 10;
                 const isLow = fullBals < 15;
