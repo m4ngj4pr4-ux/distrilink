@@ -28,12 +28,15 @@ import {
   subscribeAllDistributions,
   syncProductPacks,
   recalculateSummary,
-  getCountPendingSetoran,
-  getSemuaPendingSetoran,
-  verifikasiSetoranAdmin,
+  getSemuaPendingSetoran, 
+  verifikasiSetoranAdmin, 
+  subscribeAdminUsers,
+  seedDefaultOwner,
   subscribeAllSalesTransactions,
   subscribeAllStoreInventory
 } from "@/lib/firestore";
+import { db } from "@/lib/firebase";
+import { collection, query, where, getDocs, deleteDoc, doc, setDoc } from "firebase/firestore";
 import toast from "react-hot-toast";
 import { useAdminAuth } from "@/lib/AdminAuthContext";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -111,21 +114,38 @@ export default function DashboardPage() {
   useEffect(() => {
     fetchTasks();
     const interval = setInterval(fetchTasks, 60000);
+
+    // TEMPORARY CLEANUP SCRIPT (Phase 36.1)
+    const runCleanup = async () => {
+      if (localStorage.getItem("ledger_cleaned_36_1")) return;
+      try {
+        console.log("Starting ledger cleanup...");
+        
+        // 1. Delete all "sync_baseline" entries
+        const q = query(collection(db, "finance_ledger"), where("tipeBuku", "==", "sync_baseline"));
+        const snap = await getDocs(q);
+        for (const docSnap of snap.docs) {
+          await deleteDoc(doc(db, "finance_ledger", docSnap.id));
+        }
+        
+        // 2. Override dashboard summary
+        await setDoc(doc(db, "summary", "dashboard"), {
+          modalAktif: 75480000,
+          factoryDebt: 95579505
+        }, { merge: true });
+        
+        localStorage.setItem("ledger_cleaned_36_1", "true");
+        console.log("Cleanup successful!");
+      } catch (err) {
+        console.error("Cleanup failed:", err);
+      }
+    };
+    runCleanup();
+
     return () => clearInterval(interval);
   }, []);
 
-  async function handleRecalculate() {
-    if (!checkWritePermission("sinkronisasi dashboard")) return;
-    setIsRecalculating(true);
-    try {
-      await recalculateSummary();
-      toast.success("Dashboard berhasil diperbarui!");
-    } catch (err) {
-      toast.error("Gagal memperbarui: " + err.message);
-    } finally {
-      setIsRecalculating(false);
-    }
-  }
+
 
   const handleGlobalVerify = async (item) => {
     if (!checkWritePermission("verifikasi setoran")) return;
@@ -377,19 +397,6 @@ export default function DashboardPage() {
             </div>
             
             <div className="flex items-center gap-6">
-              {/* Status Sinkron */}
-              <button 
-                onClick={handleRecalculate} 
-                disabled={isRecalculating} 
-                className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/20 active:scale-95 transition-all text-[10px] font-bold uppercase tracking-wider disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isRecalculating ? (
-                  <>⏳ Menyinkronkan...</>
-                ) : (
-                  <><span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span> Sinkronisasi</>
-                )}
-              </button>
-
               {/* Profil User */}
               <div className="flex items-center gap-3 pl-6 border-l border-slate-400/10">
                 <div className="text-right hidden sm:block">

@@ -240,20 +240,7 @@ export default function FinanceModule({ products = [], purchases = [] }) {
     }
   };
 
-  // ── One-Time Financial Sync ──
-  const handleSyncBaseline = async () => {
-    if (!checkWritePermission("sinkronisasi keuangan")) return;
-    if (!confirm("Sinkronisasi saldo awal keuangan?\n\nModal Aktif: Rp 72.000.000\n\nAksi ini hanya perlu dilakukan SEKALI.")) return;
-    setProcessing(true);
-    try {
-      await syncFinancialBaseline();
-      toast.success("Saldo awal berhasil disinkronkan!");
-    } catch (err) {
-      toast.error("Gagal: " + err.message);
-    } finally {
-      setProcessing(false);
-    }
-  };
+
 
   const handleDeleteEntry = async (entry) => {
     if (!checkWritePermission("menghapus entri keuangan")) return;
@@ -397,11 +384,7 @@ export default function FinanceModule({ products = [], purchases = [] }) {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            {!globalSummary?.financeSyncedAt && (
-              <button onClick={handleSyncBaseline} disabled={processing} className="text-[10px] bg-amber-500/10 border border-amber-500/20 text-amber-400 px-3 py-2 rounded-lg font-bold hover:bg-amber-500/20 transition-all disabled:opacity-50">
-                ⚡ Sync Saldo Awal
-              </button>
-            )}
+
             <button onClick={openTxModal} className="btn-primary text-sm flex items-center gap-1.5 px-4 py-2">
               <HiOutlinePlus size={16} /> Catat Transaksi
             </button>
