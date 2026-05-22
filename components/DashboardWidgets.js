@@ -9,8 +9,7 @@ export default function DashboardWidgets({ products, teams, allDistributions, pu
 
   // ─── Widget 1: Top 10 Performa Tim ───
   const topTeams = [...(teams || [])]
-    .sort((a, b) => (b.goodsDropped || 0) - (a.goodsDropped || 0))
-    .slice(0, 10);
+    .sort((a, b) => (b.goodsDropped || 0) - (a.goodsDropped || 0));
 
   // ─── Widget 2: Monitor Stok Terkini ───
   const monitorProducts = [...(products || [])]
@@ -35,7 +34,7 @@ export default function DashboardWidgets({ products, teams, allDistributions, pu
     .filter(t => t.piutang > 0)
     .sort((a, b) => b.piutang - a.piutang);
 
-  const piutangRanking = allPiutang.slice(0, 5);
+  const piutangRanking = allPiutang;
   const totalPiutangSales = allPiutang.reduce((sum, t) => sum + t.piutang, 0);
 
   // Hutang Pabrik yang belum lunas
@@ -75,8 +74,7 @@ export default function DashboardWidgets({ products, teams, allDistributions, pu
   });
 
   const topSalesToday = Object.values(todayByTeam)
-    .sort((a, b) => b.total - a.total)
-    .slice(0, 5);
+    .sort((a, b) => b.total - a.total);
 
   // ─── Widget 7: Aktivitas Drop Toko Hari Ini / Terpilih ───
   const dailyDrops = salesTransactions.filter(d => {
@@ -95,7 +93,7 @@ export default function DashboardWidgets({ products, teams, allDistributions, pu
     dropsBySales[teamId].total += (d.jumlahDrop || 0);
     dropsBySales[teamId].count += 1;
   });
-  const topSalesDrop = Object.values(dropsBySales).sort((a, b) => b.total - a.total).slice(0, 3);
+  const topSalesDrop = Object.values(dropsBySales).sort((a, b) => b.total - a.total);
 
   // ─── Widget 8: Monitor Audit Stok Toko ───
   const lowStockStores = [...storeInventory]
@@ -500,24 +498,26 @@ export default function DashboardWidgets({ products, teams, allDistributions, pu
       </div>
 
       {/* Widget 7: Aktivitas Drop Toko */}
-      <div className="glass-card p-6 border-t-4 border-indigo-500 flex flex-col relative">
-        <div className="absolute top-4 right-4 flex items-center bg-dark-800/80 rounded-lg p-1 border border-slate-700/50">
-          <button onClick={() => setDayOffset(prev => prev - 1)} className="p-1 hover:bg-slate-700/50 rounded-md text-slate-400 hover:text-white transition-colors">
-            <HiOutlineChevronLeft size={16} />
-          </button>
-          <span className="text-[10px] font-bold px-2 text-indigo-400 min-w-[60px] text-center">{dateLabel}</span>
-          <button onClick={() => setDayOffset(prev => Math.min(0, prev + 1))} disabled={dayOffset === 0} className="p-1 hover:bg-slate-700/50 rounded-md text-slate-400 hover:text-white transition-colors disabled:opacity-30 disabled:hover:bg-transparent">
-            <HiOutlineChevronRight size={16} />
-          </button>
-        </div>
-
-        <div className="flex items-center gap-3 mb-6 pr-24">
-          <div className="w-10 h-10 rounded-xl bg-indigo-500/10 flex items-center justify-center shrink-0">
-            <HiOutlineTruck className="text-indigo-400" size={22} />
+      <div className="glass-card p-6 border-t-4 border-indigo-500 flex flex-col">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-indigo-500/10 flex items-center justify-center shrink-0">
+              <HiOutlineTruck className="text-indigo-400" size={22} />
+            </div>
+            <div>
+              <h3 className="text-base font-bold text-white leading-tight">Drop Toko <span className="text-indigo-400">{dateLabel}</span></h3>
+              <p className="text-[10px] text-slate-400 mt-0.5">Barang turun dari Sales ke Toko</p>
+            </div>
           </div>
-          <div>
-            <h3 className="text-base font-bold text-white leading-tight">Drop Toko <span className="text-indigo-400">{dateLabel}</span></h3>
-            <p className="text-[10px] text-slate-400 mt-0.5">Barang turun dari Sales ke Toko</p>
+          
+          <div className="flex items-center justify-center bg-dark-800/80 rounded-lg p-1 border border-slate-700/50 self-start sm:self-auto w-full sm:w-auto">
+            <button onClick={() => setDayOffset(prev => prev - 1)} className="p-1 hover:bg-slate-700/50 rounded-md text-slate-400 hover:text-white transition-colors">
+              <HiOutlineChevronLeft size={16} />
+            </button>
+            <span className="text-[10px] font-bold px-2 text-indigo-400 min-w-[60px] text-center">{dateLabel}</span>
+            <button onClick={() => setDayOffset(prev => Math.min(0, prev + 1))} disabled={dayOffset === 0} className="p-1 hover:bg-slate-700/50 rounded-md text-slate-400 hover:text-white transition-colors disabled:opacity-30 disabled:hover:bg-transparent">
+              <HiOutlineChevronRight size={16} />
+            </button>
           </div>
         </div>
 
