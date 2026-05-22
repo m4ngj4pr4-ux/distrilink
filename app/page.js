@@ -114,34 +114,6 @@ export default function DashboardPage() {
   useEffect(() => {
     fetchTasks();
     const interval = setInterval(fetchTasks, 60000);
-
-    // TEMPORARY CLEANUP SCRIPT (Phase 36.1)
-    const runCleanup = async () => {
-      if (localStorage.getItem("ledger_cleaned_36_1")) return;
-      try {
-        console.log("Starting ledger cleanup...");
-        
-        // 1. Delete all "sync_baseline" entries
-        const q = query(collection(db, "finance_ledger"), where("tipeBuku", "==", "sync_baseline"));
-        const snap = await getDocs(q);
-        for (const docSnap of snap.docs) {
-          await deleteDoc(doc(db, "finance_ledger", docSnap.id));
-        }
-        
-        // 2. Override dashboard summary
-        await setDoc(doc(db, "summary", "dashboard"), {
-          modalAktif: 75480000,
-          factoryDebt: 95579505
-        }, { merge: true });
-        
-        localStorage.setItem("ledger_cleaned_36_1", "true");
-        console.log("Cleanup successful!");
-      } catch (err) {
-        console.error("Cleanup failed:", err);
-      }
-    };
-    runCleanup();
-
     return () => clearInterval(interval);
   }, []);
 
