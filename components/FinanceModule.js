@@ -23,6 +23,8 @@ const ALL_TYPES = [
   { value: "modal_masuk", label: "Modal Masuk (Investment)", color: "text-emerald-400", sign: "+" },
   { value: "bagi_hasil", label: "Bagi Hasil (Dividend)", color: "text-purple-400", sign: "-" },
   { value: "biaya_operasional", label: "Biaya Operasional (Ops)", color: "text-rose-500", sign: "-" },
+  { value: "pemasukan_lain", label: "Pemasukan Lain-lain", color: "text-green-400", sign: "+" },
+  { value: "pengeluaran_lain", label: "Pengeluaran Lain-lain", color: "text-red-400", sign: "-" },
   // Auto-journal types (tampil di ledger, tidak bisa dipilih manual)
   { value: "auto_bayar_po", label: "[Auto] Bayar Hutang PO", color: "text-cyan-400", sign: "-" },
   { value: "auto_setoran_sales", label: "[Auto] Setoran Sales", color: "text-emerald-400", sign: "+" },
@@ -34,9 +36,9 @@ const ALL_TYPES = [
   { value: "terima_piutang", label: "Terima Bayaran (Lunas Piutang)", color: "text-yellow-400", sign: "+" },
 ];
 
-// Hanya 2 opsi manual yang tersedia untuk admin
+// Hanya 4 opsi manual yang tersedia untuk admin
 const TIPE_BUKU_OPTIONS = ALL_TYPES.filter(t => 
-  t.value === "modal_masuk" || t.value === "biaya_operasional"
+  t.value === "modal_masuk" || t.value === "biaya_operasional" || t.value === "pemasukan_lain" || t.value === "pengeluaran_lain"
 );
 
 const TIPE_MAP = {};
