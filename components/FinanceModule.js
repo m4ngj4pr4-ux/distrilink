@@ -74,10 +74,11 @@ export default function FinanceModule({ products = [], purchases = [] }) {
   // Hitung Laba Kotor (sinkron dengan modul Laba Rugi) - Sekarang menggunakan globalSummary
   const grossProfit = globalSummary?.totalLabaKotor || 0;
   
-  // Filter out any mirrored "Hutang PO" entries to keep general finance separate from stock operations
+  // Filter out legacy mirrored "Hutang PO" creation entries to keep general finance clean, 
+  // but allow "auto_bayar_po" (PO payments) to show up.
   const filteredLedger = useMemo(() => {
     return ledger.filter(entry => 
-      !entry.keterangan?.toLowerCase().includes("hutang po")
+      !(entry.tipeBuku === "hutang_masuk" && entry.keterangan?.toLowerCase().includes("hutang po"))
     );
   }, [ledger]);
 
