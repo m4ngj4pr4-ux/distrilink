@@ -366,36 +366,38 @@ export default function DashboardWidgets({ products, teams, allDistributions, pu
       </div>
 
       {/* Widget 5: Ringkasan Distribusi Harian */}
-      <div className="glass-card p-6 border-t-4 border-cyan-500 flex flex-col relative">
-        {/* Navigasi Tanggal */}
-        <div className="absolute top-4 right-4 flex items-center bg-dark-800/80 rounded-lg p-1 border border-slate-700/50">
-          <button 
-            onClick={() => setDayOffset(prev => prev - 1)}
-            className="p-1 hover:bg-slate-700/50 rounded-md text-slate-400 hover:text-white transition-colors"
-            title="Hari Sebelumnya"
-          >
-            <HiOutlineChevronLeft size={16} />
-          </button>
-          <span className="text-[10px] font-bold px-2 text-cyan-400 min-w-[60px] text-center">
-            {dateLabel}
-          </span>
-          <button 
-            onClick={() => setDayOffset(prev => Math.min(0, prev + 1))}
-            disabled={dayOffset === 0}
-            className="p-1 hover:bg-slate-700/50 rounded-md text-slate-400 hover:text-white transition-colors disabled:opacity-30 disabled:hover:bg-transparent"
-            title="Hari Berikutnya"
-          >
-            <HiOutlineChevronRight size={16} />
-          </button>
-        </div>
-
-        <div className="flex items-center gap-3 mb-6 pr-24">
-          <div className="w-10 h-10 rounded-xl bg-cyan-500/10 flex items-center justify-center shrink-0">
-            <HiOutlineClock className="text-cyan-400" size={22} />
+      <div className="glass-card p-6 border-t-4 border-cyan-500 flex flex-col">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-cyan-500/10 flex items-center justify-center shrink-0">
+              <HiOutlineClock className="text-cyan-400" size={22} />
+            </div>
+            <div>
+              <h3 className="text-base font-bold text-white leading-tight">Distribusi <span className="text-cyan-400">{dateLabel}</span></h3>
+              <p className="text-[10px] text-slate-400 mt-0.5">Performa distribusi tim harian</p>
+            </div>
           </div>
-          <div>
-            <h3 className="text-base font-bold text-white leading-tight">Distribusi <span className="text-cyan-400">{dateLabel}</span></h3>
-            <p className="text-[10px] text-slate-400 mt-0.5">Performa distribusi tim harian</p>
+          
+          {/* Navigasi Tanggal */}
+          <div className="flex items-center justify-center bg-dark-800/80 rounded-lg p-1 border border-slate-700/50 self-start sm:self-auto w-full sm:w-auto">
+            <button 
+              onClick={() => setDayOffset(prev => prev - 1)}
+              className="p-1 hover:bg-slate-700/50 rounded-md text-slate-400 hover:text-white transition-colors"
+              title="Hari Sebelumnya"
+            >
+              <HiOutlineChevronLeft size={16} />
+            </button>
+            <span className="text-[10px] font-bold px-2 text-cyan-400 min-w-[60px] text-center">
+              {dateLabel}
+            </span>
+            <button 
+              onClick={() => setDayOffset(prev => Math.min(0, prev + 1))}
+              disabled={dayOffset === 0}
+              className="p-1 hover:bg-slate-700/50 rounded-md text-slate-400 hover:text-white transition-colors disabled:opacity-30 disabled:hover:bg-transparent"
+              title="Hari Berikutnya"
+            >
+              <HiOutlineChevronRight size={16} />
+            </button>
           </div>
         </div>
 
@@ -427,34 +429,36 @@ export default function DashboardWidgets({ products, teams, allDistributions, pu
       </div>
 
       {/* Widget 6: Sales Terbaik */}
-      <div className="glass-card p-6 border-t-4 border-yellow-500 flex flex-col relative">
-        {/* Navigasi Tanggal (Sinkron dengan sebelahnya) */}
-        <div className="absolute top-4 right-4 flex items-center bg-dark-800/80 rounded-lg p-1 border border-slate-700/50">
-          <button 
-            onClick={() => setDayOffset(prev => prev - 1)}
-            className="p-1 hover:bg-slate-700/50 rounded-md text-slate-400 hover:text-white transition-colors"
-          >
-            <HiOutlineChevronLeft size={16} />
-          </button>
-          <span className="text-[10px] font-bold px-2 text-yellow-400 min-w-[60px] text-center">
-            {dateLabel}
-          </span>
-          <button 
-            onClick={() => setDayOffset(prev => Math.min(0, prev + 1))}
-            disabled={dayOffset === 0}
-            className="p-1 hover:bg-slate-700/50 rounded-md text-slate-400 hover:text-white transition-colors disabled:opacity-30 disabled:hover:bg-transparent"
-          >
-            <HiOutlineChevronRight size={16} />
-          </button>
-        </div>
-
-        <div className="flex items-center gap-3 mb-6 pr-24">
-          <div className="w-10 h-10 rounded-xl bg-yellow-500/10 flex items-center justify-center shrink-0">
-            <HiOutlineTrendingUp className="text-yellow-400" size={22} />
+      <div className="glass-card p-6 border-t-4 border-yellow-500 flex flex-col">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-yellow-500/10 flex items-center justify-center shrink-0">
+              <HiOutlineTrendingUp className="text-yellow-400" size={22} />
+            </div>
+            <div>
+              <h3 className="text-base font-bold text-white leading-tight">🏆 Sales <span className="text-yellow-400">{dateLabel}</span></h3>
+              <p className="text-[10px] text-slate-400 mt-0.5">Berdasarkan nilai distribusi harian</p>
+            </div>
           </div>
-          <div>
-            <h3 className="text-base font-bold text-white leading-tight">🏆 Sales <span className="text-yellow-400">{dateLabel}</span></h3>
-            <p className="text-[10px] text-slate-400 mt-0.5">Berdasarkan nilai distribusi harian</p>
+          
+          {/* Navigasi Tanggal (Sinkron dengan sebelahnya) */}
+          <div className="flex items-center justify-center bg-dark-800/80 rounded-lg p-1 border border-slate-700/50 self-start sm:self-auto w-full sm:w-auto">
+            <button 
+              onClick={() => setDayOffset(prev => prev - 1)}
+              className="p-1 hover:bg-slate-700/50 rounded-md text-slate-400 hover:text-white transition-colors"
+            >
+              <HiOutlineChevronLeft size={16} />
+            </button>
+            <span className="text-[10px] font-bold px-2 text-yellow-400 min-w-[60px] text-center">
+              {dateLabel}
+            </span>
+            <button 
+              onClick={() => setDayOffset(prev => Math.min(0, prev + 1))}
+              disabled={dayOffset === 0}
+              className="p-1 hover:bg-slate-700/50 rounded-md text-slate-400 hover:text-white transition-colors disabled:opacity-30 disabled:hover:bg-transparent"
+            >
+              <HiOutlineChevronRight size={16} />
+            </button>
           </div>
         </div>
 
@@ -549,44 +553,6 @@ export default function DashboardWidgets({ products, teams, allDistributions, pu
         {topSalesDrop.length === 0 && (
           <div className="text-center py-4 flex-1 flex flex-col justify-center">
             <p className="text-xs text-slate-500 italic">Belum ada drop ke toko.</p>
-          </div>
-        )}
-      </div>
-
-      {/* Widget 8: Monitor Audit Stok Toko */}
-      <div className="glass-card p-6 border-t-4 border-fuchsia-500 flex flex-col">
-        <div className="flex items-center gap-3 mb-6">
-          <div className="w-10 h-10 rounded-xl bg-fuchsia-500/10 flex items-center justify-center shrink-0">
-            <HiOutlineClipboardList className="text-fuchsia-400" size={22} />
-          </div>
-          <div>
-            <h3 className="text-base font-bold text-white leading-tight">Monitor Stok Toko</h3>
-            <p className="text-[10px] text-slate-400 mt-0.5">Audit fisik barang terkecil di rak</p>
-          </div>
-        </div>
-
-        {lowStockStores.length === 0 ? (
-          <div className="text-center py-6 flex-1 flex flex-col items-center justify-center">
-            <p className="text-3xl mb-2">📦</p>
-            <p className="text-xs text-slate-500 italic">Belum ada data stok toko.</p>
-          </div>
-        ) : (
-          <div className="flex flex-col gap-2 flex-1">
-            {lowStockStores.map((store, i) => (
-              <div key={i} className="flex items-center justify-between p-3 rounded-xl bg-dark-800/40 border border-slate-700/30 hover:border-fuchsia-500/30 transition-colors group">
-                <div className="min-w-0 pr-3">
-                  <p className="text-xs font-bold text-slate-300 truncate">{store.storeName}</p>
-                  <p className="text-[9px] text-slate-500 truncate">{store.productName}</p>
-                  <p className="text-[8px] text-slate-600 mt-1">Audit: {timeAgo(store.lastAuditDate || store.lastDropDate)}</p>
-                </div>
-                <div className="text-right shrink-0">
-                  <span className={`text-sm font-black font-mono ${store.currentStock === 0 ? 'text-rose-400' : 'text-fuchsia-400'}`}>
-                    {store.currentStock || 0}
-                  </span>
-                  <span className="text-[9px] text-slate-500 ml-1">Pk</span>
-                </div>
-              </div>
-            ))}
           </div>
         )}
       </div>

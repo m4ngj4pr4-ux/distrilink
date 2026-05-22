@@ -8,11 +8,14 @@ import {
   HiOutlineUserGroup,
 } from "react-icons/hi";
 
-export default function SummaryCards({ summary, products }) {
-  // Hitung total Bal & Slop dari semua produk
+export default function SummaryCards({ summary, products, purchases }) {
+  // Hitung total Bal & Slop dari semua produk (mengabaikan double-deduction dari operan captain)
   const totalSlops = (products || []).reduce((total, p) => {
+    const totalPurchased = (purchases || []).filter(po => po.productId === p.id).reduce((sum, po) => sum + (po.totalPack || 0), 0);
+    const actualPacks = Math.max(0, totalPurchased - (p.adminDistributedPacks || 0));
+
     const packsPerSlop = p.packsPerSlop || 10;
-    const slops = Math.floor((p.totalPacks || 0) / packsPerSlop);
+    const slops = Math.floor(actualPacks / packsPerSlop);
     return total + slops;
   }, 0);
 
