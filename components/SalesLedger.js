@@ -78,14 +78,18 @@ export default function SalesLedger({ teams, products, purchases, allDistributio
     
     // Kelompokkan PO berdasarkan produk
     products.forEach(product => {
-      let remainingGlobalStock = product.totalPacks || 0;
-      if (remainingGlobalStock <= 0) return; // Lewati jika stok gudang habis
-      
       // Ambil semua PO untuk produk ini, urutkan dari yang TERBARU (Descending)
       const productPOs = purchases
         .filter(po => po.productId === product.id)
         .sort((a, b) => (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0));
         
+      // Hitung sisa stok Gudang Aktual (mengabaikan double-deduction dari operan captain)
+      const totalPurchased = productPOs.reduce((sum, po) => sum + (po.totalPack || 0), 0);
+      let remainingGlobalStock = totalPurchased - (product.adminDistributedPacks || 0);
+      
+      if (remainingGlobalStock <= 0) return; // Lewati jika stok gudang habis
+      
+
       // Alokasikan stok global ke batch PO (mengisi PO terbaru lebih dulu)
       productPOs.forEach(po => {
         if (remainingGlobalStock <= 0) return;
