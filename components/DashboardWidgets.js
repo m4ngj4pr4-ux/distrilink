@@ -27,16 +27,16 @@ export default function DashboardWidgets({ products, teams, allDistributions, pu
     .slice(0, 8);
 
   // ─── Widget 4: Top 5 Piutang Terbesar ───
-  const piutangRanking = [...(teams || [])]
+  const allPiutang = [...(teams || [])]
     .map(t => ({
       ...t,
       piutang: Math.max(0, (t.goodsDropped || 0) - (t.totalDeposited || 0))
     }))
     .filter(t => t.piutang > 0)
-    .sort((a, b) => b.piutang - a.piutang)
-    .slice(0, 5);
-  
-  const totalPiutangSales = piutangRanking.reduce((sum, t) => sum + t.piutang, 0);
+    .sort((a, b) => b.piutang - a.piutang);
+
+  const piutangRanking = allPiutang.slice(0, 5);
+  const totalPiutangSales = allPiutang.reduce((sum, t) => sum + t.piutang, 0);
 
   // Hutang Pabrik yang belum lunas
   const hutangPabrik = (purchases || [])
