@@ -243,7 +243,7 @@ export default function FinanceModule({ products = [], purchases = [] }) {
   // ── One-Time Financial Sync ──
   const handleSyncBaseline = async () => {
     if (!checkWritePermission("sinkronisasi keuangan")) return;
-    if (!confirm("Sinkronisasi saldo awal keuangan?\n\nModal Aktif: Rp 72.000.000\nHutang Pabrik: Rp 97.979.505\n\nAksi ini hanya perlu dilakukan SEKALI.")) return;
+    if (!confirm("Sinkronisasi saldo awal keuangan?\n\nModal Aktif: Rp 72.000.000\n\nAksi ini hanya perlu dilakukan SEKALI.")) return;
     setProcessing(true);
     try {
       await syncFinancialBaseline();
