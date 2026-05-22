@@ -1,10 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { HiOutlineStar, HiOutlineExclamationCircle, HiOutlineLightningBolt, HiOutlineCash, HiOutlineClock, HiOutlineTrendingUp, HiOutlineChevronLeft, HiOutlineChevronRight } from "react-icons/hi";
+import { HiOutlineStar, HiOutlineExclamationCircle, HiOutlineLightningBolt, HiOutlineCash, HiOutlineClock, HiOutlineTrendingUp, HiOutlineChevronLeft, HiOutlineChevronRight, HiOutlineTruck, HiOutlineClipboardList } from "react-icons/hi";
 import { formatRupiah } from "@/lib/utils";
 
-export default function DashboardWidgets({ products, teams, allDistributions, purchases }) {
+export default function DashboardWidgets({ products, teams, allDistributions, purchases, salesTransactions = [], storeInventory = [] }) {
   const [dayOffset, setDayOffset] = useState(0);
 
   // ─── Widget 1: Top 10 Performa Tim ───
@@ -71,6 +71,38 @@ export default function DashboardWidgets({ products, teams, allDistributions, pu
 
   const topSalesToday = Object.values(todayByTeam)
     .sort((a, b) => b.total - a.total)
+    .slice(0, 5);
+
+  // ─── Widget 7: Aktivitas Drop Toko Hari Ini / Terpilih ───
+  const dailyDrops = salesTransactions.filter(d => {
+    const ts = d.waktu?.toMillis?.() || d.createdAt?.toMillis?.();
+    return ts && ts >= selectedDate.getTime() && ts < nextDate.getTime();
+  });
+  
+  const totalDropPacks = dailyDrops.reduce((sum, d) => sum + (d.jumlahDrop || 0), 0);
+  const totalDropStores = new Set(dailyDrops.map(d => d.storeId)).size;
+  
+  const dropsBySales = {};
+  dailyDrops.forEach(d => {
+    const name = d.namaSales || "Unknown";
+    const teamId = d.teamId;
+    if (!dropsBySales[teamId]) dropsBySales[teamId] = { name, total: 0, count: 0 };
+    dropsBySales[teamId].total += (d.jumlahDrop || 0);
+    dropsBySales[teamId].count += 1;
+  });
+  const topSalesDrop = Object.values(dropsBySales).sort((a, b) => b.total - a.total).slice(0, 3);
+
+  // ─── Widget 8: Monitor Audit Stok Toko ───
+  const lowStockStores = [...storeInventory]
+    .sort((a, b) => {
+      // Prioritaskan yang belum pernah diaudit lama, atau stoknya paling kecil
+      const timeA = a.lastAuditDate?.toMillis?.() || a.lastDropDate?.toMillis?.() || 0;
+      const timeB = b.lastAuditDate?.toMillis?.() || b.lastDropDate?.toMillis?.() || 0;
+      if (a.currentStock !== b.currentStock) {
+        return (a.currentStock || 0) - (b.currentStock || 0);
+      }
+      return timeA - timeB;
+    })
     .slice(0, 5);
 
   // Helper: format waktu relatif
@@ -452,6 +484,102 @@ export default function DashboardWidgets({ products, teams, allDistributions, pu
                 <span className={`text-xs font-black font-mono shrink-0 ml-2 ${idx === 0 ? 'text-yellow-400' : 'text-slate-300'}`}>
                   {formatRupiah(s.total)}
                 </span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Widget 7: Aktivitas Drop Toko */}
+      <div className="glass-card p-6 border-t-4 border-indigo-500 flex flex-col relative">
+        <div className="absolute top-4 right-4 flex items-center bg-dark-800/80 rounded-lg p-1 border border-slate-700/50">
+          <button onClick={() => setDayOffset(prev => prev - 1)} className="p-1 hover:bg-slate-700/50 rounded-md text-slate-400 hover:text-white transition-colors">
+            <HiOutlineChevronLeft size={16} />
+          </button>
+          <span className="text-[10px] font-bold px-2 text-indigo-400 min-w-[60px] text-center">{dateLabel}</span>
+          <button onClick={() => setDayOffset(prev => Math.min(0, prev + 1))} disabled={dayOffset === 0} className="p-1 hover:bg-slate-700/50 rounded-md text-slate-400 hover:text-white transition-colors disabled:opacity-30 disabled:hover:bg-transparent">
+            <HiOutlineChevronRight size={16} />
+          </button>
+        </div>
+
+        <div className="flex items-center gap-3 mb-6 pr-24">
+          <div className="w-10 h-10 rounded-xl bg-indigo-500/10 flex items-center justify-center shrink-0">
+            <HiOutlineTruck className="text-indigo-400" size={22} />
+          </div>
+          <div>
+            <h3 className="text-base font-bold text-white leading-tight">Drop Toko <span className="text-indigo-400">{dateLabel}</span></h3>
+            <p className="text-[10px] text-slate-400 mt-0.5">Barang turun dari Sales ke Toko</p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4 mb-5">
+          <div className="bg-dark-800/60 rounded-xl p-4 border border-slate-700/30 text-center">
+            <p className="text-[10px] text-slate-500 uppercase tracking-wider font-bold mb-1">Total Drop</p>
+            <p className="text-lg font-black text-indigo-400 font-mono">{totalDropPacks.toLocaleString("id-ID")}</p>
+            <p className="text-[9px] text-slate-500">pack</p>
+          </div>
+          <div className="bg-dark-800/60 rounded-xl p-4 border border-slate-700/30 text-center">
+            <p className="text-[10px] text-slate-500 uppercase tracking-wider font-bold mb-1">Cakupan Toko</p>
+            <p className="text-lg font-black text-white">{totalDropStores}</p>
+            <p className="text-[9px] text-slate-500">titik toko</p>
+          </div>
+        </div>
+
+        {topSalesDrop.length > 0 && (
+          <div className="bg-dark-800/40 rounded-xl p-3 border border-indigo-500/10 flex-1">
+            <p className="text-[9px] text-slate-500 uppercase tracking-wider font-bold mb-2">Leaderboard Drop</p>
+            <div className="space-y-2">
+              {topSalesDrop.map((sales, idx) => (
+                <div key={idx} className="flex justify-between items-center text-xs">
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] text-slate-500 font-mono">{idx + 1}.</span>
+                    <span className="text-white truncate max-w-[120px]">{sales.name}</span>
+                  </div>
+                  <span className="text-indigo-400 font-bold font-mono">{sales.total} Pk</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+        {topSalesDrop.length === 0 && (
+          <div className="text-center py-4 flex-1 flex flex-col justify-center">
+            <p className="text-xs text-slate-500 italic">Belum ada drop ke toko.</p>
+          </div>
+        )}
+      </div>
+
+      {/* Widget 8: Monitor Audit Stok Toko */}
+      <div className="glass-card p-6 border-t-4 border-fuchsia-500 flex flex-col">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="w-10 h-10 rounded-xl bg-fuchsia-500/10 flex items-center justify-center shrink-0">
+            <HiOutlineClipboardList className="text-fuchsia-400" size={22} />
+          </div>
+          <div>
+            <h3 className="text-base font-bold text-white leading-tight">Monitor Stok Toko</h3>
+            <p className="text-[10px] text-slate-400 mt-0.5">Audit fisik barang terkecil di rak</p>
+          </div>
+        </div>
+
+        {lowStockStores.length === 0 ? (
+          <div className="text-center py-6 flex-1 flex flex-col items-center justify-center">
+            <p className="text-3xl mb-2">📦</p>
+            <p className="text-xs text-slate-500 italic">Belum ada data stok toko.</p>
+          </div>
+        ) : (
+          <div className="flex flex-col gap-2 flex-1">
+            {lowStockStores.map((store, i) => (
+              <div key={i} className="flex items-center justify-between p-3 rounded-xl bg-dark-800/40 border border-slate-700/30 hover:border-fuchsia-500/30 transition-colors group">
+                <div className="min-w-0 pr-3">
+                  <p className="text-xs font-bold text-slate-300 truncate">{store.storeName}</p>
+                  <p className="text-[9px] text-slate-500 truncate">{store.productName}</p>
+                  <p className="text-[8px] text-slate-600 mt-1">Audit: {timeAgo(store.lastAuditDate || store.lastDropDate)}</p>
+                </div>
+                <div className="text-right shrink-0">
+                  <span className={`text-sm font-black font-mono ${store.currentStock === 0 ? 'text-rose-400' : 'text-fuchsia-400'}`}>
+                    {store.currentStock || 0}
+                  </span>
+                  <span className="text-[9px] text-slate-500 ml-1">Pk</span>
+                </div>
               </div>
             ))}
           </div>

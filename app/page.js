@@ -30,7 +30,9 @@ import {
   recalculateSummary,
   getCountPendingSetoran,
   getSemuaPendingSetoran,
-  verifikasiSetoranAdmin
+  verifikasiSetoranAdmin,
+  subscribeAllSalesTransactions,
+  subscribeAllStoreInventory
 } from "@/lib/firestore";
 import toast from "react-hot-toast";
 import { useAdminAuth } from "@/lib/AdminAuthContext";
@@ -55,6 +57,8 @@ export default function DashboardPage() {
   const [factoryReturns, setFactoryReturns] = useState([]);
   const [retailStores, setRetailStores] = useState([]);
   const [allDistributions, setAllDistributions] = useState([]);
+  const [salesTransactions, setSalesTransactions] = useState([]);
+  const [storeInventory, setStoreInventory] = useState([]);
   const [previewImage, setPreviewImage] = useState(null);
   const [editingProduct, setEditingProduct] = useState(null);
   const [pendingCount, setPendingCount] = useState(0);
@@ -80,6 +84,8 @@ export default function DashboardPage() {
     const unsubFactoryReturns = subscribeFactoryReturns(setFactoryReturns);
     const unsubRetail = subscribeRetailStores(setRetailStores);
     const unsubAllDist = subscribeAllDistributions(setAllDistributions);
+    const unsubSalesTx = subscribeAllSalesTransactions(setSalesTransactions);
+    const unsubStoreInv = subscribeAllStoreInventory(setStoreInventory);
 
     return () => {
       unsubProducts();
@@ -91,6 +97,8 @@ export default function DashboardPage() {
       unsubFactoryReturns();
       unsubRetail();
       unsubAllDist();
+      unsubSalesTx();
+      unsubStoreInv();
     };
   }, []);
 
@@ -161,7 +169,14 @@ export default function DashboardPage() {
               </div>
             )}
             <SummaryCards summary={summary} products={products} />
-            <DashboardWidgets products={products} teams={teams} allDistributions={allDistributions} purchases={purchases} />
+            <DashboardWidgets 
+              products={products} 
+              teams={teams} 
+              allDistributions={allDistributions} 
+              purchases={purchases} 
+              salesTransactions={salesTransactions}
+              storeInventory={storeInventory}
+            />
           </div>
         );
       case "po":
