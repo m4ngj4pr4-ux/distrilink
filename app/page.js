@@ -220,7 +220,10 @@ export default function DashboardPage() {
                   </thead>
                   <tbody className="divide-y divide-slate-400/5">
                     {products.map((p) => {
-                      const totalPacks = p.totalPacks || 0;
+                      // Hitung stok aktual Gudang berdasarkan histori valid (mengabaikan double-deduction dari operan captain)
+                      const totalPurchased = purchases.filter(po => po.productId === p.id).reduce((sum, po) => sum + (po.totalPack || 0), 0);
+                      const totalPacks = Math.max(0, totalPurchased - (p.adminDistributedPacks || 0));
+                      
                       const packsPerSlop = p.packsPerSlop || 10;
                       
                       const totalSlops = Math.floor(totalPacks / packsPerSlop);
