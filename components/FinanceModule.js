@@ -249,7 +249,7 @@ export default function FinanceModule({ products = [], purchases = [] }) {
     if (!checkWritePermission("menghapus entri keuangan")) return;
     if (!confirm(`Hapus entri "${entry.keterangan || entry.tipeBuku}"?`)) return;
     try {
-      await deleteFinanceEntry(entry.id);
+      await deleteFinanceEntry(entry.id, entry);
       toast.success("Entri dihapus");
     } catch (err) {
       toast.error("Gagal: " + err.message);
