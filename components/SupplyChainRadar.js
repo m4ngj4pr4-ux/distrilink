@@ -11,13 +11,15 @@ import {
   subscribeSalesTeams,
   deleteStoreInventoryRecord,
   cleanupOrphanStoreInventory,
-  updateSalesTeam
+  updateSalesTeam,
+  editDropTransaction
 } from "@/lib/firestore";
 import {
   HiOutlineDatabase, HiOutlineTruck, HiOutlineCube,
   HiOutlineExclamationCircle, HiOutlineChartPie,
   HiOutlineTrash, HiOutlineRefresh, HiOutlineTrendingUp,
-  HiOutlineUserGroup, HiOutlineFire, HiOutlineSearch
+  HiOutlineUserGroup, HiOutlineFire, HiOutlineSearch,
+  HiOutlinePencilAlt, HiOutlineX
 } from "react-icons/hi";
 import toast from "react-hot-toast";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -28,6 +30,10 @@ export default function SupplyChainRadar() {
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [isCleaning, setIsCleaning] = useState(false);
   const [searchStore, setSearchStore] = useState("");
+
+  const [selectedStoreForHistory, setSelectedStoreForHistory] = useState(null);
+  const [editingTx, setEditingTx] = useState(null);
+  const [editForm, setEditForm] = useState({ productId: "", jumlahDrop: 0 });
 
   const [products, setProducts] = useState([]);
   const [purchases, setPurchases] = useState([]);
@@ -216,6 +222,32 @@ export default function SupplyChainRadar() {
     finally { setIsCleaning(false); }
   };
 
+  const handleSaveEditDrop = async (tx) => {
+    try {
+      const prod = products.find(p => p.id === editForm.productId);
+      if (!prod) throw new Error("Produk tidak valid");
+      
+      const newHargaJual = prod.currentSellingPrice || 0;
+      const newTotal = newHargaJual * editForm.jumlahDrop;
+
+      const newData = {
+        productId: prod.id,
+        productName: prod.name,
+        jumlahDrop: editForm.jumlahDrop,
+        hargaJual: newHargaJual,
+        total: newTotal,
+        storeId: tx.storeId,
+        namaToko: tx.namaToko
+      };
+
+      await editDropTransaction(tx.id, tx, newData);
+      toast.success("Transaksi drop berhasil diubah!");
+      setEditingTx(null);
+    } catch (err) {
+      toast.error("Gagal mengubah: " + err.message);
+    }
+  };
+
   const getTrend = (total, rank) => {
     if (rank === 0) return { icon: "🏆", label: "Juara 1", color: "text-amber-400" };
     if (rank === 1) return { icon: "🥈", label: "Juara 2", color: "text-slate-300" };
@@ -333,7 +365,7 @@ export default function SupplyChainRadar() {
                 const globalRank = storeLeaderboard.findIndex(s => s.storeId === store.storeId);
                 const trend = getTrend(store.totalDrop, globalRank);
                 return (
-                  <tr key={store.storeId} className="hover:bg-white/[0.02] transition-colors group">
+                  <tr key={store.storeId} onClick={() => setSelectedStoreForHistory(store)} className="hover:bg-white/[0.05] transition-colors group cursor-pointer">
                     <td className="p-4 text-xs font-black text-slate-500">{globalRank + 1}</td>
                     <td className="p-4">
                       <span className="text-xs font-bold text-white group-hover:text-emerald-400 transition-colors">{store.namaToko}</span>
@@ -496,6 +528,85 @@ export default function SupplyChainRadar() {
           )}
         </div>
       </div>
+
+      {/* MODAL RIWAYAT DROP TOKO */}
+      {selectedStoreForHistory && (
+        <div className="fixed inset-0 bg-black/60 z-[100] flex items-center justify-center p-4 animate-fadeIn">
+          <div className="bg-dark-800 rounded-2xl w-full max-w-2xl overflow-hidden shadow-2xl border border-slate-700/50 flex flex-col max-h-[90vh]">
+            <div className="p-4 border-b border-slate-700/50 flex justify-between items-center bg-dark-900/50">
+              <div>
+                <h3 className="font-black text-white">Riwayat Drop: {selectedStoreForHistory.namaToko}</h3>
+                <p className="text-[10px] text-slate-400">Total: {selectedStoreForHistory.totalDrop} Pk</p>
+              </div>
+              <button onClick={() => { setSelectedStoreForHistory(null); setEditingTx(null); }} className="p-2 bg-dark-700 hover:bg-rose-500/10 text-slate-400 hover:text-rose-400 rounded-lg transition-colors">
+                <HiOutlineX size={18} />
+              </button>
+            </div>
+            
+            <div className="p-4 overflow-y-auto custom-scrollbar flex-1 space-y-3">
+              {transactions.filter(tx => tx.storeId === selectedStoreForHistory.storeId && tx.tipe === 'drop')
+                .sort((a,b) => (b.waktu?.seconds || 0) - (a.waktu?.seconds || 0))
+                .map(tx => (
+                <div key={tx.id} className="p-4 bg-dark-900/40 border border-slate-700/30 rounded-xl hover:bg-dark-900/60 transition-colors">
+                  {editingTx?.id === tx.id ? (
+                    <div className="space-y-3">
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                           <label className="text-[10px] text-slate-400 font-bold mb-1 block">Produk</label>
+                           <select 
+                             value={editForm.productId}
+                             onChange={(e) => setEditForm({...editForm, productId: e.target.value})}
+                             className="w-full bg-dark-700 border border-slate-600 rounded-lg px-3 py-2 text-xs text-white focus:border-emerald-500 outline-none"
+                           >
+                             {products.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                           </select>
+                        </div>
+                        <div>
+                           <label className="text-[10px] text-slate-400 font-bold mb-1 block">Jumlah Drop (Pack)</label>
+                           <input type="number" min="0"
+                             value={editForm.jumlahDrop}
+                             onChange={(e) => setEditForm({...editForm, jumlahDrop: parseInt(e.target.value) || 0})}
+                             className="w-full bg-dark-700 border border-slate-600 rounded-lg px-3 py-2 text-xs text-white focus:border-emerald-500 outline-none"
+                           />
+                        </div>
+                      </div>
+                      <div className="flex gap-2 justify-end pt-2">
+                        <button onClick={() => setEditingTx(null)} className="px-4 py-2 text-xs text-slate-400 hover:text-white hover:bg-slate-700 rounded-lg font-bold transition-all">Batal</button>
+                        <button onClick={() => handleSaveEditDrop(tx)} className="px-4 py-2 text-xs bg-emerald-600 text-white hover:bg-emerald-500 rounded-lg font-bold transition-all shadow-lg shadow-emerald-500/20">Simpan Perubahan</button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <div className="flex items-center gap-2 mb-1">
+                          <p className="text-sm font-bold text-white">{tx.productName}</p>
+                          <span className="text-[10px] bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded-full font-black">{tx.jumlahDrop} Pk</span>
+                        </div>
+                        <p className="text-[10px] text-slate-400 flex items-center gap-1.5">
+                          <span>👤 {tx.namaSales}</span>
+                          <span>•</span>
+                          <span>🕒 {tx.waktu?.toDate ? tx.waktu.toDate().toLocaleString("id-ID") : "Baru saja"}</span>
+                        </p>
+                      </div>
+                      <button onClick={() => {
+                        if (!checkWritePermission("edit transaksi drop")) return;
+                        setEditingTx(tx);
+                        setEditForm({ productId: tx.productId, jumlahDrop: tx.jumlahDrop });
+                      }} className="p-2 bg-blue-500/10 text-blue-400 rounded-lg hover:bg-blue-500 hover:text-white transition-all shadow-sm flex items-center gap-1">
+                        <HiOutlinePencilAlt size={16} />
+                        <span className="text-[10px] font-bold hidden sm:block">Edit</span>
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ))}
+              {transactions.filter(tx => tx.storeId === selectedStoreForHistory.storeId && tx.tipe === 'drop').length === 0 && (
+                 <p className="text-center text-slate-500 text-xs py-8">Tidak ada riwayat drop.</p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
