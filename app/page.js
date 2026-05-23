@@ -119,6 +119,18 @@ export default function DashboardPage() {
 
 
 
+  const handleRecalculate = async () => {
+    setIsRecalculating(true);
+    try {
+      await recalculateSummary();
+      toast.success("Sinkronisasi saldo berhasil!");
+    } catch (err) {
+      toast.error("Gagal sinkronisasi: " + err.message);
+    } finally {
+      setIsRecalculating(false);
+    }
+  };
+
   const handleGlobalVerify = async (item) => {
     if (!checkWritePermission("verifikasi setoran")) return;
     if (confirm(`Sahkan setoran Rp ${item.nominal?.toLocaleString('id-ID')} dari ${item.namaSales}?`)) {
