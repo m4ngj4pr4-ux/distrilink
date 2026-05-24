@@ -2,7 +2,7 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { 
   getGroupedStoreInventory, getSalesCarriedBrands, 
-  addDropTransaction, updateStoreShelfStock, getSisaStokSales,
+  addDropTransactionBatch, updateStoreShelfStock, getSisaStokSales,
   updateRetailStore
 } from '@/lib/firestore';
 import { getCurrentLocation } from '@/lib/geolocation';
@@ -33,6 +33,7 @@ export default function TransaksiPage() {
   const [hargaDrop, setHargaDrop] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isPrintEnabled, setIsPrintEnabled] = useState(false);
+  const [cart, setCart] = useState([]);
   
   // Success Modal for Printing
   const [lastDropData, setLastDropData] = useState(null);
@@ -168,6 +169,7 @@ export default function TransaksiPage() {
     const brands = await getSalesCarriedBrands(user.id);
     setCarriedBrands(brands);
     setHargaDrop("");
+    setCart([]); // Clear cart for new transaction
   };
 
   const handleGpsSave = async () => {
@@ -201,47 +203,86 @@ export default function TransaksiPage() {
     ? carriedBrands[selectedBrand].sellingPrice || 0
     : 0;
 
-  const handleDropSubmit = async (e) => {
-    e.preventDefault();
+  const handleAddToCart = (e) => {
+    if (e) e.preventDefault();
     const qty = parseInt(jumlahDrop) || 0;
     const price = parseInt(hargaDrop) || 0;
 
     if (!selectedBrand) return toast.error("Pilih merek barang!");
     if (qty <= 0) return toast.error("Masukkan jumlah yang valid!");
     if (price <= 0) return toast.error("Masukkan harga jual yang valid!");
-    
+
     const brandData = carriedBrands[selectedBrand];
     if (!brandData) return toast.error("Merek tidak ditemukan!");
-    if (qty > brandData.sisa) return toast.error(`Stok ${selectedBrand} Anda hanya ${brandData.sisa} Pk!`);
 
-    setIsSubmitting(true);
-    try {
-      const dropData = {
-        teamId: user.id,
-        namaSales: user.name,
-        storeId: restockStore.storeId,
-        namaToko: restockStore.namaToko,
+    const existingCartItem = cart.find(item => item.productName === selectedBrand);
+    const inCartQty = existingCartItem ? existingCartItem.jumlahDrop : 0;
+    const totalNewQty = inCartQty + qty;
+
+    if (totalNewQty > brandData.sisa) {
+      return toast.error(`Stok ${selectedBrand} Anda hanya ${brandData.sisa} Pk! Di keranjang: ${inCartQty} Pk.`);
+    }
+
+    if (existingCartItem) {
+      setCart(cart.map(item => 
+        item.productName === selectedBrand 
+          ? { ...item, jumlahDrop: totalNewQty, hargaJual: price, total: totalNewQty * price }
+          : item
+      ));
+      toast.success(`Keranjang diperbarui! ${selectedBrand} → ${totalNewQty} Pk.`);
+    } else {
+      setCart([...cart, {
         productId: brandData.productId,
         productName: selectedBrand,
         jumlahDrop: qty,
         hargaJual: price,
-        total: qty * price,
-        catatan: "Via Aplikasi Sales",
-        waktu: { toDate: () => new Date() } // Mock for printing immediately
+        total: qty * price
+      }]);
+      toast.success(`${selectedBrand} ditambahkan ke keranjang.`);
+    }
+
+    setSelectedBrand("");
+    setJumlahDrop("");
+    setHargaDrop("");
+  };
+
+  const handleRemoveFromCart = (brandName) => {
+    setCart(cart.filter(item => item.productName !== brandName));
+    toast.success(`${brandName} dihapus dari keranjang.`);
+  };
+
+  const handleCheckout = async () => {
+    if (cart.length === 0) return toast.error("Keranjang belanja kosong!");
+    
+    setIsSubmitting(true);
+    try {
+      const storeInfo = {
+        storeId: restockStore.storeId,
+        namaToko: restockStore.namaToko
+      };
+      const agentInfo = {
+        id: user.id,
+        name: user.name
       };
 
-      await addDropTransaction(dropData);
+      const receiptId = await addDropTransactionBatch(cart, storeInfo, agentInfo);
       
-      if (isPrintEnabled) {
-        setLastDropData(dropData);
-      } else {
-        toast.success(`Drop ${qty} Pk ${selectedBrand} berhasil!`);
-      }
-      
+      const checkoutSummary = {
+        receiptId: receiptId,
+        namaToko: restockStore.namaToko,
+        waktu: new Date(),
+        namaSales: user.name,
+        items: cart,
+        grandTotal: cart.reduce((sum, item) => sum + item.total, 0),
+        totalQty: cart.reduce((sum, item) => sum + item.jumlahDrop, 0)
+      };
+
+      setLastDropData(checkoutSummary);
       setRestockStore(null);
       await loadData(user.id);
+      toast.success("Checkout berhasil!");
     } catch (error) {
-      toast.error("Gagal menyimpan data.");
+      toast.error("Gagal menyimpan data drop.");
       console.error(error);
     } finally {
       setIsSubmitting(false);
@@ -255,7 +296,7 @@ export default function TransaksiPage() {
       toast.loading("Menghubungkan ke printer...", { id: "print-toast" });
       await printer.connect();
       toast.loading("Mencetak nota...", { id: "print-toast" });
-      await printer.printReceipt(lastDropData);
+      await printer.printMultiItemReceipt(lastDropData);
       toast.success("Nota berhasil dicetak!", { id: "print-toast" });
     } catch (error) {
       console.error(error);
@@ -468,80 +509,171 @@ export default function TransaksiPage() {
         </div>
       )}
 
-      {/* ── MODAL RESTOCK (DROP) ── */}
+      {/* ── MODAL POS CART SYSTEM (MULTI-ITEM DROP) ── */}
       {restockStore && (
         <div className="fixed inset-0 bg-black/80 flex items-end justify-center z-[100] pb-0 backdrop-blur-sm">
-          <div className="bg-dark-900 w-full max-w-md rounded-t-2xl p-5 border-t border-blue-500 animate-slideIn max-h-[80vh] flex flex-col">
+          <div className="bg-dark-900 w-full max-w-md rounded-t-2xl p-5 border-t border-blue-500 animate-slideIn max-h-[85vh] flex flex-col shadow-2xl">
+            {/* Header */}
             <div className="flex justify-between items-center mb-4 shrink-0">
               <div>
-                <h2 className="text-lg font-bold text-white">📦 Drop Barang</h2>
-                <p className="text-[10px] text-slate-400">ke: <span className="text-emerald-400 font-bold">{restockStore.namaToko}</span></p>
+                <h2 className="text-lg font-bold text-white flex items-center gap-2">
+                  🛒 <span>Keranjang Drop Toko</span>
+                </h2>
+                <p className="text-[10px] text-slate-400">Toko Tujuan: <span className="text-emerald-400 font-bold">{restockStore.namaToko}</span></p>
               </div>
-              <button onClick={() => setRestockStore(null)} className="text-slate-400 font-bold text-2xl px-2 hover:text-white transition-colors">&times;</button>
+              <button 
+                onClick={() => { setRestockStore(null); setCart([]); }} 
+                className="text-slate-400 font-bold text-2xl px-2 hover:text-white transition-colors"
+              >
+                &times;
+              </button>
             </div>
 
-            <form onSubmit={handleDropSubmit} className="flex-1 overflow-y-auto custom-scrollbar">
-              <div className="mb-4">
-                <label className="block text-[10px] font-medium text-slate-400 mb-1.5 uppercase tracking-wider">Pilih Merek Barang</label>
-                <select 
-                  value={selectedBrand} 
-                  onChange={(e) => setSelectedBrand(e.target.value)}
-                  className="w-full bg-dark-800 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white outline-none focus:border-blue-500"
-                  required
-                >
-                  <option value="">-- Pilih Merek yang Anda Bawa --</option>
-                  {Object.keys(carriedBrands).map(brand => (
-                    <option key={brand} value={brand}>{brand} (Tersisa: {carriedBrands[brand].sisa} Pk)</option>
-                  ))}
-                </select>
-                {Object.keys(carriedBrands).length === 0 && (
-                  <p className="text-[9px] text-rose-400 mt-1 italic">Anda belum memiliki stok bawaan. Hubungi admin.</p>
+            {/* Scrollable Modal Content */}
+            <div className="flex-1 overflow-y-auto custom-scrollbar pr-1 pb-4 flex flex-col gap-5">
+              
+              {/* SECTION 1: VISUAL CART LIST */}
+              <div className="bg-dark-800/60 rounded-2xl border border-slate-700/50 p-4">
+                <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-3">Isi Keranjang Belanja</h3>
+                
+                {cart.length === 0 ? (
+                  <div className="text-center py-6 text-slate-500 flex flex-col items-center justify-center gap-2">
+                    <span className="text-3xl">🛒</span>
+                    <p className="text-xs italic">Keranjang kosong. Tambahkan barang di bawah.</p>
+                  </div>
+                ) : (
+                  <div className="flex flex-col gap-3 max-h-48 overflow-y-auto pr-1 custom-scrollbar">
+                    {cart.map((item, idx) => (
+                      <div 
+                        key={idx} 
+                        className="flex justify-between items-center bg-dark-900/80 p-3 rounded-xl border border-slate-700/30 animate-fadeIn"
+                      >
+                        <div className="flex-1 min-w-0 pr-2">
+                          <p className="text-xs font-bold text-white truncate">{item.productName}</p>
+                          <p className="text-[10px] text-slate-500 mt-0.5">
+                            {item.jumlahDrop} Pk x Rp {item.hargaJual.toLocaleString('id-ID')}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-3 shrink-0">
+                          <span className="text-xs font-extrabold text-blue-400">
+                            Rp {item.total.toLocaleString('id-ID')}
+                          </span>
+                          <button 
+                            type="button"
+                            onClick={() => handleRemoveFromCart(item.productName)}
+                            className="p-1.5 bg-rose-500/10 border border-rose-500/20 text-rose-400 rounded-lg hover:bg-rose-500/20 active:scale-90 transition-all flex items-center justify-center"
+                            title="Hapus"
+                          >
+                            <HiX size={14} />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 )}
-              </div>
-              <div className="mb-5">
-                <label className="block text-[10px] font-medium text-slate-400 mb-1.5 uppercase tracking-wider">Jumlah Drop (Pack)</label>
-                <input 
-                  type="number" inputMode="numeric"
-                  value={jumlahDrop}
-                  onChange={(e) => setJumlahDrop(e.target.value)}
-                  className="w-full bg-dark-800 border border-slate-700 rounded-xl px-4 py-4 text-2xl font-black text-blue-400 focus:border-blue-500 outline-none text-center shadow-inner"
-                  placeholder="0"
-                  required
-                />
-                {selectedBrand && carriedBrands[selectedBrand] && (
-                  <p className="text-[9px] text-slate-500 text-center mt-1">Maks: {carriedBrands[selectedBrand].sisa} Pk</p>
+
+                {/* Cart Subtotal callout */}
+                {cart.length > 0 && (
+                  <div className="mt-4 pt-3 border-t border-slate-700/50 flex justify-between items-center">
+                    <div>
+                      <p className="text-[8px] text-slate-500 uppercase tracking-widest font-bold">Total Barang</p>
+                      <p className="text-xs text-white font-extrabold">{cart.reduce((sum, item) => sum + item.jumlahDrop, 0)} Pk</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-[8px] text-slate-500 uppercase tracking-widest font-bold">Grand Total</p>
+                      <p className="text-base text-emerald-400 font-black">
+                        Rp {cart.reduce((sum, item) => sum + item.total, 0).toLocaleString('id-ID')}
+                      </p>
+                    </div>
+                  </div>
                 )}
               </div>
 
-              <div className="mb-5">
-                <label className="block text-[10px] font-medium text-slate-400 mb-1.5 uppercase tracking-wider">Harga Jual per Pack (Rp)</label>
-                <div className="relative">
-                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 font-bold">Rp</span>
-                  <input 
-                    type="number" inputMode="numeric"
-                    value={hargaDrop}
-                    onChange={(e) => setHargaDrop(e.target.value)}
-                    className="w-full bg-dark-800 border border-slate-700 rounded-xl pl-12 pr-4 py-4 text-xl font-black text-emerald-400 focus:border-emerald-500 outline-none shadow-inner"
-                    placeholder="0"
-                    required
-                  />
+              {/* SECTION 2: ADD ITEM FORM */}
+              <div className="bg-dark-800/40 rounded-2xl border border-slate-700/30 p-4">
+                <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-3">➕ Tambah Barang Ke Keranjang</h3>
+                
+                <div className="mb-3">
+                  <label className="block text-[9px] font-semibold text-slate-500 mb-1 tracking-wider uppercase">Merek Barang</label>
+                  <select 
+                    value={selectedBrand} 
+                    onChange={(e) => setSelectedBrand(e.target.value)}
+                    className="w-full bg-dark-800 border border-slate-700 rounded-xl px-3 py-2.5 text-xs text-white outline-none focus:border-blue-500"
+                  >
+                    <option value="">-- Pilih Merek --</option>
+                    {Object.keys(carriedBrands).map(brand => {
+                      const inCartItem = cart.find(item => item.productName === brand);
+                      const displayQty = inCartItem 
+                        ? `${carriedBrands[brand].sisa - inCartItem.jumlahDrop} Pk`
+                        : `${carriedBrands[brand].sisa} Pk`;
+                      const isOutOfStock = inCartItem && inCartItem.jumlahDrop >= carriedBrands[brand].sisa;
+                      
+                      return (
+                        <option 
+                          key={brand} 
+                          value={brand}
+                          disabled={isOutOfStock}
+                        >
+                          {brand} (Stok: {displayQty}) {isOutOfStock ? '[Penuh]' : ''}
+                        </option>
+                      );
+                    })}
+                  </select>
+                  {Object.keys(carriedBrands).length === 0 && (
+                    <p className="text-[9px] text-rose-400 mt-1 italic">Anda belum memiliki stok bawaan. Hubungi admin.</p>
+                  )}
                 </div>
-                <p className="text-[9px] text-slate-500 text-center mt-1 italic">
-                  {hargaReferensi > 0 
-                    ? <>Harga ambil barang: <span className="text-amber-400 font-bold not-italic">Rp {hargaReferensi.toLocaleString('id-ID')}</span> / Pack</>
-                    : 'Sesuaikan harga dengan kesepakatan toko'
-                  }
-                </p>
+
+                <div className="grid grid-cols-2 gap-3 mb-4">
+                  <div>
+                    <label className="block text-[9px] font-semibold text-slate-500 mb-1 tracking-wider uppercase">Jumlah (Pk)</label>
+                    <input 
+                      type="number" inputMode="numeric"
+                      value={jumlahDrop}
+                      onChange={(e) => setJumlahDrop(e.target.value)}
+                      className="w-full bg-dark-800 border border-slate-700 rounded-xl px-3 py-2.5 text-sm font-bold text-blue-400 focus:border-blue-500 outline-none text-center"
+                      placeholder="0"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[9px] font-semibold text-slate-500 mb-1 tracking-wider uppercase">Harga Jual (Rp/Pk)</label>
+                    <input 
+                      type="number" inputMode="numeric"
+                      value={hargaDrop}
+                      onChange={(e) => setHargaDrop(e.target.value)}
+                      className="w-full bg-dark-800 border border-slate-700 rounded-xl px-3 py-2.5 text-sm font-bold text-emerald-400 focus:border-emerald-500 outline-none text-center"
+                      placeholder="0"
+                    />
+                  </div>
+                </div>
+
+                {selectedBrand && (
+                  <div className="mb-4 text-center">
+                    <p className="text-[9px] text-slate-500">
+                      {hargaReferensi > 0 
+                        ? <>Harga Ambil: <span className="text-amber-400 font-bold">Rp {hargaReferensi.toLocaleString('id-ID')}</span> / Pk</>
+                        : 'Sesuaikan harga jual'
+                      }
+                      {carriedBrands[selectedBrand] && (
+                        <span className="block text-[8px] text-slate-600 mt-0.5">
+                          Sisa stok bawaan Anda: {carriedBrands[selectedBrand].sisa} Pk
+                        </span>
+                      )}
+                    </p>
+                  </div>
+                )}
+
+                <button 
+                  type="button"
+                  onClick={handleAddToCart}
+                  className="w-full py-2.5 rounded-xl bg-blue-600/10 hover:bg-blue-600/20 border border-blue-500/30 text-blue-400 text-xs font-bold active:scale-95 transition-all flex items-center justify-center gap-1.5"
+                >
+                  <span>➕ Tambah ke Keranjang</span>
+                </button>
               </div>
 
-              <div className="mb-6 bg-blue-900/10 border border-blue-500/20 p-4 rounded-xl text-center">
-                <p className="text-[10px] text-blue-400 uppercase font-black tracking-widest mb-1">Total Piutang Toko</p>
-                <p className="text-2xl font-black text-white">
-                  Rp {( (parseInt(jumlahDrop)||0) * (parseInt(hargaDrop)||0) ).toLocaleString('id-ID')}
-                </p>
-              </div>
-
-              <div className="mb-6 flex items-center justify-between bg-dark-800/50 p-3 rounded-xl border border-slate-700/50">
+              {/* Bluetooth Thermal Printer Toggle */}
+              <div className="flex items-center justify-between bg-dark-800/30 p-3 rounded-xl border border-slate-700/30">
                 <div className="flex items-center gap-3">
                   <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${isPrintEnabled ? 'bg-emerald-500/10 text-emerald-500' : 'bg-slate-700 text-slate-500'}`}>
                     <HiOutlinePrinter size={18} />
@@ -560,54 +692,113 @@ export default function TransaksiPage() {
                 </button>
               </div>
 
-              <div className="flex gap-2">
-                <button type="button" onClick={() => setRestockStore(null)} className="flex-1 py-3.5 rounded-xl bg-dark-800 border border-slate-700 text-xs text-slate-400 font-bold active:scale-95 transition-all">
-                  Batal
-                </button>
-                <button type="submit" disabled={isSubmitting} className="flex-1 py-3.5 rounded-xl bg-blue-600 text-white text-xs font-bold active:scale-95 transition-all shadow-lg shadow-blue-900/30 disabled:opacity-50">
-                  {isSubmitting ? "Menyimpan..." : "Konfirmasi Drop"}
-                </button>
-              </div>
-            </form>
+            </div>
+
+            {/* Bottom Actions */}
+            <div className="flex gap-2 pt-3 border-t border-slate-800 shrink-0">
+              <button 
+                type="button" 
+                onClick={() => { setRestockStore(null); setCart([]); }} 
+                className="flex-1 py-3.5 rounded-xl bg-dark-800 border border-slate-700 text-xs text-slate-400 font-bold active:scale-95 transition-all"
+              >
+                Batal
+              </button>
+              <button 
+                type="button"
+                onClick={handleCheckout}
+                disabled={cart.length === 0 || isSubmitting} 
+                className="flex-1 py-3.5 rounded-xl bg-emerald-600 text-white text-xs font-bold active:scale-95 transition-all shadow-lg shadow-emerald-900/30 disabled:opacity-40 flex items-center justify-center gap-1.5"
+              >
+                {isSubmitting ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                    <span>Memproses...</span>
+                  </>
+                ) : (
+                  <>
+                    <span>🚀 Checkout ({cart.length})</span>
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         </div>
       )}
 
-      {/* ── MODAL SUCCESS (PRINT) ── */}
+      {/* ── MODAL SUCCESS & PREMIUM STRUK DIGITAL (CONSOLIDATED RECEIPT) ── */}
       {lastDropData && (
         <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-[110] p-4 backdrop-blur-md">
-          <div className="bg-dark-900 w-full max-w-sm rounded-3xl p-8 border border-slate-700 text-center animate-zoomIn shadow-2xl relative overflow-hidden">
+          <div className="bg-dark-900 w-full max-w-sm rounded-3xl p-6 border border-slate-700 text-center animate-zoomIn shadow-2xl relative overflow-hidden flex flex-col gap-5">
             {/* Glow background */}
             <div className="absolute -top-24 -left-24 w-48 h-48 bg-emerald-500/10 rounded-full blur-3xl"></div>
             
-            <div className="relative z-10">
-              <div className="w-20 h-20 bg-emerald-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
-                <HiCheckCircle className="text-emerald-500" size={50} />
+            <div className="relative z-10 flex flex-col gap-4">
+              <div className="w-14 h-14 bg-emerald-500/20 rounded-full flex items-center justify-center mx-auto">
+                <HiCheckCircle className="text-emerald-500" size={36} />
               </div>
               
-              <h2 className="text-xl font-black text-white mb-2">Transaksi Berhasil!</h2>
-              <p className="text-xs text-slate-400 mb-8 leading-relaxed">
-                Drop <span className="text-white font-bold">{lastDropData.jumlahDrop} Pk {lastDropData.productName}</span> ke <span className="text-emerald-400 font-bold">{lastDropData.namaToko}</span> telah tercatat.
-              </p>
+              <div>
+                <h2 className="text-lg font-black text-white">Drop Toko Sukses!</h2>
+                <p className="text-xs text-slate-400">Seluruh item berhasil dicatat secara batch.</p>
+              </div>
+
+              {/* Premium Market Paper Receipt Mockup */}
+              <div className="bg-slate-100 text-slate-900 p-4 rounded-xl text-left font-mono text-[11px] shadow-inner relative border-b-4 border-dashed border-slate-300">
+                <div className="text-center font-bold text-sm tracking-wider mb-1">DISTRILINK</div>
+                <div className="text-center text-[9px] text-slate-500 uppercase tracking-widest mb-3">POS DIGITAL RECEIPT</div>
+                
+                <div className="flex flex-col gap-0.5 border-b border-dashed border-slate-400 pb-2 mb-2">
+                  <p><span className="text-slate-500 font-bold">Nota :</span> {lastDropData.receiptId}</p>
+                  <p><span className="text-slate-500 font-bold">Toko :</span> {lastDropData.namaToko}</p>
+                  <p><span className="text-slate-500 font-bold">Tgl  :</span> {lastDropData.waktu.toLocaleString('id-ID')}</p>
+                  <p><span className="text-slate-500 font-bold">Sls  :</span> {lastDropData.namaSales}</p>
+                </div>
+
+                <div className="flex flex-col gap-2 mb-3">
+                  {lastDropData.items.map((item, idx) => (
+                    <div key={idx}>
+                      <p className="font-bold">{item.productName}</p>
+                      <div className="flex justify-between text-slate-600">
+                        <span>{item.jumlahDrop} Pk x Rp {item.hargaJual.toLocaleString('id-ID')}</span>
+                        <span className="font-bold text-slate-800">Rp {item.total.toLocaleString('id-ID')}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="border-t border-dashed border-slate-400 pt-2 flex flex-col gap-0.5 font-bold">
+                  <div className="flex justify-between text-slate-600 font-normal">
+                    <span>Total Barang:</span>
+                    <span>{lastDropData.totalQty} Pk</span>
+                  </div>
+                  <div className="flex justify-between text-sm text-emerald-700 font-black mt-1">
+                    <span>GRAND TOTAL:</span>
+                    <span>Rp {lastDropData.grandTotal.toLocaleString('id-ID')}</span>
+                  </div>
+                </div>
+
+                <div className="text-center text-[8px] text-slate-400 mt-4 uppercase tracking-wider">
+                  *** Terima Kasih Bosku ***
+                </div>
+              </div>
               
-              <div className="flex flex-col gap-3">
+              <div className="flex flex-col gap-2">
                 <button 
                   onClick={handlePrint}
                   disabled={isPrinting}
-                  className="w-full py-4 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-dark-900 font-black text-sm transition-all active:scale-95 flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20 disabled:opacity-50"
+                  className="w-full py-3.5 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-dark-900 font-black text-xs transition-all active:scale-95 flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20 disabled:opacity-50"
                 >
-                  <HiOutlinePrinter size={20} />
-                  {isPrinting ? "Mencetak..." : "Cetak Nota Sekarang"}
+                  <HiOutlinePrinter size={16} />
+                  {isPrinting ? "Mencetak..." : "Cetak Nota Bluetooth"}
                 </button>
                 <button 
                   onClick={() => setLastDropData(null)}
-                  className="w-full py-4 rounded-2xl bg-dark-800 border border-slate-700 text-slate-400 font-bold text-sm hover:text-white transition-all active:scale-95"
+                  className="w-full py-3.5 rounded-2xl bg-dark-800 border border-slate-700 text-slate-400 font-bold text-xs hover:text-white transition-all active:scale-95"
                 >
                   Selesai & Tutup
                 </button>
               </div>
               
-              <p className="text-[9px] text-slate-500 mt-6 uppercase tracking-widest font-black">Powered by DistriLink</p>
             </div>
           </div>
         </div>
