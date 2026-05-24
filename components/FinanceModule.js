@@ -13,7 +13,7 @@ import {
   subscribeInvestors, addInvestor, updateInvestor, deleteInvestor,
   subscribeFinanceLedger, addFinanceEntry, deleteFinanceEntry,
   calcFinanceSummary, subscribeAllDistributions, subscribeSummary,
-  syncFinancialBaseline
+  syncFinancialBaseline, recalculateSummary
 } from "@/lib/firestore";
 import { formatRupiah } from "@/lib/utils";
 import toast from "react-hot-toast";
@@ -70,6 +70,14 @@ export default function FinanceModule({ products = [], purchases = [] }) {
     const unsubLedger = subscribeFinanceLedger(setLedger);
     const unsubDist = subscribeAllDistributions(setDistributions);
     const unsubSummary = subscribeSummary(setGlobalSummary);
+    
+    // Auto-heal / synchronize summary document when the module is opened
+    try {
+      recalculateSummary();
+    } catch (e) {
+      console.error("Auto recalculate failed:", e);
+    }
+    
     return () => { unsubInv(); unsubLedger(); unsubDist(); unsubSummary(); };
   }, []);
 
