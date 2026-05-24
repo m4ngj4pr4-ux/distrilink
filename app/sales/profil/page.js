@@ -44,7 +44,7 @@ export default function ProfilPage() {
     // Fetch data
     getRiwayatSetoran(parsedUser.id).then(setRiwayatSetoran);
     getSalesProfile(parsedUser.id).then(setProfileData);
-    getSalesHistory(parsedUser.name).then(setRiwayatPenjualan);
+    getSalesHistory(parsedUser.id).then(setRiwayatPenjualan);
   }, [router]);
 
   const handleUpdateProfile = async (e) => {
@@ -140,13 +140,56 @@ export default function ProfilPage() {
     }
   };
 
-  const handlePrint = async (tx) => {
+  const groupTransactionsByReceipt = (txs) => {
+    const groups = {};
+    txs.forEach(tx => {
+      const rid = tx.receiptId || tx.id;
+      if (!groups[rid]) {
+        groups[rid] = {
+          receiptId: tx.receiptId || null,
+          id: rid,
+          namaToko: tx.namaToko,
+          namaSales: tx.namaSales,
+          waktu: tx.waktu,
+          storeId: tx.storeId,
+          teamId: tx.teamId,
+          items: []
+        };
+      }
+      groups[rid].items.push({
+        productId: tx.productId,
+        productName: tx.productName,
+        jumlahDrop: tx.jumlahDrop,
+        hargaJual: tx.hargaJual,
+        total: tx.total || (tx.jumlahDrop * tx.hargaJual)
+      });
+    });
+
+    return Object.values(groups).sort((a, b) => {
+      const timeA = a.waktu?.toMillis ? a.waktu.toMillis() : (a.waktu?.toDate ? a.waktu.toDate().getTime() : 0);
+      const timeB = b.waktu?.toMillis ? b.waktu.toMillis() : (b.waktu?.toDate ? b.waktu.toDate().getTime() : 0);
+      return timeB - timeA;
+    });
+  };
+
+  const handlePrint = async (receipt) => {
     setIsPrinting(true);
     try {
       toast.loading("Menghubungkan ke printer...", { id: "print-toast" });
       await printer.connect();
       toast.loading("Mencetak nota...", { id: "print-toast" });
-      await printer.printReceipt(tx);
+
+      const receiptData = {
+        receiptId: receipt.receiptId || `Nota-${receipt.id.slice(-6).toUpperCase()}`,
+        namaToko: receipt.namaToko,
+        waktu: receipt.waktu ? (receipt.waktu.toDate ? receipt.waktu.toDate() : new Date(receipt.waktu)) : new Date(),
+        namaSales: receipt.namaSales,
+        items: receipt.items,
+        grandTotal: receipt.items.reduce((sum, item) => sum + item.total, 0),
+        totalQty: receipt.items.reduce((sum, item) => sum + item.jumlahDrop, 0)
+      };
+
+      await printer.printMultiItemReceipt(receiptData);
       toast.success("Nota berhasil dicetak!", { id: "print-toast" });
     } catch (error) {
       console.error(error);
@@ -243,31 +286,46 @@ export default function ProfilPage() {
         </div>
 
         <div className="space-y-3 max-h-[420px] overflow-y-auto pr-1">
-          {riwayatPenjualan.length > 0 ? (
-            riwayatPenjualan.slice(0, 50).map(tx => (
-              <div key={tx.id} className="bg-dark-800 border border-slate-700/50 p-4 rounded-3xl flex items-center gap-4 group">
-                <div className="w-12 h-12 bg-dark-900 rounded-2xl flex items-center justify-center text-xl shrink-0 group-hover:scale-105 transition-transform">
-                  🏪
+          {groupTransactionsByReceipt(riwayatPenjualan).length > 0 ? (
+            groupTransactionsByReceipt(riwayatPenjualan).slice(0, 50).map(receipt => {
+              const totalQty = receipt.items.reduce((sum, i) => sum + i.jumlahDrop, 0);
+              const grandTotal = receipt.items.reduce((sum, i) => sum + i.total, 0);
+              
+              return (
+                <div key={receipt.id} className="bg-dark-800 border border-slate-700/50 p-4 rounded-3xl flex items-center gap-4 group">
+                  <div className="w-12 h-12 bg-dark-900 rounded-2xl flex items-center justify-center text-xl shrink-0 group-hover:scale-105 transition-transform">
+                    🏪
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex justify-between items-center mb-0.5">
+                      <p className="text-[9px] text-slate-500 font-bold uppercase tracking-widest">
+                        {receipt.waktu ? new Date(receipt.waktu.toDate()).toLocaleDateString('id-ID', { day: '2-digit', month: 'short' }) : 'Baru saja'}
+                      </p>
+                      {receipt.receiptId && (
+                        <span className="text-[8px] bg-slate-700/55 text-slate-400 px-1 py-0.2 rounded font-mono">
+                          {receipt.receiptId.slice(-6)}
+                        </span>
+                      )}
+                    </div>
+                    <h4 className="text-xs font-black text-white truncate uppercase">{receipt.namaToko}</h4>
+                    <p className="text-[10px] text-emerald-400 font-medium mt-1 truncate">
+                      {receipt.items.map(i => `${i.productName} (${i.jumlahDrop} Pk)`).join(', ')}
+                    </p>
+                    <p className="text-[9px] text-slate-500 font-bold mt-0.5">
+                      Total: Rp {grandTotal.toLocaleString('id-ID')}
+                    </p>
+                  </div>
+                  <button 
+                    onClick={() => handlePrint(receipt)}
+                    disabled={isPrinting}
+                    className="w-10 h-10 bg-emerald-500/10 border border-emerald-500/20 rounded-xl flex items-center justify-center text-emerald-400 active:scale-90 transition-all shrink-0"
+                    title="Cetak Nota"
+                  >
+                    <HiOutlinePrinter size={18} />
+                  </button>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-[9px] text-slate-500 font-bold uppercase tracking-widest mb-0.5">
-                    {tx.waktu ? new Date(tx.waktu.toDate()).toLocaleDateString('id-ID', { day: '2-digit', month: 'short' }) : 'Baru saja'}
-                  </p>
-                  <h4 className="text-xs font-black text-white truncate uppercase">{tx.namaToko}</h4>
-                  <p className="text-[10px] text-emerald-400 font-medium mt-1">
-                    {tx.jumlahDrop} Pk {tx.productName}
-                  </p>
-                </div>
-                <button 
-                  onClick={() => handlePrint(tx)}
-                  disabled={isPrinting}
-                  className="w-10 h-10 bg-emerald-500/10 border border-emerald-500/20 rounded-xl flex items-center justify-center text-emerald-400 active:scale-90 transition-all"
-                  title="Cetak Nota"
-                >
-                  <HiOutlinePrinter size={18} />
-                </button>
-              </div>
-            ))
+              );
+            })
           ) : (
             <div className="text-center py-10 bg-dark-800/30 rounded-3xl border border-dashed border-slate-700">
               <p className="text-xs text-slate-500 font-medium">Belum ada riwayat penjualan.</p>
