@@ -206,7 +206,7 @@ export default function TransaksiPage() {
   const handleAddToCart = (e) => {
     if (e) e.preventDefault();
     const qty = parseInt(jumlahDrop) || 0;
-    const price = parseInt(hargaDrop) || 0;
+    const price = parseInt(hargaDrop.toString().replace(/\D/g, '')) || 0;
 
     if (!selectedBrand) return toast.error("Pilih merek barang!");
     if (qty <= 0) return toast.error("Masukkan jumlah yang valid!");
@@ -638,9 +638,16 @@ export default function TransaksiPage() {
                   <div>
                     <label className="block text-[9px] font-semibold text-slate-500 mb-1 tracking-wider uppercase">Harga Jual (Rp/Pk)</label>
                     <input 
-                      type="number" inputMode="numeric"
+                      type="text" inputMode="numeric"
                       value={hargaDrop}
-                      onChange={(e) => setHargaDrop(e.target.value)}
+                      onChange={(e) => {
+                        const rawVal = e.target.value.replace(/\D/g, '');
+                        if (!rawVal) {
+                          setHargaDrop("");
+                        } else {
+                          setHargaDrop(parseInt(rawVal).toLocaleString('id-ID'));
+                        }
+                      }}
                       className="w-full bg-dark-800 border border-slate-700 rounded-xl px-3 py-2.5 text-sm font-bold text-emerald-400 focus:border-emerald-500 outline-none text-center"
                       placeholder="0"
                     />
