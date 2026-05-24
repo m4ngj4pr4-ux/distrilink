@@ -298,7 +298,7 @@ export default function FinanceModule({ products = [], purchases = [] }) {
           <p className={`text-2xl font-black ${(globalSummary?.sisaLabaBelumDibagikan || 0) > 0 ? 'text-purple-400' : 'text-slate-500'}`}>
             {fmtRp(globalSummary?.sisaLabaBelumDibagikan || 0)}
           </p>
-          <p className="text-[10px] text-slate-400 mt-1">Laba: {fmtRp(globalSummary?.totalLabaKotor || 0)} - Ops: {fmtRp(globalSummary?.totalBiayaOperasional || 0)}</p>
+          <p className="text-[10px] text-slate-400 mt-1">Laba: {fmtRp(globalSummary?.totalLabaKotor || 0)} - Ops: {fmtRp((globalSummary?.totalBiayaOperasional || 0) + (globalSummary?.totalPengeluaranLain || 0))}</p>
         </div>
       </div>
 
