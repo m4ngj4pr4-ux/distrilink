@@ -286,6 +286,55 @@ export default function ProfilPage() {
         </div>
       </section>
 
+      {/* History: Setoran */}
+      <section className="mb-10">
+        <div className="flex items-center gap-3 mb-4 px-1">
+          <div className="w-1.5 h-6 bg-slate-600 rounded-full"></div>
+          <h3 className="font-black text-white text-xs uppercase tracking-widest">Riwayat Setoran</h3>
+        </div>
+
+        {riwayatSetoran.length > 0 && (
+          <div className="bg-dark-800 border border-slate-700/50 p-4 rounded-2xl mb-4 flex justify-between gap-4 shadow-md">
+            <div className="flex-1">
+              <p className="text-[8px] text-slate-500 font-black uppercase tracking-wider mb-1">Total Terverifikasi</p>
+              <p className="text-sm font-black text-emerald-400">Rp {totalSelesai.toLocaleString('id-ID')}</p>
+            </div>
+            <div className="w-px bg-slate-700/50 my-1"></div>
+            <div className="flex-1">
+              <p className="text-[8px] text-slate-500 font-black uppercase tracking-wider mb-1">Total Diproses</p>
+              <p className="text-sm font-black text-amber-400">Rp {totalProses.toLocaleString('id-ID')}</p>
+            </div>
+          </div>
+        )}
+        
+        <div className="space-y-3 max-h-[420px] overflow-y-auto pr-1">
+          {riwayatSetoran.length > 0 ? (
+            riwayatSetoran.slice(0, 50).map(item => (
+              <div key={item.id} className="flex justify-between items-center bg-dark-800/40 p-4 rounded-2xl border border-slate-700/30">
+                <div>
+                  <p className="text-[9px] text-slate-500 font-bold uppercase mb-0.5">
+                    {item.waktu ? new Date(item.waktu.toDate()).toLocaleDateString('id-ID', { day: '2-digit', month: 'short' }) : 'Baru saja'}
+                  </p>
+                  <p className="text-[10px] text-slate-300 font-medium truncate max-w-[150px]">{item.catatan}</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-sm font-black text-emerald-400">Rp {item.nominal?.toLocaleString('id-ID')}</p>
+                  <span className={`text-[8px] px-1.5 py-0.5 rounded font-black uppercase tracking-tighter mt-1 inline-block ${
+                    item.status === "Diverifikasi Admin" || item.status === "Selesai (Sistem Lama)" ? "bg-emerald-500/10 text-emerald-500" : "bg-amber-500/10 text-amber-500"
+                  }`}>
+                    {item.status === "Diverifikasi Admin" || item.status === "Selesai (Sistem Lama)" ? "Selesai" : "Proses"}
+                  </span>
+                </div>
+              </div>
+            ))
+          ) : (
+            <div className="text-center py-10 bg-dark-800/30 rounded-3xl border border-dashed border-slate-700">
+              <p className="text-xs text-slate-500 font-medium">Belum ada riwayat setoran.</p>
+            </div>
+          )}
+        </div>
+      </section>
+
       {/* History: Penjualan (Drop Toko) */}
       <section className="mb-8">
         <div className="flex items-center gap-3 mb-4 px-1">
@@ -337,55 +386,6 @@ export default function ProfilPage() {
           ) : (
             <div className="text-center py-10 bg-dark-800/30 rounded-3xl border border-dashed border-slate-700">
               <p className="text-xs text-slate-500 font-medium">Belum ada riwayat penjualan.</p>
-            </div>
-          )}
-        </div>
-      </section>
-
-      {/* History: Setoran */}
-      <section className="mb-10">
-        <div className="flex items-center gap-3 mb-4 px-1">
-          <div className="w-1.5 h-6 bg-slate-600 rounded-full"></div>
-          <h3 className="font-black text-white text-xs uppercase tracking-widest">Riwayat Setoran</h3>
-        </div>
-
-        {riwayatSetoran.length > 0 && (
-          <div className="bg-dark-800 border border-slate-700/50 p-4 rounded-2xl mb-4 flex justify-between gap-4 shadow-md">
-            <div className="flex-1">
-              <p className="text-[8px] text-slate-500 font-black uppercase tracking-wider mb-1">Total Terverifikasi</p>
-              <p className="text-sm font-black text-emerald-400">Rp {totalSelesai.toLocaleString('id-ID')}</p>
-            </div>
-            <div className="w-px bg-slate-700/50 my-1"></div>
-            <div className="flex-1">
-              <p className="text-[8px] text-slate-500 font-black uppercase tracking-wider mb-1">Total Diproses</p>
-              <p className="text-sm font-black text-amber-400">Rp {totalProses.toLocaleString('id-ID')}</p>
-            </div>
-          </div>
-        )}
-        
-        <div className="space-y-3 max-h-[420px] overflow-y-auto pr-1">
-          {riwayatSetoran.length > 0 ? (
-            riwayatSetoran.slice(0, 50).map(item => (
-              <div key={item.id} className="flex justify-between items-center bg-dark-800/40 p-4 rounded-2xl border border-slate-700/30">
-                <div>
-                  <p className="text-[9px] text-slate-500 font-bold uppercase mb-0.5">
-                    {item.waktu ? new Date(item.waktu.toDate()).toLocaleDateString('id-ID', { day: '2-digit', month: 'short' }) : 'Baru saja'}
-                  </p>
-                  <p className="text-[10px] text-slate-300 font-medium truncate max-w-[150px]">{item.catatan}</p>
-                </div>
-                <div className="text-right">
-                  <p className="text-sm font-black text-emerald-400">Rp {item.nominal?.toLocaleString('id-ID')}</p>
-                  <span className={`text-[8px] px-1.5 py-0.5 rounded font-black uppercase tracking-tighter mt-1 inline-block ${
-                    item.status === "Diverifikasi Admin" || item.status === "Selesai (Sistem Lama)" ? "bg-emerald-500/10 text-emerald-500" : "bg-amber-500/10 text-amber-500"
-                  }`}>
-                    {item.status === "Diverifikasi Admin" || item.status === "Selesai (Sistem Lama)" ? "Selesai" : "Proses"}
-                  </span>
-                </div>
-              </div>
-            ))
-          ) : (
-            <div className="text-center py-10 bg-dark-800/30 rounded-3xl border border-dashed border-slate-700">
-              <p className="text-xs text-slate-500 font-medium">Belum ada riwayat setoran.</p>
             </div>
           )}
         </div>
