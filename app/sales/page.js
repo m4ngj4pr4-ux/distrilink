@@ -151,27 +151,34 @@ export default function SalesDashboard() {
               </div>
             </div>
 
-            {/* Stats Row Grid (5 columns) */}
-            <div className="grid grid-cols-5 gap-2 text-center relative z-10">
-              <div className="bg-dark-900/60 rounded-xl p-2.5 border border-slate-800/50">
-                <p className="text-[8px] text-slate-500 uppercase font-black tracking-widest mb-0.5">Bawaan</p>
-                <p className="text-sm font-black text-white">{agentPerformance.bawaanNetto.toLocaleString("id-ID")}</p>
+            {/* Stats Breakdown (Responsive Grid Rows to prevent overlapping on high numbers) */}
+            <div className="flex flex-col gap-2 relative z-10">
+              {/* Row 1: Stock Flow Metrics */}
+              <div className="grid grid-cols-3 gap-2 text-center">
+                <div className="bg-dark-900/60 rounded-xl p-2.5 border border-slate-800/50 flex flex-col justify-center min-w-0">
+                  <p className="text-[8px] text-slate-500 uppercase font-black tracking-widest mb-0.5 truncate">Bawaan</p>
+                  <p className="text-sm font-black text-white truncate">{agentPerformance.bawaanNetto.toLocaleString("id-ID")}</p>
+                </div>
+                <div className="bg-dark-900/60 rounded-xl p-2.5 border border-slate-800/50 flex flex-col justify-center min-w-0">
+                  <p className="text-[8px] text-emerald-500 uppercase font-black tracking-widest mb-0.5 truncate">Terjual</p>
+                  <p className="text-sm font-black text-emerald-400 truncate">{agentPerformance.totalTerjual.toLocaleString("id-ID")}</p>
+                </div>
+                <div className="bg-dark-900/60 rounded-xl p-2.5 border border-slate-800/50 flex flex-col justify-center min-w-0">
+                  <p className="text-[8px] text-amber-500 uppercase font-black tracking-widest mb-0.5 truncate">Sisa</p>
+                  <p className={`text-sm font-black truncate ${agentPerformance.sisa > 0 ? "text-amber-400" : "text-slate-500"}`}>{agentPerformance.sisa.toLocaleString("id-ID")}</p>
+                </div>
               </div>
-              <div className="bg-dark-900/60 rounded-xl p-2.5 border border-slate-800/50">
-                <p className="text-[8px] text-emerald-500 uppercase font-black tracking-widest mb-0.5">Terjual</p>
-                <p className="text-sm font-black text-emerald-400">{agentPerformance.totalTerjual.toLocaleString("id-ID")}</p>
-              </div>
-              <div className="bg-dark-900/60 rounded-xl p-2.5 border border-slate-800/50">
-                <p className="text-[8px] text-amber-500 uppercase font-black tracking-widest mb-0.5">Sisa</p>
-                <p className={`text-sm font-black ${agentPerformance.sisa > 0 ? "text-amber-400" : "text-slate-500"}`}>{agentPerformance.sisa.toLocaleString("id-ID")}</p>
-              </div>
-              <div className="bg-dark-900/60 rounded-xl p-2.5 border border-slate-800/50">
-                <p className="text-[8px] text-cyan-400 uppercase font-black tracking-widest mb-0.5">Toko</p>
-                <p className="text-sm font-black text-cyan-400">{agentPerformance.tokoBinaan}</p>
-              </div>
-              <div className="bg-dark-900/60 rounded-xl p-2.5 ring-1 ring-blue-500/30 bg-blue-500/5 shadow-inner">
-                <p className="text-[8px] text-blue-400 uppercase font-black tracking-widest mb-0.5">Poin</p>
-                <p className="text-sm font-black text-blue-400">{agentPerformance.activePoints.toLocaleString("id-ID")}</p>
+              
+              {/* Row 2: Engagement & Points Metrics */}
+              <div className="grid grid-cols-2 gap-2 text-center">
+                <div className="bg-dark-900/60 rounded-xl p-2.5 border border-slate-800/50 flex flex-col justify-center min-w-0">
+                  <p className="text-[8px] text-cyan-400 uppercase font-black tracking-widest mb-0.5 truncate">Toko Binaan</p>
+                  <p className="text-sm font-black text-cyan-400 truncate">{agentPerformance.tokoBinaan} Toko</p>
+                </div>
+                <div className="bg-dark-900/60 rounded-xl p-2.5 ring-1 ring-blue-500/30 bg-blue-500/5 shadow-inner flex flex-col justify-center min-w-0">
+                  <p className="text-[8px] text-blue-400 uppercase font-black tracking-widest mb-0.5 truncate">Total Poin</p>
+                  <p className="text-sm font-black text-blue-400 truncate">{agentPerformance.activePoints.toLocaleString("id-ID")} Pts</p>
+                </div>
               </div>
             </div>
 
