@@ -65,6 +65,11 @@ export default function FinanceModule({ products = [], purchases = [] }) {
 
   const [processing, setProcessing] = useState(false);
 
+  // Filter States for Buku Besar Keuangan
+  const [filterDate, setFilterDate] = useState(""); // YYYY-MM-DD
+  const [filterMonth, setFilterMonth] = useState(""); // YYYY-MM
+  const [filterType, setFilterType] = useState("all");
+
   useEffect(() => {
     const unsubInv = subscribeInvestors(setInvestors);
     const unsubLedger = subscribeFinanceLedger(setLedger);
@@ -91,6 +96,58 @@ export default function FinanceModule({ products = [], purchases = [] }) {
       !(entry.tipeBuku === "hutang_masuk" && entry.keterangan?.toLowerCase().includes("hutang po"))
     );
   }, [ledger]);
+
+  // Apply filters to Buku Besar Keuangan
+  const filteredBukuBesar = useMemo(() => {
+    return filteredLedger.filter(entry => {
+      // 1. Filter by Date
+      if (filterDate) {
+        if (!entry.createdAt) return false;
+        const entryDate = new Date(entry.createdAt.toDate()).toISOString().split('T')[0];
+        if (entryDate !== filterDate) return false;
+      }
+      
+      // 2. Filter by Month
+      if (filterMonth) {
+        if (!entry.createdAt) return false;
+        const dateObj = entry.createdAt.toDate();
+        const yyyy = dateObj.getFullYear();
+        const mm = String(dateObj.getMonth() + 1).padStart(2, '0');
+        const entryMonth = `${yyyy}-${mm}`;
+        if (entryMonth !== filterMonth) return false;
+      }
+      
+      // 3. Filter by Type (Jenis)
+      if (filterType !== "all") {
+        if (entry.tipeBuku !== filterType) return false;
+      }
+      
+      return true;
+    });
+  }, [filteredLedger, filterDate, filterMonth, filterType]);
+
+  // Filtered Summary statistics
+  const filteredSummary = useMemo(() => {
+    let totalIn = 0;
+    let totalOut = 0;
+    
+    filteredBukuBesar.forEach(entry => {
+      const meta = TIPE_MAP[entry.tipeBuku] || { sign: "" };
+      const nominal = entry.nominal || 0;
+      if (meta.sign === "+") {
+        totalIn += nominal;
+      } else if (meta.sign === "-") {
+        totalOut += nominal;
+      }
+    });
+    
+    return {
+      count: filteredBukuBesar.length,
+      totalIn,
+      totalOut,
+      netChange: totalIn - totalOut
+    };
+  }, [filteredBukuBesar]);
 
   const summary = useMemo(() => calcFinanceSummary(filteredLedger), [filteredLedger]);
 
@@ -384,7 +441,7 @@ export default function FinanceModule({ products = [], purchases = [] }) {
 
       {/* ── Section B: Transaksi Keuangan ── */}
       <div className="glass-card p-6">
-        <div className="flex items-center justify-between mb-5">
+        <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center">
               <HiOutlineDocumentText className="text-blue-400" size={22} />
@@ -395,14 +452,95 @@ export default function FinanceModule({ products = [], purchases = [] }) {
             </div>
           </div>
           <div className="flex items-center gap-2">
-
             <button onClick={openTxModal} className="btn-primary text-sm flex items-center gap-1.5 px-4 py-2">
               <HiOutlinePlus size={16} /> Catat Transaksi
             </button>
           </div>
         </div>
 
-        {ledger.length > 0 ? (
+        {/* Filters Controls */}
+        <div className="bg-dark-900/40 p-4 rounded-2xl border border-slate-700/40 mb-6">
+          <div className="flex justify-between items-center mb-3">
+            <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Penyaringan Data Ledger</span>
+            {(filterDate || filterMonth || filterType !== "all") && (
+              <button 
+                onClick={() => {
+                  setFilterDate("");
+                  setFilterMonth("");
+                  setFilterType("all");
+                }}
+                className="text-[10px] text-blue-400 hover:text-blue-300 font-bold border-b border-blue-400/20 hover:border-blue-400/50 pb-0.5 transition-all"
+              >
+                🔄 Reset Filter
+              </button>
+            )}
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div>
+              <label className="block text-[8px] uppercase tracking-widest font-black text-slate-500 mb-1">Filter Tanggal</label>
+              <input 
+                type="date"
+                value={filterDate}
+                onChange={(e) => {
+                  setFilterDate(e.target.value);
+                  if (e.target.value) setFilterMonth(""); // Reset month to avoid conflict
+                }}
+                className="w-full bg-dark-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200 outline-none focus:border-blue-500 transition-colors"
+              />
+            </div>
+            <div>
+              <label className="block text-[8px] uppercase tracking-widest font-black text-slate-500 mb-1">Filter Bulan</label>
+              <input 
+                type="month"
+                value={filterMonth}
+                onChange={(e) => {
+                  setFilterMonth(e.target.value);
+                  if (e.target.value) setFilterDate(""); // Reset date to avoid conflict
+                }}
+                className="w-full bg-dark-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200 outline-none focus:border-blue-500 transition-colors"
+              />
+            </div>
+            <div>
+              <label className="block text-[8px] uppercase tracking-widest font-black text-slate-500 mb-1">Filter Jenis</label>
+              <select
+                value={filterType}
+                onChange={(e) => setFilterType(e.target.value)}
+                className="w-full bg-dark-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200 outline-none focus:border-blue-500 transition-colors cursor-pointer"
+              >
+                <option value="all">Semua Jenis</option>
+                {ALL_TYPES.map(t => (
+                  <option key={t.value} value={t.value}>
+                    {t.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+        </div>
+
+        {/* Filtered Summary Card */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6 bg-gradient-to-br from-blue-500/5 to-emerald-500/5 p-4 rounded-2xl border border-blue-500/10">
+          <div className="min-w-0">
+            <p className="text-[8px] text-slate-500 font-bold uppercase tracking-wider mb-0.5">Jumlah Baris</p>
+            <p className="text-sm font-black text-white">{filteredSummary.count} Transaksi</p>
+          </div>
+          <div className="min-w-0">
+            <p className="text-[8px] text-emerald-500 font-bold uppercase tracking-wider mb-0.5">Total Pemasukan</p>
+            <p className="text-sm font-black text-emerald-400 truncate">{fmtRp(filteredSummary.totalIn)}</p>
+          </div>
+          <div className="min-w-0">
+            <p className="text-[8px] text-rose-500 font-bold uppercase tracking-wider mb-0.5">Total Pengeluaran</p>
+            <p className="text-sm font-black text-rose-400 truncate">{fmtRp(filteredSummary.totalOut)}</p>
+          </div>
+          <div className="min-w-0">
+            <p className="text-[8px] text-blue-400 font-bold uppercase tracking-wider mb-0.5">Selisih Bersih (Net)</p>
+            <p className={`text-sm font-black truncate ${filteredSummary.netChange >= 0 ? 'text-blue-400' : 'text-rose-400'}`}>
+              {filteredSummary.netChange < 0 ? "-" : ""}{fmtRp(Math.abs(filteredSummary.netChange))}
+            </p>
+          </div>
+        </div>
+
+        {filteredBukuBesar.length > 0 ? (
           <div className="overflow-x-auto custom-scrollbar">
             <table className="w-full text-left border-collapse min-w-[650px]">
               <thead>
@@ -415,7 +553,7 @@ export default function FinanceModule({ products = [], purchases = [] }) {
                 </tr>
               </thead>
               <tbody>
-                {filteredLedger.map(entry => {
+                {filteredBukuBesar.map(entry => {
                   const meta = TIPE_MAP[entry.tipeBuku] || { label: entry.tipeBuku, color: "text-slate-400", sign: "" };
                   return (
                     <tr key={entry.id} className={`border-b border-slate-400/5 hover:bg-dark-700/30 transition-colors group ${entry.isAutoJournal ? 'bg-dark-800/20' : ''}`}>
@@ -450,7 +588,7 @@ export default function FinanceModule({ products = [], purchases = [] }) {
             </table>
           </div>
         ) : (
-          <div className="text-center py-10 text-slate-500 italic text-sm">
+          <div className="text-center py-10 text-slate-500 italic text-sm border border-dashed border-slate-700/60 rounded-2xl">
             Belum ada transaksi keuangan. Klik "+ Catat Transaksi" untuk memulai.
           </div>
         )}
