@@ -63,6 +63,7 @@ export default function DashboardPage() {
   const [salesTransactions, setSalesTransactions] = useState([]);
   const [storeInventory, setStoreInventory] = useState([]);
   const [previewImage, setPreviewImage] = useState(null);
+  const [expandedProducts, setExpandedProducts] = useState({});
   const [editingProduct, setEditingProduct] = useState(null);
   const [pendingCount, setPendingCount] = useState(0);
   const [pendingList, setPendingList] = useState([]);
@@ -207,7 +208,7 @@ export default function DashboardPage() {
                 </div>
                 <div>
                   <h2 className="text-lg font-bold text-white">Katalog & Stok Gudang</h2>
-                  <p className="text-xs text-slate-400">Rincian sisa stok (akumulasi) dan patokan harga distribusi</p>
+                  <p className="text-xs text-slate-400">Rincian sisa stok (akumulasi) dan rincian dinamis per batch PO masuk</p>
                 </div>
               </div>
               <div className="overflow-x-auto custom-scrollbar">
@@ -218,71 +219,178 @@ export default function DashboardPage() {
                       <th className="py-3 px-4 font-semibold text-left">Produk</th>
                       <th className="py-3 px-4 font-semibold text-right">HPP Terakhir / Pk</th>
                       <th className="py-3 px-4 font-semibold text-right">Target Jual / Pk</th>
-                      <th className="py-3 px-4 font-semibold text-right">Sisa Stok</th>
+                      <th className="py-3 px-4 font-semibold text-right">Sisa Stok Gudang</th>
                       <th className="py-3 px-4 font-semibold text-center rounded-tr-lg">Aksi</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-400/5">
                     {products.map((p) => {
-                      // Hitung stok aktual Gudang berdasarkan histori valid (mengabaikan double-deduction dari operan captain)
-                      const totalPurchased = purchases.filter(po => po.productId === p.id).reduce((sum, po) => sum + (po.totalPack || 0), 0);
+                      // 1. Ambil semua PO untuk produk ini, urutkan dari yang TERBARU (Descending)
+                      const productPOs = purchases
+                        .filter(po => po.productId === p.id)
+                        .sort((a, b) => (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0));
+                        
+                      // 2. Hitung stok aktual Gudang berdasarkan histori valid (mengabaikan double-deduction dari operan captain)
+                      const totalPurchased = productPOs.reduce((sum, po) => sum + (po.totalPack || 0), 0);
                       const totalPacks = Math.max(0, totalPurchased - (p.adminDistributedPacks || 0));
                       
+                      // 3. Alokasikan stok global ke batch PO (mengisi PO terbaru lebih dulu) secara FIFO/LIFO
+                      let remainingGlobalStock = totalPacks;
+                      const batches = [];
+                      if (remainingGlobalStock > 0) {
+                        productPOs.forEach(po => {
+                          if (remainingGlobalStock <= 0) return;
+                          const poOriginalCapacity = po.totalPack || 0;
+                          const allocated = Math.min(remainingGlobalStock, poOriginalCapacity);
+                          if (allocated > 0) {
+                            batches.push({
+                              ...po,
+                              realSisa: allocated
+                            });
+                            remainingGlobalStock -= allocated;
+                          }
+                        });
+                      }
+
                       const packsPerSlop = p.packsPerSlop || 10;
-                      
                       const totalSlops = Math.floor(totalPacks / packsPerSlop);
                       const fullBals = Math.floor(totalSlops / 10);
                       const remainingSlops = totalSlops % 10;
+                      const remainingPacks = totalPacks % packsPerSlop;
                       
-                      const stockText = `${fullBals} Bal - ${remainingSlops} Slop`;
+                      const stockText = `${fullBals} Bal - ${remainingSlops} Slop - ${remainingPacks} Pk`;
                       const formatRp = (num) => num ? new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(num) : "-";
 
+                      // HPP dan Target Jual dinamis berdasarkan PO aktif terbaru
+                      const latestActiveBatch = batches[0]; // PO paling baru yang masih ada sisa stok
+                      const displayHPP = latestActiveBatch ? latestActiveBatch.hpp : p.lastHPP;
+                      const displaySellingPrice = latestActiveBatch ? latestActiveBatch.targetHargaJual : p.currentSellingPrice;
                       return (
-                        <tr key={p.id} className="hover:bg-white/5 transition-colors group">
-                          <td className="py-3 px-4">
-                            {p.imageUrl ? (
-                              <img 
-                                src={p.imageUrl} 
-                                alt={p.name} 
-                                onClick={() => setPreviewImage({ url: p.imageUrl, name: p.name })}
-                                className="w-12 h-12 rounded-lg object-cover cursor-pointer border border-slate-400/20 hover:scale-110 transition-transform" 
-                              />
-                            ) : (
-                              <div className="w-12 h-12 rounded-lg bg-dark-700 border border-dashed border-slate-600 flex items-center justify-center text-[10px] text-slate-500">
-                                No Pic
+                        <div key={p.id} className="contents">
+                          <tr className="hover:bg-white/5 transition-colors group">
+                            <td className="py-3 px-4">
+                              {p.imageUrl ? (
+                                <img 
+                                  src={p.imageUrl} 
+                                  alt={p.name} 
+                                  onClick={() => setPreviewImage({ url: p.imageUrl, name: p.name })}
+                                  className="w-12 h-12 rounded-lg object-cover cursor-pointer border border-slate-400/20 hover:scale-110 transition-transform" 
+                                />
+                              ) : (
+                                <div className="w-12 h-12 rounded-lg bg-dark-700 border border-dashed border-slate-600 flex items-center justify-center text-[10px] text-slate-500">
+                                  No Pic
+                                </div>
+                              )}
+                            </td>
+                            <td className="py-3 px-4">
+                              <div className="flex items-center gap-2">
+                                {batches.length > 0 && (
+                                  <button 
+                                    onClick={() => setExpandedProducts(prev => ({ ...prev, [p.id]: !prev[p.id] }))}
+                                    className="text-[10px] bg-slate-800 text-slate-400 hover:text-white px-1.5 py-0.5 rounded border border-slate-700 transition-colors flex items-center gap-1 font-mono font-bold"
+                                    title="Lihat Rincian Batch PO"
+                                  >
+                                    {expandedProducts[p.id] ? "▼ Tutup" : "▶ Detail"}
+                                  </button>
+                                )}
+                                <div className="font-bold text-white text-sm group-hover:text-blue-400 transition-colors">{p.name}</div>
                               </div>
-                            )}
-                          </td>
-                          <td className="py-3 px-4">
-                            <div className="font-bold text-white text-sm group-hover:text-blue-400 transition-colors">{p.name}</div>
-                          </td>
-                          <td className="py-3 px-4 text-right font-mono text-slate-300">
-                            {totalPacks > 0 ? formatRp(p.lastHPP) : <span className="text-slate-500">-</span>}
-                          </td>
-                          <td className="py-3 px-4 text-right font-mono font-bold text-blue-400 bg-blue-500/5">
-                            {totalPacks > 0 ? formatRp(p.currentSellingPrice) : <span className="text-slate-500">-</span>}
-                          </td>
-                          <td className="py-3 px-4 text-right">
-                            <div className="font-bold text-emerald-400 text-sm">{stockText}</div>
-                            {totalPacks > 0 && (
-                              <div className="text-[10px] text-slate-500 font-normal mt-0.5">
-                                Total: {totalPacks.toLocaleString("id-ID")} Bungkus
-                              </div>
-                            )}
-                          </td>
-                          <td className="py-3 px-4 text-center">
-                            <button 
-                              onClick={() => {
-                                if (checkWritePermission("edit produk")) {
-                                  setEditingProduct(p);
-                                }
-                              }}
-                              className="p-1.5 rounded hover:bg-emerald-500/10 text-slate-500 hover:text-emerald-400 transition-colors"
-                            >
-                              <HiOutlinePencil size={18} />
-                            </button>
-                          </td>
-                        </tr>
+                            </td>
+                            <td className="py-3 px-4 text-right font-mono text-slate-300">
+                              {totalPacks > 0 ? (
+                                <div className="flex flex-col items-end">
+                                  <span>{formatRp(displayHPP)}</span>
+                                  {latestActiveBatch && <span className="text-[8px] text-slate-500">Batch {latestActiveBatch.id.slice(-4).toUpperCase()}</span>}
+                                </div>
+                              ) : <span className="text-slate-500">-</span>}
+                            </td>
+                            <td className="py-3 px-4 text-right font-mono font-bold text-blue-400 bg-blue-500/5">
+                              {totalPacks > 0 ? (
+                                <div className="flex flex-col items-end">
+                                  <span>{formatRp(displaySellingPrice)}</span>
+                                  {latestActiveBatch && <span className="text-[8px] text-blue-500/50">Batch {latestActiveBatch.id.slice(-4).toUpperCase()}</span>}
+                                </div>
+                              ) : <span className="text-slate-500">-</span>}
+                            </td>
+                            <td className="py-3 px-4 text-right">
+                              <div className="font-bold text-emerald-400 text-sm">{stockText}</div>
+                              {totalPacks > 0 && (
+                                <div className="text-[10px] text-slate-500 font-normal mt-0.5">
+                                  Total: {totalPacks.toLocaleString("id-ID")} Bungkus
+                                </div>
+                              )}
+                            </td>
+                            <td className="py-3 px-4 text-center">
+                              <button 
+                                onClick={() => {
+                                  if (checkWritePermission("edit produk")) {
+                                    setEditingProduct(p);
+                                  }
+                                }}
+                                className="p-1.5 rounded hover:bg-emerald-500/10 text-slate-500 hover:text-emerald-400 transition-colors"
+                              >
+                                <HiOutlinePencil size={18} />
+                              </button>
+                            </td>
+                          </tr>
+                          {expandedProducts[p.id] && batches.length > 0 && (
+                            <tr className="bg-dark-900/40">
+                              <td colSpan={6} className="py-4 px-6">
+                                <div className="bg-dark-800/80 rounded-2xl border border-slate-700/60 p-4 shadow-inner animate-fadeIn">
+                                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-3 flex items-center gap-1.5">
+                                    📦 Rincian Batch PO Aktif (FIFO Inventory)
+                                  </p>
+                                  <div className="overflow-x-auto custom-scrollbar">
+                                    <table className="w-full text-left text-xs border-collapse">
+                                      <thead>
+                                        <tr className="text-[9px] uppercase tracking-wider text-slate-500 border-b border-slate-700/50">
+                                          <th className="py-2 px-3">Tanggal PO</th>
+                                          <th className="py-2 px-3">Kode Batch (ID)</th>
+                                          <th className="py-2 px-3 text-right text-emerald-400">HPP PO / Pk</th>
+                                          <th className="py-2 px-3 text-right text-blue-400">Target Jual / Pk</th>
+                                          <th className="py-2 px-3 text-right">Sisa Stok Batch</th>
+                                          <th className="py-2 px-3 text-right">Total Pack</th>
+                                        </tr>
+                                      </thead>
+                                      <tbody className="divide-y divide-slate-700/30">
+                                        {batches.map(batch => {
+                                          const batchPacks = batch.realSisa || 0;
+                                          const bSlops = Math.floor(batchPacks / packsPerSlop);
+                                          const bBals = Math.floor(bSlops / 10);
+                                          const bRemainingSlops = bSlops % 10;
+                                          const bRemainingPacks = batchPacks % packsPerSlop;
+                                          
+                                          return (
+                                            <tr key={batch.id} className="hover:bg-slate-700/20 transition-colors">
+                                              <td className="py-2.5 px-3 text-slate-400 font-medium">
+                                                {batch.createdAt ? new Date(batch.createdAt.toDate()).toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "numeric" }) : "-"}
+                                              </td>
+                                              <td className="py-2.5 px-3 font-mono text-[10px] text-slate-400">
+                                                {batch.id ? batch.id.slice(-6).toUpperCase() : "-"}
+                                              </td>
+                                              <td className="py-2.5 px-3 text-right font-mono text-emerald-400 font-bold">
+                                                {formatRp(batch.hpp)}
+                                              </td>
+                                              <td className="py-2.5 px-3 text-right font-mono text-blue-400 font-bold">
+                                                {formatRp(batch.targetHargaJual)}
+                                              </td>
+                                              <td className="py-2.5 px-3 text-right text-slate-300 font-bold">
+                                                {bBals} Bal - {bRemainingSlops} Slop - {bRemainingPacks} Pack
+                                              </td>
+                                              <td className="py-2.5 px-3 text-right font-mono text-slate-500 font-semibold">
+                                                {batchPacks.toLocaleString("id-ID")} Pk
+                                              </td>
+                                            </tr>
+                                          );
+                                        })}
+                                      </tbody>
+                                    </table>
+                                  </div>
+                                </div>
+                              </td>
+                            </tr>
+                          )}
+                        </div>
                       );
                     })}
                   </tbody>
