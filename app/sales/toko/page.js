@@ -210,7 +210,7 @@ export default function SalesTokoPage() {
             onClick={() => setViewTab("list")}
             className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 ${viewTab === "list" ? 'bg-blue-600 text-white' : 'text-slate-400'}`}
           >
-            <HiOutlineViewList size={16} /> Daftar
+            <HiOutlineViewList size={16} /> Daftar {user?.role !== 'captain' ? `(${myStoresCount})` : ''}
           </button>
           <button 
             onClick={() => setViewTab("map")}
