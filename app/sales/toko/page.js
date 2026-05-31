@@ -36,7 +36,11 @@ export default function SalesTokoPage() {
   useEffect(() => {
     const storedUser = localStorage.getItem('sales_user');
     if (!storedUser) return router.push('/sales/login');
-    setUser(JSON.parse(storedUser));
+    const parsedUser = JSON.parse(storedUser);
+    setUser(parsedUser);
+    if (parsedUser?.role !== 'captain') {
+      setFilterTab("saya");
+    }
     getRetailStoresList().then(setStores);
   }, [router]);
 
@@ -46,7 +50,10 @@ export default function SalesTokoPage() {
     const matchesSearch = 
       store.namaToko?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       store.alamat?.toLowerCase().includes(searchTerm.toLowerCase());
-    if (filterTab === "saya") {
+    
+    // Keamanan tambahan: Jika bukan captain, paksa hanya melihat toko miliknya sendiri ("saya")
+    const activeFilter = user?.role === 'captain' ? filterTab : 'saya';
+    if (activeFilter === "saya") {
       return matchesSearch && store.teamId === user?.id;
     }
     return matchesSearch;
@@ -213,20 +220,22 @@ export default function SalesTokoPage() {
           </button>
         </div>
 
-        <div className="flex bg-slate-800/50 p-1 rounded-xl border border-slate-700/50">
-          <button 
-            onClick={() => setFilterTab("saya")}
-            className={`flex-1 py-2 text-[10px] font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 ${filterTab === "saya" ? 'bg-emerald-600 text-white' : 'text-slate-500'}`}
-          >
-            Toko Saya ({myStoresCount})
-          </button>
-          <button 
-            onClick={() => setFilterTab("semua")}
-            className={`flex-1 py-2 text-[10px] font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 ${filterTab === "semua" ? 'bg-emerald-600 text-white' : 'text-slate-500'}`}
-          >
-            Semua Toko ({stores.length})
-          </button>
-        </div>
+        {user?.role === 'captain' && (
+          <div className="flex bg-slate-800/50 p-1 rounded-xl border border-slate-700/50">
+            <button 
+              onClick={() => setFilterTab("saya")}
+              className={`flex-1 py-2 text-[10px] font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 ${filterTab === "saya" ? 'bg-emerald-600 text-white' : 'text-slate-500'}`}
+            >
+              Toko Saya ({myStoresCount})
+            </button>
+            <button 
+              onClick={() => setFilterTab("semua")}
+              className={`flex-1 py-2 text-[10px] font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 ${filterTab === "semua" ? 'bg-emerald-600 text-white' : 'text-slate-500'}`}
+            >
+              Semua Toko ({stores.length})
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Main Content Area */}
