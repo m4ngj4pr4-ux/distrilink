@@ -57,7 +57,7 @@ export default function FinanceModule({ products = [], purchases = [] }) {
   const [invForm, setInvForm] = useState({ nama: "", persentaseBagiHasil: "", totalModal: "", kontak: "" });
 
   const [showTxModal, setShowTxModal] = useState(false);
-  const [txForm, setTxForm] = useState({ tipeBuku: "", nominal: "", keterangan: "", relasiId: "" });
+  const [txForm, setTxForm] = useState({ tipeBuku: "", nominal: "", keterangan: "", relasiId: "", tanggal: "" });
 
   // Bagi Hasil Modal
   const [showBagiHasilModal, setShowBagiHasilModal] = useState(false);
@@ -281,7 +281,7 @@ export default function FinanceModule({ products = [], purchases = [] }) {
 
   // ── Transaction Handlers ──
   const openTxModal = () => {
-    setTxForm({ tipeBuku: "", nominal: "", keterangan: "", relasiId: "" });
+    setTxForm({ tipeBuku: "", nominal: "", keterangan: "", relasiId: "", tanggal: "" });
     setShowTxModal(true);
   };
 
@@ -297,7 +297,8 @@ export default function FinanceModule({ products = [], purchases = [] }) {
         tipeBuku: txForm.tipeBuku,
         nominal,
         keterangan: txForm.keterangan.trim() || TIPE_MAP[txForm.tipeBuku]?.label || "",
-        relasiId: txForm.relasiId || null
+        relasiId: txForm.relasiId || null,
+        tanggal: txForm.tanggal || ""
       });
       toast.success("Transaksi tercatat!");
       setShowTxModal(false);
@@ -648,6 +649,10 @@ export default function FinanceModule({ products = [], purchases = [] }) {
                     <option key={t.value} value={t.value}>{t.label}</option>
                   ))}
                 </select>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-slate-400 mb-1.5">Tanggal Transaksi (Kosongkan untuk hari ini)</label>
+                <input type="date" value={txForm.tanggal} onChange={e => setTxForm({ ...txForm, tanggal: e.target.value })} className="input-field w-full" />
               </div>
               <div>
                 <label className="block text-xs font-medium text-slate-400 mb-1.5">Nominal (Rp)</label>
