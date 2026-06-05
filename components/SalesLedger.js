@@ -418,6 +418,22 @@ export default function SalesLedger({ teams, products, purchases, allDistributio
                 </tr>
               );
             })}
+
+            {/* Grand Total Row */}
+            {teams.length > 0 && (
+              <tr className="bg-dark-700/60 font-bold hover:bg-dark-700/60">
+                <td className="border-t-2 border-slate-700/80 text-slate-500 text-xs font-mono"></td>
+                <td className="border-t-2 border-slate-700/80 text-white text-sm font-bold">TOTAL KESELURUHAN</td>
+                <td className="border-t-2 border-slate-700/80 text-center"></td>
+                <td className="border-t-2 border-slate-700/80 text-center"></td>
+                <td className="border-t-2 border-slate-700/80 text-right font-mono text-sm text-white">{formatRupiah(totalGoods)}</td>
+                <td className="border-t-2 border-slate-700/80 text-right font-mono text-sm text-emerald-400">{formatRupiah(totalDeposited)}</td>
+                <td className={`border-t-2 border-slate-700/80 text-right font-mono text-sm font-bold ${totalBalance > 0 ? "text-amber-400" : "text-emerald-400"}`}>
+                  {formatRupiah(totalBalance)}
+                </td>
+                <td className="border-t-2 border-slate-700/80"></td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>
