@@ -934,13 +934,13 @@ function AdminGudangDashboard({ user, router }) {
               ) : ledgerData.length === 0 ? (
                 <p className="text-center py-10 text-slate-500 text-xs italic">Belum ada riwayat transaksi.</p>
               ) : (
-                <table className="w-full text-left border-collapse min-w-[500px]">
+                <table className="w-full text-left border-collapse">
                   <thead>
                     <tr className="text-[9px] uppercase tracking-wider text-slate-500 border-b border-slate-700/50 bg-dark-800/30">
-                      <th className="py-2.5 px-2">Tgl</th>
-                      <th className="py-2.5 px-2">Keterangan</th>
-                      <th className="py-2.5 px-2 text-right">Nilai</th>
-                      <th className="py-2.5 px-2 text-right">Saldo</th>
+                      <th className="py-2.5 px-2 whitespace-nowrap">Tgl</th>
+                      <th className="py-2.5 px-2 whitespace-nowrap">Keterangan</th>
+                      <th className="py-2.5 px-2 text-right whitespace-nowrap">Nilai</th>
+                      <th className="py-2.5 px-2 text-right whitespace-nowrap">Saldo</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-800/35">
@@ -953,7 +953,7 @@ function AdminGudangDashboard({ user, router }) {
                               day: '2-digit', month: '2-digit', year: '2-digit'
                             }) : '--/--/--'}
                           </td>
-                          <td className="py-2.5 px-2 text-slate-200">
+                          <td className="py-2.5 px-2 text-slate-200 max-w-[160px] break-words">
                             <span className="font-bold block">{item.keterangan}</span>
                             {item.qty && (
                               <span className="text-[8px] text-slate-500">
@@ -961,7 +961,7 @@ function AdminGudangDashboard({ user, router }) {
                               </span>
                             )}
                           </td>
-                          <td className={`py-2.5 px-2 text-right font-bold font-mono ${
+                          <td className={`py-2.5 px-2 text-right font-bold font-mono whitespace-nowrap ${
                             item.tipe === 'setoran_pending' ? 'text-slate-500' :
                             isMinus ? (item.tipe === 'retur' ? 'text-amber-400/80' : 'text-rose-400') : 'text-emerald-400'
                           }`}>
@@ -970,7 +970,7 @@ function AdminGudangDashboard({ user, router }) {
                               <span className="text-[7px] text-slate-500 font-bold block uppercase tracking-tighter">Pending</span>
                             )}
                           </td>
-                          <td className="py-2.5 px-2 text-right font-mono text-slate-300 font-semibold">
+                          <td className="py-2.5 px-2 text-right font-mono text-slate-300 font-semibold whitespace-nowrap">
                             Rp {item.saldo.toLocaleString('id-ID')}
                           </td>
                         </tr>
