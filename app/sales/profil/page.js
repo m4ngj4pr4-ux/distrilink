@@ -120,8 +120,8 @@ export default function ProfilPage() {
         catatanSetor
       );
       
-      const msg = metodeSetor === "Tunai ke Captain" 
-        ? "Laporan terkirim! Serahkan uang tunai ke Captain."
+      const msg = (metodeSetor === "Tunai ke Captain" || metodeSetor === "Tunai ke Admin Gudang") 
+        ? "Laporan terkirim! Serahkan uang tunai ke Admin Gudang / Captain."
         : "Setoran berhasil dikirim ke Admin!";
       
       toast.success(msg);
@@ -524,7 +524,7 @@ export default function ProfilPage() {
                   className="w-full bg-dark-800 border border-slate-700 rounded-2xl px-5 py-4 text-sm text-white focus:border-emerald-500 outline-none"
                 >
                   <option value="Transfer Bank">Transfer Bank</option>
-                  <option value="Tunai ke Captain">Tunai ke Captain</option>
+                  <option value="Tunai ke Admin Gudang">Tunai ke Admin Gudang (Warehouse)</option>
                 </select>
               </div>
 

@@ -9,15 +9,24 @@ export default function SalesLayoutClient({ children }) {
   const router = useRouter();
   const [isAuthorized, setIsAuthorized] = useState(false);
   const [isOffline, setIsOffline] = useState(false);
+  const [userRole, setUserRole] = useState(null);
 
   useEffect(() => {
-    const user = localStorage.getItem('sales_user');
+    const userStr = localStorage.getItem('sales_user');
     const isLoginPage = pathname === '/sales/login';
 
-    if (!user && !isLoginPage) {
+    if (!userStr && !isLoginPage) {
       router.replace('/sales/login');
     } else {
       setIsAuthorized(true);
+      if (userStr) {
+        try {
+          const parsed = JSON.parse(userStr);
+          setUserRole(parsed.role);
+        } catch (e) {
+          console.error(e);
+        }
+      }
     }
   }, [pathname, router]);
 
@@ -90,20 +99,24 @@ export default function SalesLayoutClient({ children }) {
               <HiOutlineHome size={24} />
               <span className="text-[11px] mt-1 font-medium">Beranda</span>
             </Link>
-            <Link 
-              className={`flex flex-col items-center transition-all active:scale-95 ${pathname === '/sales/toko' ? 'text-emerald-500' : 'text-slate-400 hover:text-emerald-500'}`} 
-              href="/sales/toko"
-            >
-              <HiOutlineMap size={24} />
-              <span className="text-[11px] mt-1 font-medium">Toko</span>
-            </Link>
-            <Link 
-              className={`flex flex-col items-center transition-all active:scale-95 ${pathname === '/sales/transaksi' ? 'text-emerald-500' : 'text-slate-400 hover:text-emerald-500'}`} 
-              href="/sales/transaksi"
-            >
-              <HiOutlineClipboardList size={24} />
-              <span className="text-[11px] mt-1 font-medium">Rute</span>
-            </Link>
+            {userRole !== 'admin_gudang' && (
+              <>
+                <Link 
+                  className={`flex flex-col items-center transition-all active:scale-95 ${pathname === '/sales/toko' ? 'text-emerald-500' : 'text-slate-400 hover:text-emerald-500'}`} 
+                  href="/sales/toko"
+                >
+                  <HiOutlineMap size={24} />
+                  <span className="text-[11px] mt-1 font-medium">Toko</span>
+                </Link>
+                <Link 
+                  className={`flex flex-col items-center transition-all active:scale-95 ${pathname === '/sales/transaksi' ? 'text-emerald-500' : 'text-slate-400 hover:text-emerald-500'}`} 
+                  href="/sales/transaksi"
+                >
+                  <HiOutlineClipboardList size={24} />
+                  <span className="text-[11px] mt-1 font-medium">Rute</span>
+                </Link>
+              </>
+            )}
             <Link 
               className={`flex flex-col items-center transition-all active:scale-95 ${pathname.startsWith('/sales/profil') ? 'text-emerald-500' : 'text-slate-400 hover:text-emerald-500'}`} 
               href="/sales/profil"

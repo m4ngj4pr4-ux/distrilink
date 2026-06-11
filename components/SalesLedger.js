@@ -376,6 +376,9 @@ export default function SalesLedger({ teams, products, purchases, allDistributio
                         {team.role === 'captain' && (
                           <span className="w-fit text-[8px] bg-amber-500/15 text-amber-400 px-1.5 py-0.5 rounded border border-amber-500/20 font-bold uppercase mt-1">Captain</span>
                         )}
+                        {team.role === 'admin_gudang' && (
+                          <span className="w-fit text-[8px] bg-blue-500/15 text-blue-400 px-1.5 py-0.5 rounded border border-blue-500/20 font-bold uppercase mt-1">Admin Gudang</span>
+                        )}
                       </div>
                       <button onClick={() => { 
                         setEditTeamModal(team); 
@@ -728,18 +731,21 @@ export default function SalesLedger({ teams, products, purchases, allDistributio
               />
             </div>
             <div className="mb-6">
-              <label className="flex items-center gap-3 cursor-pointer group">
-                <input 
-                  type="checkbox" 
-                  checked={newTeamRole === 'captain'}
-                  onChange={(e) => setNewTeamRole(e.target.checked ? 'captain' : 'sales')}
-                  className="w-4 h-4 rounded border-slate-600 bg-dark-700 text-amber-500 focus:ring-amber-500 focus:ring-offset-0 cursor-pointer"
-                />
-                <div>
-                  <span className="text-xs font-bold text-white group-hover:text-amber-400 transition-colors">Jadikan Captain</span>
-                  <p className="text-[9px] text-slate-500">Memiliki akses Distribusi ke Tim & Verifikasi Setoran</p>
-                </div>
-              </label>
+              <label className="block text-xs font-medium text-slate-400 mb-1.5 font-bold uppercase tracking-wider">Role / Jabatan</label>
+              <select 
+                value={newTeamRole} 
+                onChange={(e) => setNewTeamRole(e.target.value)}
+                className="input-field w-full text-xs"
+              >
+                <option value="sales">Sales Agent</option>
+                <option value="captain">Sales Captain</option>
+                <option value="admin_gudang">Admin Gudang (Warehouse)</option>
+              </select>
+              <p className="text-[9px] text-slate-500 mt-1">
+                {newTeamRole === 'sales' && 'Sales biasa. Hanya bisa mencatat rute, drop toko, dan setoran.'}
+                {newTeamRole === 'captain' && 'Captain tim. Bisa distribusi barang ke sales dan verifikasi setoran.'}
+                {newTeamRole === 'admin_gudang' && 'Admin Gudang. Bisa dropping, terima setoran, retur barang, dan akses buku besar sales.'}
+              </p>
             </div>
             <div className="flex items-center gap-3">
               <button onClick={() => setAddTeamModal(false)} className="btn-ghost flex-1">Batal</button>
@@ -790,18 +796,21 @@ export default function SalesLedger({ teams, products, purchases, allDistributio
               />
             </div>
             <div className="mb-6">
-              <label className="flex items-center gap-3 cursor-pointer group">
-                <input 
-                  type="checkbox" 
-                  checked={newTeamRole === 'captain'}
-                  onChange={(e) => setNewTeamRole(e.target.checked ? 'captain' : 'sales')}
-                  className="w-4 h-4 rounded border-slate-600 bg-dark-700 text-amber-500 focus:ring-amber-500 focus:ring-offset-0 cursor-pointer"
-                />
-                <div>
-                  <span className="text-xs font-bold text-white group-hover:text-amber-400 transition-colors">Jadikan Captain</span>
-                  <p className="text-[9px] text-slate-500">Memiliki akses Distribusi ke Tim & Verifikasi Setoran</p>
-                </div>
-              </label>
+              <label className="block text-xs font-medium text-slate-400 mb-1.5 font-bold uppercase tracking-wider">Role / Jabatan</label>
+              <select 
+                value={newTeamRole} 
+                onChange={(e) => setNewTeamRole(e.target.value)}
+                className="input-field w-full text-xs"
+              >
+                <option value="sales">Sales Agent</option>
+                <option value="captain">Sales Captain</option>
+                <option value="admin_gudang">Admin Gudang (Warehouse)</option>
+              </select>
+              <p className="text-[9px] text-slate-500 mt-1">
+                {newTeamRole === 'sales' && 'Sales biasa. Hanya bisa mencatat rute, drop toko, dan setoran.'}
+                {newTeamRole === 'captain' && 'Captain tim. Bisa distribusi barang ke sales dan verifikasi setoran.'}
+                {newTeamRole === 'admin_gudang' && 'Admin Gudang. Bisa dropping, terima setoran, retur barang, dan akses buku besar sales.'}
+              </p>
             </div>
             <div className="flex items-center gap-3">
               <button onClick={() => setEditTeamModal(null)} className="btn-ghost flex-1">Batal</button>

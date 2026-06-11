@@ -62,7 +62,7 @@ export default function SalesLogin() {
 
       <form onSubmit={handleLogin} className="w-full space-y-4">
         <div>
-          <label className="block text-xs font-medium text-slate-400 mb-1.5">Nama Sales</label>
+          <label className="block text-xs font-medium text-slate-400 mb-1.5">Nama Pengguna (Sales / Admin Gudang)</label>
           <select 
             value={selectedName} 
             onChange={(e) => setSelectedName(e.target.value)} 
