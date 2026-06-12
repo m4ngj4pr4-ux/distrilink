@@ -49,7 +49,7 @@ export default function SalesLogin() {
   };
 
   return (
-    <div className="p-6 flex flex-col items-center justify-center w-full animate-fadeIn min-h-[80vh]">
+    <div className="p-6 flex flex-col items-center justify-center w-full min-h-[80vh]">
       <div className="w-28 h-28 mb-8 rounded-[32px] overflow-hidden shadow-2xl border border-emerald-500/20 bg-dark-800 relative group">
         <div className="absolute inset-0 bg-emerald-500/10 mix-blend-overlay group-hover:bg-transparent transition-all"></div>
         <img src="/icon.png" alt="DistriLink Logo" className="w-full h-full object-cover" />

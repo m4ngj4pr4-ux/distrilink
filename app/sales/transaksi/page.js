@@ -330,7 +330,7 @@ export default function TransaksiPage() {
   };
 
   return (
-    <div className="p-4 pb-20 animate-fadeIn">
+    <div className="p-4 pb-20">
       <header className="mb-5 mt-2">
         <h1 className="text-xl font-bold text-white tracking-tight">📊 Rute & Stok Toko</h1>
         <p className="text-xs text-slate-400 mt-1">
@@ -366,7 +366,7 @@ export default function TransaksiPage() {
 
         {/* Suggestion Dropdown */}
         {showSuggestions && suggestions.length > 0 && (
-          <div className="absolute top-full left-0 right-0 mt-1.5 bg-dark-800 border border-slate-700 rounded-xl shadow-2xl shadow-black/40 z-50 overflow-hidden animate-fadeIn">
+          <div className="absolute top-full left-0 right-0 mt-1.5 bg-dark-800 border border-slate-700 rounded-xl shadow-2xl shadow-black/40 z-50 overflow-hidden">
             <div className="py-1 max-h-64 overflow-y-auto custom-scrollbar">
               {suggestions.map((store, idx) => {
                 // Highlight the matching part of the store name
@@ -411,7 +411,7 @@ export default function TransaksiPage() {
 
         {/* No results hint */}
         {showSuggestions && searchTerm.trim().length > 0 && suggestions.length === 0 && (
-          <div className="absolute top-full left-0 right-0 mt-1.5 bg-dark-800 border border-slate-700 rounded-xl shadow-2xl shadow-black/40 z-50 overflow-hidden animate-fadeIn">
+          <div className="absolute top-full left-0 right-0 mt-1.5 bg-dark-800 border border-slate-700 rounded-xl shadow-2xl shadow-black/40 z-50 overflow-hidden">
             <div className="px-4 py-4 text-center">
               <span className="text-2xl mb-1 block">🔍</span>
               <p className="text-xs text-slate-500">Tidak ada toko dengan nama &ldquo;<span className="text-slate-400">{searchTerm}</span>&rdquo;</p>
@@ -546,7 +546,7 @@ export default function TransaksiPage() {
                     {cart.map((item, idx) => (
                       <div 
                         key={idx} 
-                        className="flex justify-between items-center bg-dark-900/80 p-3 rounded-xl border border-slate-700/30 animate-fadeIn"
+                        className="flex justify-between items-center bg-dark-900/80 p-3 rounded-xl border border-slate-700/30"
                       >
                         <div className="flex-1 min-w-0 pr-2">
                           <p className="text-xs font-bold text-white truncate">{item.productName}</p>

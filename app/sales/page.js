@@ -92,7 +92,7 @@ export default function SalesDashboard() {
   }
 
   return (
-    <div className="p-5 animate-fadeIn pb-24 max-w-lg mx-auto">
+    <div className="p-5 pb-24 max-w-lg mx-auto">
       {/* Header Profile */}
       <header className="flex justify-between items-center mb-8 pt-4">
         <div>
@@ -796,7 +796,7 @@ function AdminGudangDashboard({ user, router }) {
     .reduce((sum, sales) => sum + ((sales.goodsDropped || 0) - (sales.totalDeposited || 0)), 0);
 
   return (
-    <div className="p-5 animate-fadeIn pb-24 w-full max-w-md mx-auto">
+    <div className="p-5 pb-24 w-full max-w-md mx-auto">
       {/* Header Profile */}
       <header className="flex justify-between items-center mb-8 pt-4 gap-4">
         <div className="min-w-0">

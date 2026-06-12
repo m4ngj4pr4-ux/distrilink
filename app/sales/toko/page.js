@@ -177,7 +177,7 @@ export default function SalesTokoPage() {
   };
 
   return (
-    <div className="p-4 pb-20 animate-fadeIn">
+    <div className="p-4 pb-20">
       <header className="mb-4 mt-2">
         <h1 className="text-xl font-bold text-white tracking-tight">📒 Direktori Toko</h1>
         <p className="text-xs text-slate-400 mt-1">Kelola daftar warung & toko retail Anda</p>
@@ -239,7 +239,7 @@ export default function SalesTokoPage() {
       </div>
 
       {/* Main Content Area */}
-      <div className={`flex flex-col gap-6 animate-fadeIn ${viewTab === "map" ? "h-auto" : ""}`}>
+      <div className={`flex flex-col gap-6 ${viewTab === "map" ? "h-auto" : ""}`}>
         
         {/* Store List (Scrollable if in Map View) */}
         <div className={`${viewTab === "map" ? "h-[300px] overflow-y-auto pr-1 custom-scrollbar shrink-0" : "flex flex-col gap-3"}`}>

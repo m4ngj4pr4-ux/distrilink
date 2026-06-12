@@ -318,6 +318,12 @@ select.input-field option {
 .sales-app {
   /* Scale all text inside the sales app wrapper */
   font-size: 1.05rem;
+  /* Force a clean hardware rendering context to prevent GPU layer ghosting/trails on older WebViews */
+  -webkit-transform: translate3d(0, 0, 0);
+  transform: translate3d(0, 0, 0);
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  -webkit-overflow-scrolling: touch;
 }
 
 /* Bump tiny utility classes (the ones used most in the sales UI) */

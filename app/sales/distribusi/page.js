@@ -128,7 +128,7 @@ export default function CaptainDistribusiPage() {
   if (!user) return null;
 
   return (
-    <div className="p-4 pb-20 animate-fadeIn">
+    <div className="p-4 pb-20">
       <header className="mb-5 mt-2">
         <button onClick={() => router.back()} className="text-xs text-slate-500 mb-2 hover:text-white transition-colors">← Kembali</button>
         <h1 className="text-xl font-bold text-white tracking-tight">🔄 Distribusi ke Tim</h1>

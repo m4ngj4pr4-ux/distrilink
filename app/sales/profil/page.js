@@ -252,7 +252,7 @@ export default function ProfilPage() {
   });
 
   return (
-    <div className="p-4 pb-24 animate-fadeIn max-w-md mx-auto">
+    <div className="p-4 pb-24 max-w-md mx-auto">
       <header className="mb-6 mt-4">
         <h1 className="text-2xl font-black text-white tracking-tight">Profil & Riwayat</h1>
       </header>
