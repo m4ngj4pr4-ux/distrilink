@@ -26,6 +26,7 @@ import {
   verifikasiSetoranAdmin,
   updateDistributionDate,
   updateSetoranDate,
+  deleteSetoranTransaction,
 } from "@/lib/firestore";
 import toast from "react-hot-toast";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -200,6 +201,25 @@ export default function SalesLedger({ teams, products, purchases, allDistributio
       toast.success("Distribusi dihapus dan direkonsiliasi");
     } catch (err) {
       toast.error("Gagal menghapus: " + err.message);
+    }
+  }
+
+  async function handleDeleteSetoran(dep) {
+    if (!checkWritePermission("menghapus setoran sales")) return;
+    let warningMsg = `Hapus setoran senilai ${formatRupiah(dep.nominal || dep.amount)} dari ${dep.namaSales || 'Sales'}?`;
+    if (dep.status === "Diverifikasi Admin" || dep.status === "Selesai (Sistem Lama)") {
+      warningMsg += "\n\nPERINGATAN: Setoran ini SUDAH diverifikasi. Menghapusnya akan memotong kas aktif dan menambahkan piutang sales kembali!";
+    }
+    if (!confirm(warningMsg)) return;
+
+    setProcessing(true);
+    try {
+      await deleteSetoranTransaction(dep.id, dep);
+      toast.success("Setoran berhasil dihapus dan didebet kembali!");
+    } catch (err) {
+      toast.error("Gagal menghapus: " + err.message);
+    } finally {
+      setProcessing(false);
     }
   }
 
@@ -631,6 +651,13 @@ export default function SalesLedger({ teams, products, purchases, allDistributio
                                title="Ubah Tanggal Setoran"
                              >
                                <HiOutlineCalendar size={13} />
+                             </button>
+                             <button 
+                               onClick={() => handleDeleteSetoran(dep)}
+                               className="p-1 rounded hover:bg-rose-500/10 text-slate-500 hover:text-rose-400 transition-colors"
+                               title="Hapus Setoran"
+                             >
+                               <HiOutlineTrash size={13} />
                              </button>
                            </div>
                          </td>
