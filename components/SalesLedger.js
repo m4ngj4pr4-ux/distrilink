@@ -10,6 +10,7 @@ import {
   HiOutlinePencilAlt,
   HiOutlineEye,
   HiOutlineEyeOff,
+  HiOutlineCalendar,
 } from "react-icons/hi";
 import { formatRupiah, formatNumber, formatInputNumber, parseInputNumber, parseRupiah } from "@/lib/utils";
 import {
@@ -23,6 +24,8 @@ import {
   subscribeDistributions,
   deleteDistribution,
   verifikasiSetoranAdmin,
+  updateDistributionDate,
+  updateSetoranDate,
 } from "@/lib/firestore";
 import toast from "react-hot-toast";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -50,6 +53,11 @@ export default function SalesLedger({ teams, products, purchases, allDistributio
   const [showPin, setShowPin] = useState(false);
   const [distributions, setDistributions] = useState([]);
   const [depositHistory, setDepositHistory] = useState([]);
+
+  const [editingDistDate, setEditingDistDate] = useState(null);
+  const [editingSetorDate, setEditingSetorDate] = useState(null);
+  const [newDistDateInput, setNewDistDateInput] = useState("");
+  const [newSetorDateInput, setNewSetorDateInput] = useState("");
 
   useEffect(() => {
     if (!detailModal) {
@@ -192,6 +200,41 @@ export default function SalesLedger({ teams, products, purchases, allDistributio
       toast.success("Distribusi dihapus dan direkonsiliasi");
     } catch (err) {
       toast.error("Gagal menghapus: " + err.message);
+    }
+  }
+
+  async function handleUpdateDistDate(e) {
+    e.preventDefault();
+    if (!editingDistDate) return;
+    if (!newDistDateInput) return toast.error("Pilih tanggal baru");
+    setProcessing(true);
+    try {
+      await updateDistributionDate(editingDistDate.id, newDistDateInput);
+      toast.success("Tanggal distribusi berhasil diubah!");
+      setEditingDistDate(null);
+      setNewDistDateInput("");
+    } catch (err) {
+      toast.error("Gagal mengubah tanggal: " + err.message);
+    } finally {
+      setProcessing(false);
+    }
+  }
+
+  async function handleUpdateSetorDate(e) {
+    e.preventDefault();
+    if (!editingSetorDate) return;
+    if (!newSetorDateInput) return toast.error("Pilih tanggal baru");
+    setProcessing(true);
+    try {
+      const isOld = editingSetorDate._collection === "deposits";
+      await updateSetoranDate(editingSetorDate.id, newSetorDateInput, isOld);
+      toast.success("Tanggal setoran berhasil diubah!");
+      setEditingSetorDate(null);
+      setNewSetorDateInput("");
+    } catch (err) {
+      toast.error("Gagal mengubah tanggal: " + err.message);
+    } finally {
+      setProcessing(false);
     }
   }
 
@@ -463,7 +506,7 @@ export default function SalesLedger({ teams, products, purchases, allDistributio
               {distributions.length === 0 ? (
                 <p className="text-center py-10 text-slate-500 text-sm italic">Belum ada riwayat distribusi.</p>
               ) : (
-                <table className="w-full text-left border-collapse min-w-[700px]">
+                <table className="w-full text-left border-collapse min-w-[500px]">
                   <thead>
                     <tr className="text-[10px] uppercase tracking-wider text-slate-500 border-b border-slate-400/10">
                       <th className="py-3 font-semibold">Tgl</th>
@@ -489,13 +532,31 @@ export default function SalesLedger({ teams, products, purchases, allDistributio
                         </td>
                         <td className="py-3 text-right font-bold text-emerald-400">{formatRupiah(d.amount)}</td>
                         <td className="py-3 text-center">
-                          <button 
-                            onClick={() => handleDeleteDist(d)} 
-                            className="p-1.5 rounded hover:bg-rose-500/10 text-slate-500 hover:text-rose-400 transition-colors"
-                            title="Hapus Distribusi"
-                          >
-                            <HiOutlineTrash size={14} />
-                          </button>
+                          <div className="flex items-center justify-center gap-1">
+                            <button 
+                              onClick={() => {
+                                setEditingDistDate(d);
+                                if (d.createdAt) {
+                                  const dateObj = d.createdAt.toDate();
+                                  const year = dateObj.getFullYear();
+                                  const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+                                  const day = String(dateObj.getDate()).padStart(2, '0');
+                                  setNewDistDateInput(`${year}-${month}-${day}`);
+                                }
+                              }}
+                              className="p-1.5 rounded hover:bg-violet-500/10 text-slate-500 hover:text-violet-400 transition-colors"
+                              title="Ubah Tanggal"
+                            >
+                              <HiOutlineCalendar size={14} />
+                            </button>
+                            <button 
+                              onClick={() => handleDeleteDist(d)} 
+                              className="p-1.5 rounded hover:bg-rose-500/10 text-slate-500 hover:text-rose-400 transition-colors"
+                              title="Hapus Distribusi"
+                            >
+                              <HiOutlineTrash size={14} />
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -542,20 +603,36 @@ export default function SalesLedger({ teams, products, purchases, allDistributio
                            {formatRupiah(dep.nominal || dep.amount)}
                          </td>
                          <td className="py-2 text-right">
-                           {(dep.status === "Menunggu Verifikasi" || dep.status === "Menunggu Verifikasi Admin") ? (
+                           <div className="flex items-center justify-end gap-1.5">
+                             {(dep.status === "Menunggu Verifikasi" || dep.status === "Menunggu Verifikasi Admin") ? (
+                               <button 
+                                 onClick={() => handleVerifikasi(dep)}
+                                 className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[10px] px-2 py-1 rounded transition-colors shadow-sm"
+                               >
+                                 Sahkan
+                               </button>
+                             ) : (
+                               <span className={`text-[10px] px-2 py-0.5 rounded font-bold uppercase tracking-tighter ${
+                                 dep.status === "Diverifikasi Admin" || dep.status === "Selesai (Sistem Lama)" ? "bg-emerald-500/10 text-emerald-500" : "bg-slate-800 text-slate-500"
+                               }`}>
+                                 {dep.status === "Diverifikasi Admin" ? "Selesai" : (dep.status === "Kas di Captain" ? "Di Captain" : dep.status)}
+                               </span>
+                             )}
                              <button 
-                               onClick={() => handleVerifikasi(dep)}
-                               className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[10px] px-2 py-1 rounded transition-colors shadow-sm"
+                               onClick={() => {
+                                 setEditingSetorDate(dep);
+                                 const dateObj = dep.waktu ? dep.waktu.toDate() : (dep.createdAt ? dep.createdAt.toDate() : new Date());
+                                 const year = dateObj.getFullYear();
+                                 const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+                                 const day = String(dateObj.getDate()).padStart(2, '0');
+                                 setNewSetorDateInput(`${year}-${month}-${day}`);
+                               }}
+                               className="p-1 rounded hover:bg-violet-500/10 text-slate-500 hover:text-violet-400 transition-colors"
+                               title="Ubah Tanggal Setoran"
                              >
-                               Sahkan
+                               <HiOutlineCalendar size={13} />
                              </button>
-                           ) : (
-                             <span className={`text-[10px] px-2 py-0.5 rounded font-bold uppercase tracking-tighter ${
-                               dep.status === "Diverifikasi Admin" || dep.status === "Selesai (Sistem Lama)" ? "bg-emerald-500/10 text-emerald-500" : "bg-slate-800 text-slate-500"
-                             }`}>
-                               {dep.status === "Diverifikasi Admin" ? "Selesai" : (dep.status === "Kas di Captain" ? "Di Captain" : dep.status)}
-                             </span>
-                           )}
+                           </div>
                          </td>
                        </tr>
                      ))}
@@ -816,6 +893,97 @@ export default function SalesLedger({ teams, products, purchases, allDistributio
               <button onClick={() => setEditTeamModal(null)} className="btn-ghost flex-1">Batal</button>
               <button onClick={handleUpdateTeam} disabled={processing} className="btn-primary flex-1">Simpan</button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── MODAL EDIT TANGGAL DISTRIBUSI ── */}
+      {editingDistDate && (
+        <div className="modal-overlay" onClick={() => setEditingDistDate(null)}>
+          <div className="modal-content max-w-sm" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-base font-bold text-white">Ubah Tanggal Distribusi</h3>
+              <button onClick={() => setEditingDistDate(null)} className="p-1 rounded hover:bg-dark-600 text-slate-400">
+                <HiOutlineX size={18} />
+              </button>
+            </div>
+            <form onSubmit={handleUpdateDistDate} className="space-y-4">
+              <div>
+                <label className="block text-xs font-medium text-slate-400 mb-1.5">Produk</label>
+                <input 
+                  type="text" 
+                  value={editingDistDate.productName} 
+                  disabled 
+                  className="input-field w-full opacity-60 cursor-not-allowed" 
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-slate-400 mb-1.5">Jumlah</label>
+                <input 
+                  type="text" 
+                  value={`${formatNumber(editingDistDate.qtyOriginal)} ${editingDistDate.unit}`} 
+                  disabled 
+                  className="input-field w-full opacity-60 cursor-not-allowed" 
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-slate-400 mb-1.5">Pilih Tanggal Baru</label>
+                <input 
+                  type="date" 
+                  value={newDistDateInput} 
+                  onChange={(e) => setNewDistDateInput(e.target.value)} 
+                  className="input-field w-full text-slate-200" 
+                  required
+                />
+              </div>
+              <div className="flex items-center gap-3 pt-2">
+                <button type="button" onClick={() => setEditingDistDate(null)} className="btn-ghost flex-1">Batal</button>
+                <button type="submit" disabled={processing} className="btn-primary flex-1">
+                  {processing ? "Menyimpan..." : "Simpan"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ── MODAL EDIT TANGGAL SETORAN ── */}
+      {editingSetorDate && (
+        <div className="modal-overlay" onClick={() => setEditingSetorDate(null)}>
+          <div className="modal-content max-w-sm" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-base font-bold text-white">Ubah Tanggal Setoran</h3>
+              <button onClick={() => setEditingSetorDate(null)} className="p-1 rounded hover:bg-dark-600 text-slate-400">
+                <HiOutlineX size={18} />
+              </button>
+            </div>
+            <form onSubmit={handleUpdateSetorDate} className="space-y-4">
+              <div>
+                <label className="block text-xs font-medium text-slate-400 mb-1.5">Keterangan</label>
+                <input 
+                  type="text" 
+                  value={`${editingSetorDate.metode || 'Transfer'} - ${formatRupiah(editingSetorDate.nominal || editingSetorDate.amount)}`} 
+                  disabled 
+                  className="input-field w-full opacity-60 cursor-not-allowed" 
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-slate-400 mb-1.5">Pilih Tanggal Baru</label>
+                <input 
+                  type="date" 
+                  value={newSetorDateInput} 
+                  onChange={(e) => setNewSetorDateInput(e.target.value)} 
+                  className="input-field w-full text-slate-200" 
+                  required
+                />
+              </div>
+              <div className="flex items-center gap-3 pt-2">
+                <button type="button" onClick={() => setEditingSetorDate(null)} className="btn-ghost flex-1">Batal</button>
+                <button type="submit" disabled={processing} className="btn-primary flex-1">
+                  {processing ? "Menyimpan..." : "Simpan"}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
