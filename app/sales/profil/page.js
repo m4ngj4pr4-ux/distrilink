@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { addSetoranDana, getRiwayatSetoran, getSalesProfile, getSalesHistory, updateSalesTeam, uploadProfilePicture } from '@/lib/firestore';
+import { addSetoranDana, getRiwayatSetoran, getSalesProfile, getSalesHistory, updateSalesTeam, uploadProfilePicture, getDroppingHistory } from '@/lib/firestore';
 import toast from 'react-hot-toast';
 import { printer } from '@/lib/printer';
 import { HiOutlinePrinter, HiOutlineLogout, HiOutlineCash, HiOutlineShoppingBag, HiX } from 'react-icons/hi';
@@ -23,6 +23,11 @@ export default function ProfilPage() {
   const [riwayatPenjualan, setRiwayatPenjualan] = useState([]);
   const [isPrinting, setIsPrinting] = useState(false);
 
+  // Admin Dropping History States
+  const [riwayatDropping, setRiwayatDropping] = useState([]);
+  const [filterDate, setFilterDate] = useState("");
+  const [filterMonth, setFilterMonth] = useState("");
+
   // Edit Profile States
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editName, setEditName] = useState("");
@@ -41,10 +46,15 @@ export default function ProfilPage() {
     setEditPin(parsedUser.pin || "");
     setEditPhone(parsedUser.phone || "");
     
-    // Fetch data
-    getRiwayatSetoran(parsedUser.id).then(setRiwayatSetoran);
-    getSalesProfile(parsedUser.id).then(setProfileData);
-    getSalesHistory(parsedUser.id).then(setRiwayatPenjualan);
+    // Fetch data based on role
+    if (parsedUser.role === 'admin_gudang') {
+      getDroppingHistory().then(setRiwayatDropping);
+      getSalesProfile(parsedUser.id).then(setProfileData);
+    } else {
+      getRiwayatSetoran(parsedUser.id).then(setRiwayatSetoran);
+      getSalesProfile(parsedUser.id).then(setProfileData);
+      getSalesHistory(parsedUser.id).then(setRiwayatPenjualan);
+    }
   }, [router]);
 
   const handleUpdateProfile = async (e) => {
@@ -211,6 +221,36 @@ export default function ProfilPage() {
     .filter(item => item.status !== "Diverifikasi Admin" && item.status !== "Selesai (Sistem Lama)")
     .reduce((sum, item) => sum + (item.nominal || 0), 0);
 
+  const filteredDropping = riwayatDropping.filter(item => {
+    if (!item.createdAt) return true;
+    const date = item.createdAt.toDate ? item.createdAt.toDate() : new Date(item.createdAt);
+    
+    // Filter harian YYYY-MM-DD
+    if (filterDate) {
+      const targetDate = new Date(filterDate);
+      if (
+        date.getDate() !== targetDate.getDate() ||
+        date.getMonth() !== targetDate.getMonth() ||
+        date.getFullYear() !== targetDate.getFullYear()
+      ) {
+        return false;
+      }
+    }
+    
+    // Filter bulanan YYYY-MM
+    if (filterMonth) {
+      const [year, month] = filterMonth.split("-");
+      if (
+        date.getFullYear() !== parseInt(year) ||
+        (date.getMonth() + 1) !== parseInt(month)
+      ) {
+        return false;
+      }
+    }
+    
+    return true;
+  });
+
   return (
     <div className="p-4 pb-24 animate-fadeIn max-w-md mx-auto">
       <header className="mb-6 mt-4">
@@ -244,7 +284,7 @@ export default function ProfilPage() {
           </div>
         </div>
         
-        {profileData && (
+        {profileData && user.role !== 'admin_gudang' && (
           <div className="mt-8 pt-6 border-t border-slate-700/50 flex justify-between items-center gap-3 relative z-10">
             <div className="min-w-0">
               <p className="text-[9px] text-slate-500 font-black uppercase tracking-widest mb-1.5">Tagihan Berjalan</p>
@@ -259,137 +299,238 @@ export default function ProfilPage() {
         )}
       </div>
 
-      {/* Action: Setoran */}
-      <section className="mb-8">
-        <div className="flex items-center gap-3 mb-4 px-1">
-          <div className="w-1.5 h-6 bg-blue-500 rounded-full"></div>
-          <h3 className="font-black text-white text-xs uppercase tracking-widest">Manajemen Keuangan</h3>
-        </div>
-        
-        <div className="bg-dark-800 border border-slate-700 p-5 rounded-3xl shadow-lg">
-          <div className="flex items-center gap-4 mb-5">
-            <div className="w-12 h-12 bg-blue-500/10 rounded-2xl flex items-center justify-center text-blue-400">
-              <HiOutlineCash size={24} />
-            </div>
-            <div>
-              <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Laporan Setoran</p>
-              <p className="text-xs text-slate-300">Setorkan uang penjualan ke pusat</p>
-            </div>
+      {/* Action: Setoran (Sales/Captain only) */}
+      {user.role !== 'admin_gudang' && (
+        <section className="mb-8">
+          <div className="flex items-center gap-3 mb-4 px-1">
+            <div className="w-1.5 h-6 bg-blue-500 rounded-full"></div>
+            <h3 className="font-black text-white text-xs uppercase tracking-widest">Manajemen Keuangan</h3>
           </div>
           
-          <button 
-            onClick={() => setIsSetorModalOpen(true)}
-            className="w-full bg-blue-600 hover:bg-blue-500 active:scale-95 text-white font-black py-4 rounded-2xl transition-all text-xs shadow-lg shadow-blue-900/20 flex justify-center items-center gap-2"
-          >
-            Buat Laporan Setoran
-          </button>
-        </div>
-      </section>
-
-      {/* History: Setoran */}
-      <section className="mb-10">
-        <div className="flex items-center gap-3 mb-4 px-1">
-          <div className="w-1.5 h-6 bg-slate-600 rounded-full"></div>
-          <h3 className="font-black text-white text-xs uppercase tracking-widest">Riwayat Setoran</h3>
-        </div>
-
-        {riwayatSetoran.length > 0 && (
-          <div className="bg-dark-800 border border-slate-700/50 p-4 rounded-2xl mb-4 flex justify-between gap-4 shadow-md">
-            <div className="flex-1">
-              <p className="text-[8px] text-slate-500 font-black uppercase tracking-wider mb-1">Total Terverifikasi</p>
-              <p className="text-sm font-black text-emerald-400">Rp {totalSelesai.toLocaleString('id-ID')}</p>
-            </div>
-            <div className="w-px bg-slate-700/50 my-1"></div>
-            <div className="flex-1">
-              <p className="text-[8px] text-slate-500 font-black uppercase tracking-wider mb-1">Total Diproses</p>
-              <p className="text-sm font-black text-amber-400">Rp {totalProses.toLocaleString('id-ID')}</p>
-            </div>
-          </div>
-        )}
-        
-        <div className="space-y-3 max-h-[420px] overflow-y-auto pr-1">
-          {riwayatSetoran.length > 0 ? (
-            riwayatSetoran.slice(0, 50).map(item => (
-              <div key={item.id} className="flex justify-between items-center bg-dark-800/40 p-4 rounded-2xl border border-slate-700/30">
-                <div>
-                  <p className="text-[9px] text-slate-500 font-bold uppercase mb-0.5">
-                    {item.waktu ? new Date(item.waktu.toDate()).toLocaleDateString('id-ID', { day: '2-digit', month: 'short' }) : 'Baru saja'}
-                  </p>
-                  <p className="text-[10px] text-slate-300 font-medium truncate max-w-[150px]">{item.catatan}</p>
-                </div>
-                <div className="text-right">
-                  <p className="text-sm font-black text-emerald-400">Rp {item.nominal?.toLocaleString('id-ID')}</p>
-                  <span className={`text-[8px] px-1.5 py-0.5 rounded font-black uppercase tracking-tighter mt-1 inline-block ${
-                    item.status === "Diverifikasi Admin" || item.status === "Selesai (Sistem Lama)" ? "bg-emerald-500/10 text-emerald-500" : "bg-amber-500/10 text-amber-500"
-                  }`}>
-                    {item.status === "Diverifikasi Admin" || item.status === "Selesai (Sistem Lama)" ? "Selesai" : "Proses"}
-                  </span>
-                </div>
+          <div className="bg-dark-800 border border-slate-700 p-5 rounded-3xl shadow-lg">
+            <div className="flex items-center gap-4 mb-5">
+              <div className="w-12 h-12 bg-blue-500/10 rounded-2xl flex items-center justify-center text-blue-400">
+                <HiOutlineCash size={24} />
               </div>
-            ))
-          ) : (
-            <div className="text-center py-10 bg-dark-800/30 rounded-3xl border border-dashed border-slate-700">
-              <p className="text-xs text-slate-500 font-medium">Belum ada riwayat setoran.</p>
+              <div>
+                <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Laporan Setoran</p>
+                <p className="text-xs text-slate-300">Setorkan uang penjualan ke pusat</p>
+              </div>
+            </div>
+            
+            <button 
+              onClick={() => setIsSetorModalOpen(true)}
+              className="w-full bg-blue-600 hover:bg-blue-500 active:scale-95 text-white font-black py-4 rounded-2xl transition-all text-xs shadow-lg shadow-blue-900/20 flex justify-center items-center gap-2"
+            >
+              Buat Laporan Setoran
+            </button>
+          </div>
+        </section>
+      )}
+
+      {/* History: Setoran (Sales/Captain only) */}
+      {user.role !== 'admin_gudang' && (
+        <section className="mb-10">
+          <div className="flex items-center gap-3 mb-4 px-1">
+            <div className="w-1.5 h-6 bg-slate-600 rounded-full"></div>
+            <h3 className="font-black text-white text-xs uppercase tracking-widest">Riwayat Setoran</h3>
+          </div>
+
+          {riwayatSetoran.length > 0 && (
+            <div className="bg-dark-800 border border-slate-700/50 p-4 rounded-2xl mb-4 flex justify-between gap-4 shadow-md">
+              <div className="flex-1">
+                <p className="text-[8px] text-slate-500 font-black uppercase tracking-wider mb-1">Total Terverifikasi</p>
+                <p className="text-sm font-black text-emerald-400">Rp {totalSelesai.toLocaleString('id-ID')}</p>
+              </div>
+              <div className="w-px bg-slate-700/50 my-1"></div>
+              <div className="flex-1">
+                <p className="text-[8px] text-slate-500 font-black uppercase tracking-wider mb-1">Total Diproses</p>
+                <p className="text-sm font-black text-amber-400">Rp {totalProses.toLocaleString('id-ID')}</p>
+              </div>
             </div>
           )}
-        </div>
-      </section>
-
-      {/* History: Penjualan (Drop Toko) */}
-      <section className="mb-8">
-        <div className="flex items-center gap-3 mb-4 px-1">
-          <div className="w-1.5 h-6 bg-emerald-500 rounded-full"></div>
-          <h3 className="font-black text-white text-xs uppercase tracking-widest">Riwayat Penjualan</h3>
-        </div>
-
-        <div className="space-y-3 max-h-[420px] overflow-y-auto pr-1">
-          {groupTransactionsByReceipt(riwayatPenjualan).length > 0 ? (
-            groupTransactionsByReceipt(riwayatPenjualan).slice(0, 50).map(receipt => {
-              const totalQty = receipt.items.reduce((sum, i) => sum + i.jumlahDrop, 0);
-              const grandTotal = receipt.items.reduce((sum, i) => sum + i.total, 0);
-              
-              return (
-                <div key={receipt.id} className="bg-dark-800 border border-slate-700/50 p-4 rounded-3xl flex items-center gap-4 group">
-                  <div className="w-12 h-12 bg-dark-900 rounded-2xl flex items-center justify-center text-xl shrink-0 group-hover:scale-105 transition-transform">
-                    🏪
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex justify-between items-center mb-0.5">
-                      <p className="text-[9px] text-slate-500 font-bold uppercase tracking-widest">
-                        {receipt.waktu ? new Date(receipt.waktu.toDate()).toLocaleDateString('id-ID', { day: '2-digit', month: 'short' }) : 'Baru saja'}
-                      </p>
-                      {receipt.receiptId && (
-                        <span className="text-[8px] bg-slate-700/55 text-slate-400 px-1 py-0.2 rounded font-mono">
-                          {receipt.receiptId.slice(-6)}
-                        </span>
-                      )}
-                    </div>
-                    <h4 className="text-xs font-black text-white truncate uppercase">{receipt.namaToko}</h4>
-                    <p className="text-[10px] text-emerald-400 font-medium mt-1 truncate">
-                      {receipt.items.map(i => `${i.productName} (${i.jumlahDrop} Pk)`).join(', ')}
+          
+          <div className="space-y-3 max-h-[420px] overflow-y-auto pr-1">
+            {riwayatSetoran.length > 0 ? (
+              riwayatSetoran.slice(0, 50).map(item => (
+                <div key={item.id} className="flex justify-between items-center bg-dark-800/40 p-4 rounded-2xl border border-slate-700/30">
+                  <div>
+                    <p className="text-[9px] text-slate-500 font-bold uppercase mb-0.5">
+                      {item.waktu ? new Date(item.waktu.toDate()).toLocaleDateString('id-ID', { day: '2-digit', month: 'short' }) : 'Baru saja'}
                     </p>
-                    <p className="text-[9px] text-slate-500 font-bold mt-0.5">
-                      Total: Rp {grandTotal.toLocaleString('id-ID')}
-                    </p>
+                    <p className="text-[10px] text-slate-300 font-medium truncate max-w-[150px]">{item.catatan}</p>
                   </div>
-                  <button 
-                    onClick={() => handlePrint(receipt)}
-                    disabled={isPrinting}
-                    className="w-10 h-10 bg-emerald-500/10 border border-emerald-500/20 rounded-xl flex items-center justify-center text-emerald-400 active:scale-90 transition-all shrink-0"
-                    title="Cetak Nota"
-                  >
-                    <HiOutlinePrinter size={18} />
-                  </button>
+                  <div className="text-right">
+                    <p className="text-sm font-black text-emerald-400">Rp {item.nominal?.toLocaleString('id-ID')}</p>
+                    <span className={`text-[8px] px-1.5 py-0.5 rounded font-black uppercase tracking-tighter mt-1 inline-block ${
+                      item.status === "Diverifikasi Admin" || item.status === "Selesai (Sistem Lama)" ? "bg-emerald-500/10 text-emerald-500" : "bg-amber-500/10 text-amber-500"
+                    }`}>
+                      {item.status === "Diverifikasi Admin" || item.status === "Selesai (Sistem Lama)" ? "Selesai" : "Proses"}
+                    </span>
+                  </div>
                 </div>
-              );
-            })
-          ) : (
-            <div className="text-center py-10 bg-dark-800/30 rounded-3xl border border-dashed border-slate-700">
-              <p className="text-xs text-slate-500 font-medium">Belum ada riwayat penjualan.</p>
+              ))
+            ) : (
+              <div className="text-center py-10 bg-dark-800/30 rounded-3xl border border-dashed border-slate-700">
+                <p className="text-xs text-slate-500 font-medium">Belum ada riwayat setoran.</p>
+              </div>
+            )}
+          </div>
+        </section>
+      )}
+
+      {/* History: Penjualan (Sales/Captain only) */}
+      {user.role !== 'admin_gudang' && (
+        <section className="mb-8">
+          <div className="flex items-center gap-3 mb-4 px-1">
+            <div className="w-1.5 h-6 bg-emerald-500 rounded-full"></div>
+            <h3 className="font-black text-white text-xs uppercase tracking-widest">Riwayat Penjualan</h3>
+          </div>
+
+          <div className="space-y-3 max-h-[420px] overflow-y-auto pr-1">
+            {groupTransactionsByReceipt(riwayatPenjualan).length > 0 ? (
+              groupTransactionsByReceipt(riwayatPenjualan).slice(0, 50).map(receipt => {
+                const totalQty = receipt.items.reduce((sum, i) => sum + i.jumlahDrop, 0);
+                const grandTotal = receipt.items.reduce((sum, i) => sum + i.total, 0);
+                
+                return (
+                  <div key={receipt.id} className="bg-dark-800 border border-slate-700/50 p-4 rounded-3xl flex items-center gap-4 group">
+                    <div className="w-12 h-12 bg-dark-900 rounded-2xl flex items-center justify-center text-xl shrink-0 group-hover:scale-105 transition-transform">
+                      🏪
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex justify-between items-center mb-0.5">
+                        <p className="text-[9px] text-slate-500 font-bold uppercase tracking-widest">
+                          {receipt.waktu ? new Date(receipt.waktu.toDate()).toLocaleDateString('id-ID', { day: '2-digit', month: 'short' }) : 'Baru saja'}
+                        </p>
+                        {receipt.receiptId && (
+                          <span className="text-[8px] bg-slate-700/55 text-slate-400 px-1 py-0.2 rounded font-mono">
+                            {receipt.receiptId.slice(-6)}
+                          </span>
+                        )}
+                      </div>
+                      <h4 className="text-xs font-black text-white truncate uppercase">{receipt.namaToko}</h4>
+                      <p className="text-[10px] text-emerald-400 font-medium mt-1 truncate">
+                        {receipt.items.map(i => `${i.productName} (${i.jumlahDrop} Pk)`).join(', ')}
+                      </p>
+                      <p className="text-[9px] text-slate-500 font-bold mt-0.5">
+                        Total: Rp {grandTotal.toLocaleString('id-ID')}
+                      </p>
+                    </div>
+                    <button 
+                      onClick={() => handlePrint(receipt)}
+                      disabled={isPrinting}
+                      className="w-10 h-10 bg-emerald-500/10 border border-emerald-500/20 rounded-xl flex items-center justify-center text-emerald-400 active:scale-90 transition-all shrink-0"
+                      title="Cetak Nota"
+                    >
+                      <HiOutlinePrinter size={18} />
+                    </button>
+                  </div>
+                );
+              })
+            ) : (
+              <div className="text-center py-10 bg-dark-800/30 rounded-3xl border border-dashed border-slate-700">
+                <p className="text-xs text-slate-500 font-medium">Belum ada riwayat penjualan.</p>
+              </div>
+            )}
+          </div>
+        </section>
+      )}
+
+      {/* History: Dropping (Admin Gudang Only) */}
+      {user.role === 'admin_gudang' && (
+        <section className="mb-8">
+          <div className="flex items-center justify-between mb-4 px-1">
+            <div className="flex items-center gap-3">
+              <div className="w-1.5 h-6 bg-emerald-500 rounded-full"></div>
+              <h3 className="font-black text-white text-xs uppercase tracking-widest">Riwayat Dropping</h3>
             </div>
-          )}
-        </div>
-      </section>
+            <span className="text-[10px] bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded font-bold">
+              {filteredDropping.length} Item
+            </span>
+          </div>
+
+          {/* Filter Bar */}
+          <div className="bg-dark-800 border border-slate-700/50 p-4 rounded-2xl mb-4 space-y-3">
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-[8px] uppercase tracking-wider text-slate-500 font-black mb-1">Cek Harian</label>
+                <input 
+                  type="date"
+                  value={filterDate}
+                  onChange={(e) => {
+                    setFilterDate(e.target.value);
+                    setFilterMonth("");
+                  }}
+                  className="w-full bg-dark-900 border border-slate-700 rounded-xl px-3 py-2 text-[10px] text-white focus:border-emerald-500 outline-none"
+                />
+              </div>
+              <div>
+                <label className="block text-[8px] uppercase tracking-wider text-slate-500 font-black mb-1">Cek Bulanan</label>
+                <input 
+                  type="month"
+                  value={filterMonth}
+                  onChange={(e) => {
+                    setFilterMonth(e.target.value);
+                    setFilterDate("");
+                  }}
+                  className="w-full bg-dark-900 border border-slate-700 rounded-xl px-3 py-2 text-[10px] text-white focus:border-emerald-500 outline-none"
+                />
+              </div>
+            </div>
+            {(filterDate || filterMonth) && (
+              <button 
+                onClick={() => {
+                  setFilterDate("");
+                  setFilterMonth("");
+                }}
+                className="w-full py-2 bg-dark-900 hover:bg-slate-800 border border-slate-700/60 rounded-xl text-[9px] font-black text-slate-400 uppercase tracking-widest transition-all"
+              >
+                🔄 Reset Filter
+              </button>
+            )}
+          </div>
+
+          {/* Dropping List */}
+          <div className="space-y-3 max-h-[420px] overflow-y-auto pr-1">
+            {filteredDropping.length > 0 ? (
+              filteredDropping.slice(0, 50).map(item => {
+                const dateObj = item.createdAt ? (item.createdAt.toDate ? item.createdAt.toDate() : new Date(item.createdAt)) : null;
+                const formattedDate = dateObj ? dateObj.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) : 'Baru saja';
+                
+                return (
+                  <div key={item.id} className="bg-dark-800 border border-slate-700/50 p-4 rounded-3xl flex items-center gap-4 group">
+                    <div className="w-12 h-12 bg-dark-900 rounded-2xl flex items-center justify-center text-xl shrink-0">
+                      📦
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex justify-between items-center mb-0.5">
+                        <p className="text-[9px] text-slate-500 font-bold uppercase tracking-widest">
+                          {formattedDate}
+                        </p>
+                        <span className="text-[8px] bg-emerald-500/10 text-emerald-400 px-1.5 py-0.2 rounded font-bold uppercase tracking-wider">
+                          Drop
+                        </span>
+                      </div>
+                      <h4 className="text-xs font-black text-white truncate uppercase">{item.teamName || 'Sales Agent'}</h4>
+                      <p className="text-[10px] text-amber-400 font-medium mt-1 truncate">
+                        {item.productName} ({item.qtyOriginal} {item.unit})
+                      </p>
+                      <p className="text-[9px] text-slate-500 font-bold mt-0.5">
+                        Nilai: Rp {(item.amount || 0).toLocaleString('id-ID')}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })
+            ) : (
+              <div className="text-center py-10 bg-dark-800/30 rounded-3xl border border-dashed border-slate-700">
+                <p className="text-xs text-slate-500 font-medium">Tidak ada riwayat dropping.</p>
+              </div>
+            )}
+          </div>
+        </section>
+      )}
 
       {/* Logout */}
       <button 

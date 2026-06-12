@@ -1,6 +1,8 @@
 "use client";
 import { useEffect, useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 import { 
   HiOutlineExclamationCircle, 
   HiOutlineCube, 
@@ -429,6 +431,89 @@ function AdminGudangDashboard({ user, router }) {
   const [isBayaring, setIsBayaring] = useState(false);
 
   const [isBulkDepositing, setIsBulkDepositing] = useState(false);
+
+  const handleDownloadPDF = (sales, ledger) => {
+    if (!sales || !ledger || ledger.length === 0) {
+      toast.error("Tidak ada data transaksi untuk diunduh!");
+      return;
+    }
+    toast.loading("Menyiapkan PDF Laporan...", { id: 'pdf-ledger' });
+    try {
+      const doc = new jsPDF();
+      const dateStr = new Date().toLocaleDateString("id-ID", { 
+        day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' 
+      });
+      
+      // Header Title
+      doc.setFont("Helvetica", "bold");
+      doc.setFontSize(16);
+      doc.text("Laporan Aktivitas Buku Besar Sales", 14, 20);
+      
+      doc.setFont("Helvetica", "normal");
+      doc.setFontSize(9);
+      doc.text(`DistriLink - Tanggal Unduh: ${dateStr}`, 14, 26);
+      
+      // Divider line
+      doc.setDrawColor(200, 200, 200);
+      doc.line(14, 30, 196, 30);
+      
+      // Metadata
+      doc.setFontSize(10);
+      doc.setFont("Helvetica", "bold");
+      doc.text("INFORMASI SALES AGENT", 14, 38);
+      
+      doc.setFont("Helvetica", "normal");
+      doc.text(`Nama Sales   : ${sales.name}`, 14, 44);
+      doc.text(`No. WA       : ${sales.phone || '-'}`, 14, 50);
+      
+      const balance = (sales.goodsDropped || 0) - (sales.totalDeposited || 0);
+      doc.setFont("Helvetica", "bold");
+      doc.text(`Saldo Akhir  : Rp ${balance.toLocaleString('id-ID')}`, 14, 56);
+      
+      // Generate Table Data
+      const tableRows = ledger.map((item, index) => {
+        const isMinus = item.nilai < 0;
+        const formattedDate = item.tanggal ? new Date(item.tanggal.toDate()).toLocaleDateString('id-ID', {
+          day: '2-digit', month: '2-digit', year: 'numeric'
+        }) : '--/--/----';
+        
+        let formattedNilai = (isMinus ? '-' : '+') + ' Rp ' + Math.abs(item.nilai).toLocaleString('id-ID');
+        if (item.tipe === 'setoran_pending') {
+          formattedNilai += ' (Pending)';
+        }
+        
+        return [
+          index + 1,
+          formattedDate,
+          item.keterangan + (item.qty ? `\n(${item.qty} @${item.harga?.toLocaleString('id-ID')})` : ''),
+          formattedNilai,
+          'Rp ' + item.saldo.toLocaleString('id-ID')
+        ];
+      });
+      
+      autoTable(doc, {
+        startY: 62,
+        head: [["No", "Tanggal", "Keterangan / Aktivitas", "Nilai Transaksi", "Saldo Berjalan"]],
+        body: tableRows,
+        theme: 'grid',
+        headStyles: { fillColor: [30, 41, 59], halign: 'left', fontStyle: 'bold' },
+        columnStyles: {
+          0: { cellWidth: 10, halign: 'center' },
+          1: { cellWidth: 28 },
+          2: { cellWidth: 70 },
+          3: { cellWidth: 42, halign: 'right' },
+          4: { cellWidth: 42, halign: 'right' }
+        },
+        styles: { fontSize: 8.5 }
+      });
+      
+      doc.save(`Buku_Besar_${sales.name.replace(/\s+/g, '_')}_${new Date().getTime()}.pdf`);
+      toast.success("PDF Laporan berhasil diunduh!", { id: 'pdf-ledger' });
+    } catch (error) {
+      console.error(error);
+      toast.error("Gagal mendownload PDF: " + error.message, { id: 'pdf-ledger' });
+    }
+  };
 
   // Subscriptions
   useEffect(() => {
@@ -896,23 +981,23 @@ function AdminGudangDashboard({ user, router }) {
 
       {/* ── MODAL BUKU BESAR (LEDGER BOOK) ── */}
       {activeLedgerSales && (
-        <div className="fixed inset-0 bg-black/80 flex items-end justify-center z-[150] pb-0 backdrop-blur-sm" onClick={() => setActiveLedgerSales(null)}>
-          <div className="bg-dark-900 w-full max-w-md rounded-t-3xl p-6 border-t border-slate-700 animate-slideIn max-h-[85vh] overflow-y-auto flex flex-col" onClick={(e) => e.stopPropagation()}>
+        <div className="fixed inset-0 bg-dark-900 z-[150] flex flex-col animate-slideIn" onClick={(e) => e.stopPropagation()}>
+          <div className="flex-1 p-5 flex flex-col h-full max-w-lg mx-auto w-full overflow-hidden">
             {/* Header */}
-            <div className="flex justify-between items-start mb-4">
+            <div className="flex justify-between items-start mb-4 shrink-0">
               <div>
                 <h2 className="text-lg font-black text-white tracking-tight flex items-center gap-1.5">
                   📖 Buku Besar Sales
                 </h2>
                 <p className="text-xs text-slate-400 mt-0.5">{activeLedgerSales.name}</p>
               </div>
-              <button onClick={() => setActiveLedgerSales(null)} className="text-slate-500 hover:text-white transition-colors p-1">
-                <HiOutlineX size={24}/>
+              <button onClick={() => setActiveLedgerSales(null)} className="text-slate-500 hover:text-white transition-colors p-1.5 rounded-xl bg-dark-800 border border-slate-700/60 hover:bg-slate-700">
+                <HiOutlineX size={20}/>
               </button>
             </div>
 
             {/* Current Balance card */}
-            <div className="bg-dark-800 rounded-2xl p-4 border border-slate-700/50 mb-4 flex justify-between items-center">
+            <div className="bg-dark-800 rounded-2xl p-4 border border-slate-700/50 mb-4 flex justify-between items-center shrink-0">
               <div>
                 <span className="text-[8px] text-slate-500 font-black uppercase tracking-wider block">Saldo Akhir</span>
                 <span className={`text-xl font-mono font-black ${((activeLedgerSales.goodsDropped || 0) - (activeLedgerSales.totalDeposited || 0)) > 0 ? "text-amber-500" : "text-emerald-400"}`}>
@@ -924,8 +1009,8 @@ function AdminGudangDashboard({ user, router }) {
               </div>
             </div>
 
-            {/* Ledger Table */}
-            <div className="flex-1 overflow-x-auto custom-scrollbar">
+            {/* Ledger Table Container */}
+            <div className="flex-1 overflow-auto custom-scrollbar border border-slate-800 rounded-2xl bg-dark-950/40 p-1">
               {isLedgerLoading ? (
                 <div className="flex flex-col items-center justify-center py-20 gap-3">
                   <div className="w-8 h-8 border-4 border-blue-500/30 border-t-blue-500 rounded-full animate-spin"></div>
@@ -981,12 +1066,22 @@ function AdminGudangDashboard({ user, router }) {
               )}
             </div>
             
-            <button 
-              onClick={() => setActiveLedgerSales(null)}
-              className="mt-6 w-full py-4 bg-dark-800 border border-slate-700 hover:bg-slate-800 text-slate-300 font-black rounded-2xl text-xs uppercase tracking-widest active:scale-98 transition-all shrink-0"
-            >
-              Tutup Buku Besar
-            </button>
+            {/* Footer Buttons */}
+            <div className="mt-4 flex gap-3 shrink-0 pt-4 border-t border-slate-800">
+              <button 
+                onClick={() => handleDownloadPDF(activeLedgerSales, ledgerData)}
+                disabled={isLedgerLoading || ledgerData.length === 0}
+                className="flex-1 py-4 bg-blue-600 hover:bg-blue-500 active:scale-95 text-white font-black rounded-2xl text-xs uppercase tracking-widest transition-all disabled:opacity-50 flex items-center justify-center gap-1.5 shadow-lg shadow-blue-900/20"
+              >
+                📄 Download PDF
+              </button>
+              <button 
+                onClick={() => setActiveLedgerSales(null)}
+                className="py-4 px-6 bg-dark-800 border border-slate-700 hover:bg-slate-800 text-slate-300 font-black rounded-2xl text-xs uppercase tracking-widest active:scale-98 transition-all shrink-0"
+              >
+                Tutup
+              </button>
+            </div>
           </div>
         </div>
       )}
