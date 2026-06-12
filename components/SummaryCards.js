@@ -11,7 +11,7 @@ import {
 export default function SummaryCards({ summary, products, purchases }) {
   // Hitung total Bal & Slop dari semua produk (mengabaikan double-deduction dari operan captain)
   const totalSlops = (products || []).reduce((total, p) => {
-    const totalPurchased = (purchases || []).filter(po => po.productId === p.id).reduce((sum, po) => sum + (po.totalPack || 0), 0);
+    const totalPurchased = (purchases || []).filter(po => po.productId === p.id && po.status !== "pengiriman").reduce((sum, po) => sum + (po.totalPack || 0), 0);
     const actualPacks = Math.max(0, totalPurchased - (p.adminDistributedPacks || 0));
 
     const packsPerSlop = p.packsPerSlop || 10;

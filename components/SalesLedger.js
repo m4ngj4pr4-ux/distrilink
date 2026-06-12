@@ -80,7 +80,7 @@ export default function SalesLedger({ teams, products, purchases, allDistributio
     products.forEach(product => {
       // Ambil semua PO untuk produk ini, urutkan dari yang TERBARU (Descending)
       const productPOs = purchases
-        .filter(po => po.productId === product.id)
+        .filter(po => po.productId === product.id && po.status !== "pengiriman")
         .sort((a, b) => (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0));
         
       // Hitung sisa stok Gudang Aktual (mengabaikan double-deduction dari operan captain)

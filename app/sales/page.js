@@ -563,7 +563,7 @@ function AdminGudangDashboard({ user, router }) {
     let resultBatches = [];
     products.forEach(product => {
       const productPOs = purchases
-        .filter(po => po.productId === product.id)
+        .filter(po => po.productId === product.id && po.status !== "pengiriman")
         .sort((a, b) => (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0));
         
       const totalPurchased = productPOs.reduce((sum, po) => sum + (po.totalPack || 0), 0);

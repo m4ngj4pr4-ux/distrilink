@@ -227,7 +227,7 @@ export default function DashboardPage() {
                     {products.map((p) => {
                       // 1. Ambil semua PO untuk produk ini, urutkan dari yang TERBARU (Descending)
                       const productPOs = purchases
-                        .filter(po => po.productId === p.id)
+                        .filter(po => po.productId === p.id && po.status !== "pengiriman")
                         .sort((a, b) => (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0));
                         
                       // 2. Hitung stok aktual Gudang berdasarkan histori valid (mengabaikan double-deduction dari operan captain)

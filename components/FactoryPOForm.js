@@ -176,6 +176,7 @@ export default function FactoryPOForm({ products }) {
         totalFaktur: result.totalFaktur,
         sisaHutang: result.sisaHutang,
         conversion: result.conversion,
+        status: "pengiriman",
       });
 
       toast.success("PO berhasil disimpan secara atomik!");

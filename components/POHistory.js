@@ -232,7 +232,19 @@ export default function POHistory({ purchases, distributions }) {
                     <td className="text-xs text-white font-medium">
                       {p.createdAt?.toDate().toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "2-digit" })}
                     </td>
-                    <td className="font-bold text-white text-sm">{p.productName}</td>
+                     <td className="font-bold text-white text-sm">
+                      {p.productName}
+                      {p.status === "pengiriman" && (
+                        <span className="block mt-1 text-[8.5px] font-black uppercase tracking-wider text-amber-400 bg-amber-950/40 border border-amber-900/50 px-2 py-0.5 rounded w-max">
+                          Dalam Pengiriman
+                        </span>
+                      )}
+                      {(p.status === "diterima" || !p.status) && (
+                        <span className="block mt-1 text-[8.5px] font-black uppercase tracking-wider text-emerald-400 bg-emerald-950/40 border border-emerald-900/50 px-2 py-0.5 rounded w-max">
+                          Diterima Gudang
+                        </span>
+                      )}
+                     </td>
                     <td>
                       <div className="text-sm font-bold text-emerald-400">
                         {p.jumlahKarton} Ct / {totalBalls} Bal

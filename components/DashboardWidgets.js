@@ -14,7 +14,7 @@ export default function DashboardWidgets({ products, teams, allDistributions, pu
   // ─── Widget 2: Monitor Stok Terkini ───
   const monitorProducts = [...(products || [])]
     .map(p => {
-      const totalPurchased = (purchases || []).filter(po => po.productId === p.id).reduce((sum, po) => sum + (po.totalPack || 0), 0);
+      const totalPurchased = (purchases || []).filter(po => po.productId === p.id && po.status !== "pengiriman").reduce((sum, po) => sum + (po.totalPack || 0), 0);
       const actualPacks = Math.max(0, totalPurchased - (p.adminDistributedPacks || 0));
       return { ...p, actualPacks };
     })

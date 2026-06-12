@@ -2,7 +2,8 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { HiOutlineSearch, HiCube, HiChevronDown, HiChevronUp, HiOutlineRefresh } from 'react-icons/hi';
-import { subscribeProducts, subscribePurchases } from '@/lib/firestore';
+import { subscribeProducts, subscribePurchases, receivePurchaseAtomic } from '@/lib/firestore';
+import toast from 'react-hot-toast';
 
 export default function StokGudangPage() {
   const router = useRouter();
@@ -12,6 +13,10 @@ export default function StokGudangPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [expandedProducts, setExpandedProducts] = useState({});
+  const [receivingPO, setReceivingPO] = useState(null);
+  const [actualCartonsInput, setActualCartonsInput] = useState("");
+  const [qtyMatches, setQtyMatches] = useState(true);
+  const [isSubmittingReceive, setIsSubmittingReceive] = useState(false);
 
   useEffect(() => {
     const userStr = localStorage.getItem('sales_user');
@@ -56,9 +61,9 @@ export default function StokGudangPage() {
   };
 
   const getProductStockData = (p) => {
-    // 1. Ambil semua PO untuk produk ini, urutkan dari yang TERBARU (Descending)
+    // 1. Ambil semua PO untuk produk ini yang SUDAH DITERIMA, urutkan dari yang TERBARU (Descending)
     const productPOs = purchases
-      .filter(po => po.productId === p.id)
+      .filter(po => po.productId === p.id && po.status !== "pengiriman")
       .sort((a, b) => (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0));
       
     // 2. Hitung stok aktual Gudang berdasarkan PO dan barang terdistribusi
@@ -98,6 +103,36 @@ export default function StokGudangPage() {
     };
   };
 
+  const pendingPOs = purchases.filter(po => po.status === "pengiriman");
+
+  const handleConfirmReceive = async () => {
+    if (!receivingPO) return;
+    
+    let receivedQty = receivingPO.jumlahKarton;
+    if (!qtyMatches) {
+      const parsed = parseInt(actualCartonsInput);
+      if (isNaN(parsed) || parsed <= 0) {
+        toast.error("Jumlah karton yang diterima harus berupa angka lebih dari 0");
+        return;
+      }
+      receivedQty = parsed;
+    }
+
+    setIsSubmittingReceive(true);
+    try {
+      await receivePurchaseAtomic(receivingPO.id, receivedQty);
+      toast.success("Barang PO berhasil diterima & stok masuk gudang!");
+      setReceivingPO(null);
+      setActualCartonsInput("");
+      setQtyMatches(true);
+    } catch (err) {
+      console.error(err);
+      toast.error("Gagal menerima barang: " + err.message);
+    } finally {
+      setIsSubmittingReceive(false);
+    }
+  };
+
   const filteredProducts = products.filter(p => 
     p.name?.toLowerCase().includes(searchQuery.toLowerCase())
   );
@@ -122,6 +157,40 @@ export default function StokGudangPage() {
           Pantau stok produk dan rincian alokasi per batch PO masuk
         </p>
       </header>
+
+      {/* PO Dalam Pengiriman */}
+      {pendingPOs.length > 0 && (
+        <div className="mb-6 bg-dark-800 border border-amber-500/30 rounded-2xl p-4">
+          <h2 className="text-xs font-black text-amber-400 uppercase tracking-wider mb-3 flex items-center gap-1.5">
+            <span>🚚</span> PO Dalam Pengiriman ({pendingPOs.length})
+          </h2>
+          <div className="space-y-3">
+            {pendingPOs.map(po => (
+              <div key={po.id} className="bg-dark-900 border border-slate-700/60 rounded-xl p-3 flex justify-between items-center text-xs">
+                <div className="min-w-0 flex-1 pr-3">
+                  <h4 className="font-bold text-white truncate">{po.productName}</h4>
+                  <p className="text-[10px] text-slate-400 mt-0.5">
+                    Order: <span className="font-bold font-mono text-slate-300">{po.jumlahKarton} Ct</span>
+                  </p>
+                  <p className="text-[9px] text-slate-500 mt-0.5">
+                    Dibuat: {po.createdAt ? new Date(po.createdAt.toDate()).toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "2-digit" }) : "-"}
+                  </p>
+                </div>
+                <button
+                  onClick={() => {
+                    setReceivingPO(po);
+                    setActualCartonsInput(po.jumlahKarton.toString());
+                    setQtyMatches(true);
+                  }}
+                  className="bg-amber-950 hover:bg-amber-900 border border-amber-800 text-amber-400 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider active:scale-95 transition-all shrink-0"
+                >
+                  Terima Barang
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Search Bar */}
       <div className="mb-5 relative">
@@ -249,6 +318,87 @@ export default function StokGudangPage() {
           </div>
         )}
       </div>
+
+      {/* Modal Terima Barang */}
+      {receivingPO && (
+        <div className="modal-overlay z-[100] fixed inset-0 bg-black/90 flex items-center justify-center p-4">
+          <div className="modal-content w-full max-w-sm bg-dark-900 border border-slate-700 rounded-2xl p-5 shadow-2xl">
+            <h3 className="text-sm font-black text-white mb-2 uppercase tracking-wide">📦 Konfirmasi Penerimaan</h3>
+            <p className="text-xs text-slate-400 mb-4 leading-relaxed">
+              Silakan konfirmasi kedatangan produk <span className="text-white font-bold">{receivingPO.productName}</span> dari pabrik.
+            </p>
+
+            <div className="space-y-4">
+              {/* Box PO Info */}
+              <div className="bg-dark-800 border border-slate-800 rounded-xl p-3 text-xs">
+                <div className="flex justify-between border-b border-slate-700/30 pb-1.5 mb-1.5 text-slate-400">
+                  <span>Jumlah di PO:</span>
+                  <span className="font-bold text-white font-mono">{receivingPO.jumlahKarton} Karton</span>
+                </div>
+                <div className="flex justify-between text-slate-400">
+                  <span>HPP per Pack:</span>
+                  <span className="font-mono text-emerald-400">{formatRp(receivingPO.hpp)}</span>
+                </div>
+              </div>
+
+              {/* Checkbox Konfirmasi Qty */}
+              <div className="space-y-2">
+                <label className="flex items-center gap-2.5 text-xs text-slate-300 font-semibold cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={qtyMatches}
+                    onChange={(e) => setQtyMatches(e.target.checked)}
+                    className="w-4 h-4 rounded border-slate-700 bg-dark-800 text-blue-500 focus:ring-0 cursor-pointer"
+                  />
+                  <span>Jumlah barang sesuai PO ({receivingPO.jumlahKarton} Ct)</span>
+                </label>
+              </div>
+
+              {/* Input manual qty jika tidak sesuai */}
+              {!qtyMatches && (
+                <div className="bg-dark-800/50 border border-slate-800 rounded-xl p-3">
+                  <label className="block text-[10px] font-black uppercase text-amber-400 tracking-wider mb-1.5">
+                    Jumlah Karton yang Diterima
+                  </label>
+                  <input
+                    type="number"
+                    value={actualCartonsInput}
+                    onChange={(e) => setActualCartonsInput(e.target.value)}
+                    className="w-full bg-dark-900 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-200 outline-none focus:border-amber-500"
+                    placeholder="Masukkan jumlah karton..."
+                    min="1"
+                  />
+                  <p className="text-[9px] text-slate-500 mt-1">
+                    *Selisih jumlah akan menyesuaikan nilai tagihan/utang otomatis.
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex gap-3 mt-6">
+              <button
+                disabled={isSubmittingReceive}
+                onClick={() => {
+                  setReceivingPO(null);
+                  setActualCartonsInput("");
+                  setQtyMatches(true);
+                }}
+                className="btn-ghost flex-1 py-2.5 border border-slate-700 text-slate-400 text-xs font-bold rounded-xl"
+              >
+                Batal
+              </button>
+              <button
+                disabled={isSubmittingReceive}
+                onClick={handleConfirmReceive}
+                className="btn-primary flex-1 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl disabled:opacity-50"
+              >
+                {isSubmittingReceive ? "Memproses..." : "Konfirmasi"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
