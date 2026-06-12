@@ -429,6 +429,7 @@ function AdminGudangDashboard({ user, router }) {
   const [bayarMetode, setBayarMetode] = useState("Tunai ke Admin Gudang");
   const [bayarCatatan, setBayarCatatan] = useState("");
   const [isBayaring, setIsBayaring] = useState(false);
+  const [bayarTanggal, setBayarTanggal] = useState("");
 
   const [isBulkDepositing, setIsBulkDepositing] = useState(false);
 
@@ -738,12 +739,14 @@ function AdminGudangDashboard({ user, router }) {
         bayarSales.name,
         nominal,
         bayarMetode,
-        bayarCatatan
+        bayarCatatan,
+        bayarTanggal || null
       );
       toast.success(`Berhasil mencatat setoran Rp ${nominal.toLocaleString('id-ID')} untuk ${bayarSales.name}`);
       setBayarSales(null);
       setBayarNominal("");
       setBayarCatatan("");
+      setBayarTanggal("");
     } catch (err) {
       toast.error("Gagal mencatat setoran");
     } finally {
@@ -962,6 +965,7 @@ function AdminGudangDashboard({ user, router }) {
                         setBayarNominal("");
                         setBayarMetode("Tunai ke Admin Gudang");
                         setBayarCatatan("");
+                        setBayarTanggal("");
                       }}
                       className="bg-purple-500/10 border border-purple-500/20 hover:bg-purple-500/20 text-purple-400 text-[10px] font-black py-2.5 rounded-xl transition-all flex items-center justify-center gap-1 active:scale-95"
                     >
@@ -1291,6 +1295,16 @@ function AdminGudangDashboard({ user, router }) {
                   <option value="Tunai ke Admin Gudang">Tunai ke Admin Gudang</option>
                   <option value="Transfer Bank">Transfer Bank (BCA)</option>
                 </select>
+              </div>
+
+              <div>
+                <label className="block text-[10px] uppercase font-bold text-slate-500 mb-1.5">Tanggal Pembayaran (Kosongkan untuk hari ini)</label>
+                <input 
+                  type="date"
+                  value={bayarTanggal}
+                  onChange={(e) => setBayarTanggal(e.target.value)}
+                  className="w-full bg-dark-800 border border-slate-700 rounded-2xl px-4 py-3 text-xs text-white focus:border-blue-500 outline-none"
+                />
               </div>
 
               <div>
