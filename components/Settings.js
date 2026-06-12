@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { HiOutlineShieldCheck, HiOutlineRefresh, HiDatabase, HiOutlineExclamation, HiOutlineX, HiOutlineUserAdd, HiOutlineTrash, HiOutlinePencilAlt, HiOutlineEye, HiOutlineEyeOff } from "react-icons/hi";
-import { factoryResetDatabase, subscribeAdminUsers, addAdminUser, updateAdminUser, deleteAdminUser } from "@/lib/firestore";
+import { factoryResetDatabase, resetSalesData, subscribeAdminUsers, addAdminUser, updateAdminUser, deleteAdminUser } from "@/lib/firestore";
 import { useAdminAuth } from "@/lib/AdminAuthContext";
 import toast from "react-hot-toast";
 
@@ -8,6 +8,25 @@ export default function Settings({ onRecalculate, isRecalculating }) {
   const [isResetting, setIsResetting] = useState(false);
   const [showResetModal, setShowResetModal] = useState(false);
   const [confirmText, setConfirmText] = useState("");
+  const [isResettingSales, setIsResettingSales] = useState(false);
+  const [showResetSalesModal, setShowResetSalesModal] = useState(false);
+  const [confirmSalesText, setConfirmSalesText] = useState("");
+
+  async function handleResetSalesData() {
+    if (confirmSalesText !== "MULAI_ULANG") return;
+    setIsResettingSales(true);
+    try {
+      await resetSalesData();
+      toast.success("DATA DISTRIBUSI & PIUTANG SALES BERHASIL DIRESET!");
+      setShowResetSalesModal(false);
+      setConfirmSalesText("");
+      if (onRecalculate) await onRecalculate();
+    } catch (err) {
+      toast.error("Gagal mereset: " + err.message);
+    } finally {
+      setIsResettingSales(false);
+    }
+  }
   
   const { adminUser } = useAdminAuth();
   const [users, setUsers] = useState([]);
@@ -202,6 +221,22 @@ export default function Settings({ onRecalculate, isRecalculating }) {
             Hapus Semua Data
           </button>
         </div>
+        
+        <div className="p-5 rounded-2xl bg-amber-500/5 border border-amber-500/10 flex flex-col sm:flex-row sm:items-center justify-between gap-4 sm:gap-6 mt-4">
+          <div className="flex-1">
+            <h3 className="text-sm font-semibold text-white mb-1">Reset Distribusi & Piutang Sales (Mulai Ulang Sales)</h3>
+            <p className="text-xs text-amber-400/80 leading-relaxed">
+              Hapus riwayat dropping sales, retur, setoran sales, store transactions, dan store stock. Saldo piutang sales diatur ke 0, dan stok produk dikembalikan penuh ke gudang. Data toko dan PO pabrik tetap aman.
+            </p>
+          </div>
+          <button 
+            onClick={() => setShowResetSalesModal(true)}
+            disabled={isResetting || isResettingSales || isRecalculating}
+            className="w-full sm:w-auto flex-shrink-0 px-5 py-3 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-sm font-bold transition-all shadow-lg shadow-amber-500/20 disabled:opacity-50"
+          >
+            Reset Data Sales
+          </button>
+        </div>
       </div>
 
       {/* MODAL USER (Add/Edit) */}
@@ -304,6 +339,58 @@ export default function Settings({ onRecalculate, isRecalculating }) {
                 </button>
                 <button 
                   onClick={() => setShowResetModal(false)}
+                  className="w-full py-3 text-sm text-slate-400 hover:text-white font-medium"
+                >
+                  Batalkan
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL KONFIRMASI RESET SALES */}
+      {showResetSalesModal && (
+        <div className="modal-overlay z-[9999]" onClick={() => setShowResetSalesModal(false)}>
+          <div className="modal-content max-w-md border border-amber-500/30" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-amber-500/20 flex items-center justify-center text-amber-500">
+                  <HiOutlineExclamation size={24} />
+                </div>
+                <h3 className="text-lg font-bold text-white">Konfirmasi Reset Sales</h3>
+              </div>
+              <button onClick={() => setShowResetSalesModal(false)} className="text-slate-500 hover:text-white"><HiOutlineX size={20}/></button>
+            </div>
+
+            <div className="space-y-4">
+              <p className="text-sm text-slate-300 leading-relaxed">
+                Anda akan menghapus <span className="text-amber-400 font-bold underline">seluruh data distribusi, retur, dan setoran sales</span>. Saldo piutang sales akan diatur ke Rp 0, dan stok barang ditarik kembali penuh ke gudang utama. Data toko dan PO pabrik tetap aman.
+              </p>
+              
+              <div className="bg-amber-500/10 p-3 rounded-lg border border-amber-500/20">
+                <p className="text-[11px] text-amber-400 font-medium uppercase mb-2">Ketik kata kunci di bawah untuk melanjutkan:</p>
+                <p className="text-xl font-black text-white tracking-widest text-center mb-3 select-none">MULAI_ULANG</p>
+                <input 
+                  type="text" 
+                  value={confirmSalesText}
+                  onChange={(e) => setConfirmSalesText(e.target.value.toUpperCase())}
+                  placeholder="Ketik di sini..."
+                  className="input-field w-full text-center border-amber-500/30 focus:border-amber-500"
+                  autoFocus
+                />
+              </div>
+
+              <div className="flex flex-col gap-2 pt-2">
+                <button 
+                  onClick={handleResetSalesData}
+                  disabled={confirmSalesText !== "MULAI_ULANG" || isResettingSales}
+                  className="w-full py-3 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                >
+                  {isResettingSales ? "Mereset Data Sales..." : "Ya, Reset Data Sales"}
+                </button>
+                <button 
+                  onClick={() => setShowResetSalesModal(false)}
                   className="w-full py-3 text-sm text-slate-400 hover:text-white font-medium"
                 >
                   Batalkan
