@@ -985,7 +985,7 @@ function AdminGudangDashboard({ user, router }) {
 
       {/* ── MODAL BUKU BESAR (LEDGER BOOK) ── */}
       {activeLedgerSales && (
-        <div className="fixed inset-0 bg-dark-900 z-[150] flex flex-col animate-slideIn" onClick={(e) => e.stopPropagation()}>
+        <div className="fixed inset-0 bg-dark-900 z-[150] flex flex-col" onClick={(e) => e.stopPropagation()}>
           <div className="flex-1 pt-5 pb-5 px-3 flex flex-col h-full max-w-lg mx-auto w-full overflow-hidden">
             {/* Header */}
             <div className="flex justify-between items-start mb-4 shrink-0 px-2">
@@ -1014,7 +1014,7 @@ function AdminGudangDashboard({ user, router }) {
             </div>
 
             {/* Ledger Table Container */}
-            <div className="flex-1 overflow-auto custom-scrollbar border border-slate-800 rounded-2xl bg-dark-950/40 p-1">
+            <div className="flex-1 overflow-auto custom-scrollbar border border-slate-800 rounded-2xl bg-dark-900 p-1">
               {isLedgerLoading ? (
                 <div className="flex flex-col items-center justify-center py-20 gap-3">
                   <div className="w-8 h-8 border-4 border-blue-500/30 border-t-blue-500 rounded-full animate-spin"></div>
@@ -1093,7 +1093,7 @@ function AdminGudangDashboard({ user, router }) {
       {/* ── MODAL DROP STOK ── */}
       {dropSales && (
         <div className="fixed inset-0 bg-black/90 flex items-end justify-center z-[150] pb-0" onClick={() => setDropSales(null)}>
-          <div className="bg-dark-900 w-full max-w-md rounded-t-3xl p-6 border-t border-slate-700 animate-slideIn" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-dark-900 w-full max-w-md rounded-t-3xl p-6 border-t border-slate-700" onClick={(e) => e.stopPropagation()}>
             <div className="flex justify-between items-center mb-6">
               <div>
                 <h3 className="text-base font-bold text-white">Drop Barang ke Sales</h3>
@@ -1183,7 +1183,7 @@ function AdminGudangDashboard({ user, router }) {
       {/* ── MODAL TARIK RETUR ── */}
       {returSales && (
         <div className="fixed inset-0 bg-black/90 flex items-end justify-center z-[150] pb-0" onClick={() => setReturSales(null)}>
-          <div className="bg-dark-900 w-full max-w-md rounded-t-3xl p-6 border-t border-slate-700 animate-slideIn" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-dark-900 w-full max-w-md rounded-t-3xl p-6 border-t border-slate-700" onClick={(e) => e.stopPropagation()}>
             <div className="flex justify-between items-center mb-6">
               <div>
                 <h3 className="text-base font-bold text-white">Tarik Retur dari Sales</h3>
@@ -1258,7 +1258,7 @@ function AdminGudangDashboard({ user, router }) {
       {/* ── MODAL CATAT BAYAR ── */}
       {bayarSales && (
         <div className="fixed inset-0 bg-black/90 flex items-end justify-center z-[150] pb-0" onClick={() => setBayarSales(null)}>
-          <div className="bg-dark-900 w-full max-w-md rounded-t-3xl p-6 border-t border-slate-700 animate-slideIn" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-dark-900 w-full max-w-md rounded-t-3xl p-6 border-t border-slate-700" onClick={(e) => e.stopPropagation()}>
             <div className="flex justify-between items-center mb-6">
               <div>
                 <h3 className="text-base font-bold text-white">Catat Bayaran (Setoran)</h3>

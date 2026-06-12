@@ -318,7 +318,7 @@ export default function SalesTokoPage() {
       {/* ── MODAL ADD / EDIT TOKO ── */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-black/90 flex items-end justify-center z-[110] pb-0">
-          <div className="bg-dark-900 w-full max-w-md rounded-t-2xl p-5 border-t border-slate-700 animate-slideIn max-h-[85vh] flex flex-col">
+          <div className="bg-dark-900 w-full max-w-md rounded-t-2xl p-5 border-t border-slate-700 max-h-[85vh] flex flex-col">
             <div className="flex justify-between items-center mb-4 shrink-0">
               <div>
                 <h2 className="text-lg font-bold text-white">{editingStoreId ? "Edit Detail Toko" : "Daftar Toko Baru"}</h2>

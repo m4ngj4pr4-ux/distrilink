@@ -548,7 +548,7 @@ export default function ProfilPage() {
       {/* Edit Profile Modal */}
       {isEditModalOpen && (
         <div className="fixed inset-0 bg-black/90 flex items-end justify-center z-[120] pb-0">
-          <div className="bg-dark-900 w-full max-w-md rounded-t-3xl p-8 border-t border-slate-700 animate-slideIn max-h-[90vh] overflow-y-auto">
+          <div className="bg-dark-900 w-full max-w-md rounded-t-3xl p-8 border-t border-slate-700 max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center mb-8">
               <h2 className="text-xl font-black text-white tracking-tight">Edit Profil</h2>
               <button onClick={() => setIsEditModalOpen(false)} className="text-slate-500 hover:text-white transition-colors">
@@ -629,7 +629,7 @@ export default function ProfilPage() {
       {/* Setoran Modal */}
       {isSetorModalOpen && (
         <div className="fixed inset-0 bg-black/90 flex items-end justify-center z-[100] pb-0">
-          <div className="bg-dark-900 w-full max-w-md rounded-t-3xl p-8 border-t border-slate-700 animate-slideIn">
+          <div className="bg-dark-900 w-full max-w-md rounded-t-3xl p-8 border-t border-slate-700">
             <div className="flex justify-between items-center mb-8">
               <h2 className="text-xl font-black text-white tracking-tight">Lapor Setoran</h2>
               <button onClick={() => setIsSetorModalOpen(false)} className="text-slate-500 hover:text-white transition-colors">

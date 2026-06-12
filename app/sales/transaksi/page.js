@@ -512,7 +512,7 @@ export default function TransaksiPage() {
       {/* ── MODAL POS CART SYSTEM (MULTI-ITEM DROP) ── */}
       {restockStore && (
         <div className="fixed inset-0 bg-black/90 flex items-end justify-center z-[100] pb-0">
-          <div className="bg-dark-900 w-full max-w-md rounded-t-2xl p-5 border-t border-blue-500 animate-slideIn max-h-[85vh] flex flex-col shadow-2xl">
+          <div className="bg-dark-900 w-full max-w-md rounded-t-2xl p-5 border-t border-blue-500 max-h-[85vh] flex flex-col shadow-2xl">
             {/* Header */}
             <div className="flex justify-between items-center mb-4 shrink-0">
               <div>
@@ -814,7 +814,7 @@ export default function TransaksiPage() {
       {/* ── MODAL AUDIT STOK ── */}
       {auditItem && (
         <div className="fixed inset-0 bg-black/90 flex items-end justify-center z-[100] pb-0">
-          <div className="bg-dark-900 w-full max-w-md rounded-t-2xl p-5 border-t border-amber-500 animate-slideIn">
+          <div className="bg-dark-900 w-full max-w-md rounded-t-2xl p-5 border-t border-amber-500">
             <div className="flex justify-between items-center mb-4">
               <div>
                 <h2 className="text-lg font-bold text-white">🔄 Audit Stok</h2>
@@ -855,7 +855,7 @@ export default function TransaksiPage() {
       {/* ── GPS COORDINATE PROMPT MODAL ── */}
       {gpsPrompt && (
         <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-[120] p-4">
-          <div className="bg-dark-900 w-full max-w-sm rounded-2xl p-5 border border-slate-700 animate-slideIn shadow-2xl">
+          <div className="bg-dark-900 w-full max-w-sm rounded-2xl p-5 border border-slate-700 shadow-2xl">
             <div className="flex items-center gap-3 mb-4">
               <div className={`w-11 h-11 rounded-xl flex items-center justify-center ${
                 gpsPrompt.status === 'ok' ? 'bg-emerald-500/10' : gpsPrompt.status === 'failed' ? 'bg-amber-500/10' : 'bg-blue-500/10'
