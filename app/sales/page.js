@@ -982,9 +982,9 @@ function AdminGudangDashboard({ user, router }) {
       {/* ── MODAL BUKU BESAR (LEDGER BOOK) ── */}
       {activeLedgerSales && (
         <div className="fixed inset-0 bg-dark-900 z-[150] flex flex-col animate-slideIn" onClick={(e) => e.stopPropagation()}>
-          <div className="flex-1 p-5 flex flex-col h-full max-w-lg mx-auto w-full overflow-hidden">
+          <div className="flex-1 pt-5 pb-5 px-3 flex flex-col h-full max-w-lg mx-auto w-full overflow-hidden">
             {/* Header */}
-            <div className="flex justify-between items-start mb-4 shrink-0">
+            <div className="flex justify-between items-start mb-4 shrink-0 px-2">
               <div>
                 <h2 className="text-lg font-black text-white tracking-tight flex items-center gap-1.5">
                   📖 Buku Besar Sales
@@ -997,7 +997,7 @@ function AdminGudangDashboard({ user, router }) {
             </div>
 
             {/* Current Balance card */}
-            <div className="bg-dark-800 rounded-2xl p-4 border border-slate-700/50 mb-4 flex justify-between items-center shrink-0">
+            <div className="bg-dark-800 rounded-2xl p-4 border border-slate-700/50 mb-4 flex justify-between items-center shrink-0 mx-2">
               <div>
                 <span className="text-[8px] text-slate-500 font-black uppercase tracking-wider block">Saldo Akhir</span>
                 <span className={`text-xl font-mono font-black ${((activeLedgerSales.goodsDropped || 0) - (activeLedgerSales.totalDeposited || 0)) > 0 ? "text-amber-500" : "text-emerald-400"}`}>
@@ -1022,41 +1022,41 @@ function AdminGudangDashboard({ user, router }) {
                 <table className="w-full text-left border-collapse">
                   <thead>
                     <tr className="text-[9px] uppercase tracking-wider text-slate-500 border-b border-slate-700/50 bg-dark-800/30">
-                      <th className="py-2.5 px-2 whitespace-nowrap">Tgl</th>
-                      <th className="py-2.5 px-2 whitespace-nowrap">Keterangan</th>
-                      <th className="py-2.5 px-2 text-right whitespace-nowrap">Nilai</th>
-                      <th className="py-2.5 px-2 text-right whitespace-nowrap">Saldo</th>
+                      <th className="py-2.5 px-1 whitespace-nowrap text-left">Tgl</th>
+                      <th className="py-2.5 px-1 text-left">Keterangan</th>
+                      <th className="py-2.5 px-1 text-right whitespace-nowrap">Nilai (Rp)</th>
+                      <th className="py-2.5 px-1 text-right whitespace-nowrap">Saldo (Rp)</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-800/35">
                     {ledgerData.map((item) => {
                       const isMinus = item.nilai < 0;
                       return (
-                        <tr key={item.id} className="text-[11px] hover:bg-white/5 transition-colors">
-                          <td className="py-2.5 px-2 text-slate-500 whitespace-nowrap">
+                        <tr key={item.id} className="hover:bg-white/5 transition-colors">
+                          <td className="py-2.5 px-1 text-slate-500 whitespace-nowrap text-[10px]">
                             {item.tanggal ? new Date(item.tanggal.toDate()).toLocaleDateString('id-ID', {
                               day: '2-digit', month: '2-digit', year: '2-digit'
                             }) : '--/--/--'}
                           </td>
-                          <td className="py-2.5 px-2 text-slate-200 max-w-[160px] break-words">
-                            <span className="font-bold block">{item.keterangan}</span>
+                          <td className="py-2.5 px-1 text-slate-200 max-w-[120px] break-words text-[10px]">
+                            <span className="font-bold block text-[10.5px] leading-tight">{item.keterangan}</span>
                             {item.qty && (
-                              <span className="text-[8px] text-slate-500">
+                              <span className="text-[7.5px] text-slate-500 mt-0.5 block">
                                 {item.qty} @{item.harga?.toLocaleString('id-ID')}
                               </span>
                             )}
                           </td>
-                          <td className={`py-2.5 px-2 text-right font-bold font-mono whitespace-nowrap ${
+                          <td className={`py-2.5 px-1 text-right font-bold font-mono whitespace-nowrap text-[10px] ${
                             item.tipe === 'setoran_pending' ? 'text-slate-500' :
                             isMinus ? (item.tipe === 'retur' ? 'text-amber-400/80' : 'text-rose-400') : 'text-emerald-400'
                           }`}>
-                            {isMinus ? '-' : '+'} Rp {Math.abs(item.nilai).toLocaleString('id-ID')}
+                            {isMinus ? '-' : '+'}{Math.abs(item.nilai).toLocaleString('id-ID')}
                             {item.tipe === 'setoran_pending' && (
                               <span className="text-[7px] text-slate-500 font-bold block uppercase tracking-tighter">Pending</span>
                             )}
                           </td>
-                          <td className="py-2.5 px-2 text-right font-mono text-slate-300 font-semibold whitespace-nowrap">
-                            Rp {item.saldo.toLocaleString('id-ID')}
+                          <td className="py-2.5 px-1 text-right font-mono text-slate-300 font-semibold whitespace-nowrap text-[10px]">
+                            {item.saldo.toLocaleString('id-ID')}
                           </td>
                         </tr>
                       );
@@ -1067,7 +1067,7 @@ function AdminGudangDashboard({ user, router }) {
             </div>
             
             {/* Footer Buttons */}
-            <div className="mt-4 flex gap-3 shrink-0 pt-4 border-t border-slate-800">
+            <div className="mt-4 flex gap-3 shrink-0 pt-4 border-t border-slate-800 px-2">
               <button 
                 onClick={() => handleDownloadPDF(activeLedgerSales, ledgerData)}
                 disabled={isLedgerLoading || ledgerData.length === 0}
