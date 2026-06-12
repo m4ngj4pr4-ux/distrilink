@@ -818,8 +818,7 @@ function AdminGudangDashboard({ user, router }) {
       {/* Summary Cards */}
       <div className="grid grid-cols-2 gap-4 mb-6">
         {/* Kas di Tangan */}
-        <div className="bg-dark-800 border border-slate-700/50 rounded-2xl p-4 flex flex-col justify-between shadow-lg relative overflow-hidden group">
-          <div className="absolute top-0 right-0 w-16 h-16 bg-emerald-500/5 rounded-full -mr-8 -mt-8 blur-xl"></div>
+        <div className="bg-dark-800 border border-slate-700 rounded-2xl p-4 flex flex-col justify-between relative overflow-hidden group">
           <div>
             <p className="text-[9px] text-slate-500 uppercase font-black tracking-wider mb-1">Kas Tunai di Tangan</p>
             <h3 className="text-base font-black text-emerald-400 truncate">Rp {totalKasDiTangan.toLocaleString('id-ID')}</h3>
@@ -828,7 +827,7 @@ function AdminGudangDashboard({ user, router }) {
             <button 
               onClick={handleBulkSetor}
               disabled={isBulkDepositing}
-              className="mt-3 w-full bg-emerald-600 hover:bg-emerald-500 text-white text-[9px] uppercase font-black py-2 rounded-lg transition-all shadow-md tracking-wider disabled:opacity-50"
+              className="mt-3 w-full bg-emerald-600 hover:bg-emerald-500 text-white text-[9px] uppercase font-black py-2 rounded-lg transition-all tracking-wider disabled:opacity-50"
             >
               {isBulkDepositing ? "Memproses..." : "Setor ke BCA"}
             </button>
@@ -836,8 +835,7 @@ function AdminGudangDashboard({ user, router }) {
         </div>
 
         {/* Total Piutang */}
-        <div className="bg-dark-800 border border-slate-700/50 rounded-2xl p-4 flex flex-col justify-between shadow-lg relative overflow-hidden group">
-          <div className="absolute top-0 right-0 w-16 h-16 bg-blue-500/5 rounded-full -mr-8 -mt-8 blur-xl"></div>
+        <div className="bg-dark-800 border border-slate-700 rounded-2xl p-4 flex flex-col justify-between relative overflow-hidden group">
           <div>
             <p className="text-[9px] text-slate-500 uppercase font-black tracking-wider mb-1">Piutang Sales Aktif</p>
             <h3 className="text-base font-black text-amber-500 truncate">Rp {totalPiutangSales.toLocaleString('id-ID')}</h3>
@@ -898,7 +896,7 @@ function AdminGudangDashboard({ user, router }) {
             salesTeams.map((sales) => {
               const balance = (sales.goodsDropped || 0) - (sales.totalDeposited || 0);
               return (
-                <div key={sales.id} className="bg-dark-800 border border-slate-700/50 rounded-2xl p-4 shadow-md flex flex-col gap-4">
+                <div key={sales.id} className="bg-dark-800 border border-slate-700 rounded-2xl p-4 flex flex-col gap-4">
                   {/* Info Header */}
                   <div 
                     onClick={() => setActiveLedgerSales(sales)}
@@ -944,7 +942,7 @@ function AdminGudangDashboard({ user, router }) {
                         setDropPrice("");
                         setDropPoId("");
                       }}
-                      className="bg-emerald-500/10 border border-emerald-500/20 hover:bg-emerald-500/20 text-emerald-400 text-[10px] font-black py-2.5 rounded-xl transition-all flex items-center justify-center gap-1 active:scale-95"
+                      className="bg-emerald-950 border border-emerald-800 hover:bg-emerald-900 text-emerald-400 text-[10px] font-black py-2.5 rounded-xl flex items-center justify-center gap-1 active:scale-95"
                     >
                       <HiOutlinePlus size={12}/> Drop Stok
                     </button>
@@ -955,7 +953,7 @@ function AdminGudangDashboard({ user, router }) {
                         setReturQty("");
                         setReturReason("Sisa Tarikan Sales");
                       }}
-                      className="bg-amber-500/10 border border-amber-500/20 hover:bg-amber-500/20 text-amber-400 text-[10px] font-black py-2.5 rounded-xl transition-all flex items-center justify-center gap-1 active:scale-95"
+                      className="bg-amber-950 border border-amber-800 hover:bg-amber-900 text-amber-500 text-[10px] font-black py-2.5 rounded-xl flex items-center justify-center gap-1 active:scale-95"
                     >
                       <HiOutlineReply size={12}/> Tarik Retur
                     </button>
@@ -967,7 +965,7 @@ function AdminGudangDashboard({ user, router }) {
                         setBayarCatatan("");
                         setBayarTanggal("");
                       }}
-                      className="bg-purple-500/10 border border-purple-500/20 hover:bg-purple-500/20 text-purple-400 text-[10px] font-black py-2.5 rounded-xl transition-all flex items-center justify-center gap-1 active:scale-95"
+                      className="bg-purple-950 border border-purple-800 hover:bg-purple-900 text-purple-400 text-[10px] font-black py-2.5 rounded-xl flex items-center justify-center gap-1 active:scale-95"
                     >
                       <HiOutlineCash size={12}/> Catat Bayar
                     </button>
