@@ -1092,7 +1092,7 @@ function AdminGudangDashboard({ user, router }) {
 
       {/* ── MODAL DROP STOK ── */}
       {dropSales && (
-        <div className="fixed inset-0 bg-black/80 flex items-end justify-center z-[150] pb-0 backdrop-blur-sm" onClick={() => setDropSales(null)}>
+        <div className="fixed inset-0 bg-black/90 flex items-end justify-center z-[150] pb-0" onClick={() => setDropSales(null)}>
           <div className="bg-dark-900 w-full max-w-md rounded-t-3xl p-6 border-t border-slate-700 animate-slideIn" onClick={(e) => e.stopPropagation()}>
             <div className="flex justify-between items-center mb-6">
               <div>
@@ -1182,7 +1182,7 @@ function AdminGudangDashboard({ user, router }) {
 
       {/* ── MODAL TARIK RETUR ── */}
       {returSales && (
-        <div className="fixed inset-0 bg-black/80 flex items-end justify-center z-[150] pb-0 backdrop-blur-sm" onClick={() => setReturSales(null)}>
+        <div className="fixed inset-0 bg-black/90 flex items-end justify-center z-[150] pb-0" onClick={() => setReturSales(null)}>
           <div className="bg-dark-900 w-full max-w-md rounded-t-3xl p-6 border-t border-slate-700 animate-slideIn" onClick={(e) => e.stopPropagation()}>
             <div className="flex justify-between items-center mb-6">
               <div>
@@ -1257,7 +1257,7 @@ function AdminGudangDashboard({ user, router }) {
 
       {/* ── MODAL CATAT BAYAR ── */}
       {bayarSales && (
-        <div className="fixed inset-0 bg-black/80 flex items-end justify-center z-[150] pb-0 backdrop-blur-sm" onClick={() => setBayarSales(null)}>
+        <div className="fixed inset-0 bg-black/90 flex items-end justify-center z-[150] pb-0" onClick={() => setBayarSales(null)}>
           <div className="bg-dark-900 w-full max-w-md rounded-t-3xl p-6 border-t border-slate-700 animate-slideIn" onClick={(e) => e.stopPropagation()}>
             <div className="flex justify-between items-center mb-6">
               <div>

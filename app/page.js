@@ -506,7 +506,7 @@ export default function DashboardPage() {
 
         {/* Global Verification Hub Modal */}
         {isVerificationQueueOpen && (
-          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
+          <div className="fixed inset-0 bg-black/85 flex items-center justify-center z-[100] p-4">
             <div className="bg-dark-900 w-full max-w-2xl rounded-2xl border border-slate-700 shadow-2xl flex flex-col max-h-[80vh] animate-slideIn">
               
               {/* Modal Header */}

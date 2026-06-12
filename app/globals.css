@@ -61,10 +61,9 @@ body {
 
 /* ── Glass card ── */
 .glass-card {
-  background: linear-gradient(135deg, rgba(26,35,50,0.8) 0%, rgba(17,24,39,0.9) 100%);
-  border: 1px solid rgba(148, 163, 184, 0.08);
+  background: linear-gradient(135deg, rgba(26,35,50,0.95) 0%, rgba(17,24,39,0.98) 100%);
+  border: 1px solid rgba(148, 163, 184, 0.12);
   border-radius: 16px;
-  backdrop-filter: blur(20px);
   box-shadow: 0 4px 30px rgba(0, 0, 0, 0.3);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
@@ -196,8 +195,7 @@ select.input-field option {
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.7);
-  backdrop-filter: blur(4px);
+  background: rgba(8, 12, 21, 0.95);
   display: flex;
   align-items: center;
   justify-content: center;

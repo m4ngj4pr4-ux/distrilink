@@ -266,7 +266,7 @@ export default function RetailMarketing() {
         {/* Fullscreen Toggle Button */}
         <button
           onClick={() => setIsMapFullscreen(true)}
-          className="absolute top-3 left-3 z-[1001] p-2.5 bg-dark-800/90 backdrop-blur-sm text-white rounded-xl border border-slate-600 shadow-lg hover:bg-dark-700 active:scale-90 transition-all"
+          className="absolute top-3 left-3 z-[1001] p-2.5 bg-dark-800 text-white rounded-xl border border-slate-600 shadow-lg hover:bg-dark-700 active:scale-90 transition-all"
           title="Buka Fullscreen"
         >
           <HiOutlineArrowsExpand size={18} />
@@ -350,7 +350,7 @@ export default function RetailMarketing() {
           {/* Close Fullscreen Button */}
           <button
             onClick={() => setIsMapFullscreen(false)}
-            className="absolute top-4 left-4 z-[100000] px-3 py-2.5 bg-dark-800/95 backdrop-blur-md text-white rounded-xl border border-slate-500 shadow-2xl hover:bg-red-600 active:scale-90 transition-all flex items-center gap-2"
+            className="absolute top-4 left-4 z-[100000] px-3 py-2.5 bg-dark-800 text-white rounded-xl border border-slate-500 shadow-2xl hover:bg-red-600 active:scale-90 transition-all flex items-center gap-2"
           >
             <HiOutlineX size={18} />
             <span className="text-xs font-bold">Tutup</span>

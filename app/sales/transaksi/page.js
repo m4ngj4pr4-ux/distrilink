@@ -511,7 +511,7 @@ export default function TransaksiPage() {
 
       {/* ── MODAL POS CART SYSTEM (MULTI-ITEM DROP) ── */}
       {restockStore && (
-        <div className="fixed inset-0 bg-black/80 flex items-end justify-center z-[100] pb-0 backdrop-blur-sm">
+        <div className="fixed inset-0 bg-black/90 flex items-end justify-center z-[100] pb-0">
           <div className="bg-dark-900 w-full max-w-md rounded-t-2xl p-5 border-t border-blue-500 animate-slideIn max-h-[85vh] flex flex-col shadow-2xl">
             {/* Header */}
             <div className="flex justify-between items-center mb-4 shrink-0">
@@ -734,7 +734,7 @@ export default function TransaksiPage() {
 
       {/* ── MODAL SUCCESS & PREMIUM STRUK DIGITAL (CONSOLIDATED RECEIPT) ── */}
       {lastDropData && (
-        <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-[110] p-4 backdrop-blur-md">
+        <div className="fixed inset-0 bg-black/95 flex items-center justify-center z-[110] p-4">
           <div className="bg-dark-900 w-full max-w-sm rounded-3xl p-6 border border-slate-700 text-center animate-zoomIn shadow-2xl relative overflow-hidden flex flex-col gap-5">
             {/* Glow background */}
             <div className="absolute -top-24 -left-24 w-48 h-48 bg-emerald-500/10 rounded-full blur-3xl"></div>
@@ -813,7 +813,7 @@ export default function TransaksiPage() {
 
       {/* ── MODAL AUDIT STOK ── */}
       {auditItem && (
-        <div className="fixed inset-0 bg-black/80 flex items-end justify-center z-[100] pb-0 backdrop-blur-sm">
+        <div className="fixed inset-0 bg-black/90 flex items-end justify-center z-[100] pb-0">
           <div className="bg-dark-900 w-full max-w-md rounded-t-2xl p-5 border-t border-amber-500 animate-slideIn">
             <div className="flex justify-between items-center mb-4">
               <div>
@@ -854,7 +854,7 @@ export default function TransaksiPage() {
 
       {/* ── GPS COORDINATE PROMPT MODAL ── */}
       {gpsPrompt && (
-        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-[120] backdrop-blur-sm p-4">
+        <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-[120] p-4">
           <div className="bg-dark-900 w-full max-w-sm rounded-2xl p-5 border border-slate-700 animate-slideIn shadow-2xl">
             <div className="flex items-center gap-3 mb-4">
               <div className={`w-11 h-11 rounded-xl flex items-center justify-center ${
