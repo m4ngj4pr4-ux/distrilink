@@ -173,30 +173,19 @@ export default function StokGudangPage() {
                   </div>
                 </div>
 
-                {/* HPP and Selling Price */}
-                <div className="grid grid-cols-2 gap-2 bg-dark-900 border border-slate-700/60 rounded-xl p-2.5 text-[10px]">
+                {/* Price Display */}
+                <div className="bg-dark-900 border border-slate-700/60 rounded-xl p-2.5 text-[10px] flex justify-between items-center">
                   <div>
-                    <span className="text-slate-500 font-bold block uppercase text-[8px] tracking-wider mb-0.5">HPP Terakhir</span>
-                    <span className="font-mono font-bold text-slate-300">
-                      {totalPacks > 0 ? formatRp(displayHPP) : "-"}
-                    </span>
-                    {latestActiveBatch && totalPacks > 0 && (
-                      <span className="text-[7.5px] text-slate-500 font-mono block">
-                        Batch {latestActiveBatch.id.slice(-6).toUpperCase()}
-                      </span>
-                    )}
-                  </div>
-                  <div>
-                    <span className="text-blue-400 font-bold block uppercase text-[8px] tracking-wider mb-0.5">Target Jual / Pk</span>
-                    <span className="font-mono font-bold text-blue-400">
+                    <span className="text-blue-400 font-bold block uppercase text-[8px] tracking-wider mb-0.5">Harga / Pk</span>
+                    <span className="font-mono font-bold text-blue-400 text-xs">
                       {totalPacks > 0 ? formatRp(displaySellingPrice) : "-"}
                     </span>
-                    {latestActiveBatch && totalPacks > 0 && (
-                      <span className="text-[7.5px] text-blue-500/50 font-mono block">
-                        Batch {latestActiveBatch.id.slice(-6).toUpperCase()}
-                      </span>
-                    )}
                   </div>
+                  {latestActiveBatch && totalPacks > 0 && (
+                    <span className="text-[8.5px] text-blue-500/70 font-mono bg-blue-950/40 border border-blue-900/50 px-2 py-0.5 rounded">
+                      Batch {latestActiveBatch.id.slice(-6).toUpperCase()}
+                    </span>
+                  )}
                 </div>
 
                 {/* Expander Button for Batches */}
@@ -235,8 +224,7 @@ export default function StokGudangPage() {
                               </span>
                             </div>
                             <div className="flex justify-between text-[9px] text-slate-400">
-                              <span>HPP: <span className="text-emerald-400 font-bold font-mono">{formatRp(batch.hpp)}</span></span>
-                              <span>Target: <span className="text-blue-400 font-bold font-mono">{formatRp(batch.targetHargaJual)}</span></span>
+                              <span>Harga: <span className="text-blue-400 font-bold font-mono">{formatRp(batch.targetHargaJual)}</span></span>
                             </div>
                             <div className="flex justify-between items-center mt-1 text-[9px]">
                               <span className="text-slate-400 font-semibold">
