@@ -27,6 +27,7 @@ import {
   updateDistributionDate,
   updateSetoranDate,
   deleteSetoranTransaction,
+  addGoodsDropTransactionBatch,
 } from "@/lib/firestore";
 import toast from "react-hot-toast";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -277,38 +278,69 @@ export default function SalesLedger({ teams, products, purchases, allDistributio
     const packsPerSlop = product.packsPerSlop || 10;
     const slopsPerKarton = (product.slopsPerBall || 20) * (product.ballsPerKarton || 5);
 
-    let totalPacksDistributed = 0;
+    let conversionFactor = packsPerSlop;
     if (dropUnit === "Ct") {
-      totalPacksDistributed = qty * slopsPerKarton * packsPerSlop;
+      conversionFactor = slopsPerKarton * packsPerSlop;
     } else if (dropUnit === "Bal") {
-      totalPacksDistributed = qty * 10 * packsPerSlop; // 1 Bal = 10 Slop
-    } else {
-      totalPacksDistributed = qty * packsPerSlop;
+      conversionFactor = 10 * packsPerSlop;
     }
 
-    // VALIDASI STOK: Cegah stok batch minus
-    const selectedBatch = availableBatches.find(b => b.id === selectedPoId);
-    if (!selectedBatch) return toast.error("Batch PO tidak valid atau stok sudah habis!");
+    const totalPacksDistributed = Math.round(qty * conversionFactor);
 
-    if (totalPacksDistributed > selectedBatch.realSisa) {
-      return toast.error(`Gagal! Sisa stok di batch ini hanya ${selectedBatch.realSisa.toLocaleString("id-ID")} Bungkus. Anda mencoba mendistribusikan ${totalPacksDistributed.toLocaleString("id-ID")} Bungkus.`);
+    // Filter PO yang sama dan urutkan dari terlama ke terbaru (ascending)
+    const sameProductBatches = availableBatches
+      .filter(b => b.productId === po.productId)
+      .sort((a, b) => (a.createdAt?.toMillis() || 0) - (b.createdAt?.toMillis() || 0));
+
+    const selectedIndex = sameProductBatches.findIndex(b => b.id === selectedPoId);
+    if (selectedIndex === -1) return toast.error("Batch PO tidak valid!");
+
+    const batchesToAllocate = sameProductBatches.slice(selectedIndex);
+
+    // VALIDASI BATAS TOTAL STOK: Jumlah dropping tidak boleh melebihi stok yang tersedia dari batch ini dan batch selanjutnya
+    const totalAvailable = batchesToAllocate.reduce((sum, b) => sum + (b.realSisa || 0), 0);
+    if (totalPacksDistributed > totalAvailable) {
+      return toast.error(`Stok tidak cukup! Total stok tersedia pada batch ini dan batch selanjutnya hanya ${totalAvailable.toLocaleString("id-ID")} Pk. Anda mencoba mendistribusikan ${totalPacksDistributed.toLocaleString("id-ID")} Pk.`);
+    }
+
+    // Alokasikan kuantitas dropping (FIFO)
+    let remainingToAllocate = totalPacksDistributed;
+    let itemsToDrop = [];
+
+    for (const batch of batchesToAllocate) {
+      if (remainingToAllocate <= 0) break;
+
+      const take = Math.min(remainingToAllocate, batch.realSisa);
+      if (take > 0) {
+        const portionQty = take / conversionFactor;
+        const portionAmount = Math.round(take * parseFloat(dropPricePerPack));
+
+        itemsToDrop.push({
+          poId: batch.id,
+          totalPacksDistributed: take,
+          jumlahKarton: take / (slopsPerKarton * packsPerSlop),
+          amount: portionAmount,
+          unit: dropUnit,
+          qtyOriginal: portionQty,
+          pricePerPack: parseFloat(dropPricePerPack),
+          hppSnapshot: batch.hpp || 0
+        });
+
+        remainingToAllocate -= take;
+      }
     }
 
     setProcessing(true);
     try {
-      await addGoodsDropTransaction({
+      await addGoodsDropTransactionBatch({
         teamId: dropModal.id,
         teamName: dropModal.name,
-        poId: selectedPoId,
         productId: po.productId,
         productName: po.productName,
         totalPacksDistributed: totalPacksDistributed,
-        jumlahKarton: totalPacksDistributed / (slopsPerKarton * packsPerSlop),
         amount: amount,
-        unit: dropUnit,
-        qtyOriginal: qty,
-        pricePerPack: parseFloat(dropPricePerPack),
-        hppSnapshot: po.hpp || 0, // KUNCI HPP DARI BATCH INI
+        items: itemsToDrop,
+        source: 'owner_central'
       });
 
       toast.success(`Distribusi ${po.productName} (${qty} ${dropUnit}) berhasil!`);

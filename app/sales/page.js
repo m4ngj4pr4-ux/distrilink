@@ -27,7 +27,7 @@ import {
   subscribeProducts,
   subscribePurchases,
   subscribePendingSetoran,
-  addGoodsDropTransaction,
+  addGoodsDropTransactionBatch,
   addReturnTransaction,
   addSetoranDana,
   getSalesLedgerBookData,
@@ -633,44 +633,77 @@ function AdminGudangDashboard({ user, router }) {
     const ballsPerKarton = product.ballsPerKarton || 5;
     const slopsPerKarton = slopsPerBall * ballsPerKarton;
 
-    let totalPacks = 0;
+    let conversionFactor = 1;
     if (dropUnit === "Ct") {
-      totalPacks = rawQty * slopsPerKarton * packsPerSlop;
+      conversionFactor = slopsPerKarton * packsPerSlop;
     } else if (dropUnit === "Bal") {
-      totalPacks = rawQty * slopsPerBall * packsPerSlop;
+      conversionFactor = slopsPerBall * packsPerSlop;
     } else if (dropUnit === "Slop") {
-      totalPacks = rawQty * packsPerSlop;
+      conversionFactor = packsPerSlop;
     } else {
-      totalPacks = rawQty;
+      conversionFactor = 1;
     }
-    totalPacks = Math.round(totalPacks);
+
+    const totalPacks = Math.round(rawQty * conversionFactor);
 
     if (totalPacks <= 0) return toast.error("Jumlah tidak valid");
     if (price <= 0) return toast.error("Harga tidak valid");
 
-    // Check warehouse stock
-    const batch = availableBatches.find(b => b.id === dropPoId);
-    if (!batch || totalPacks > batch.realSisa) {
-      return toast.error(`Stok gudang tidak cukup! Sisa batch ini hanya ${batch?.realSisa || 0} Pk.`);
+    // Filter PO yang sama dan urutkan dari terlama ke terbaru (ascending)
+    const sameProductBatches = availableBatches
+      .filter(b => b.productId === po.productId)
+      .sort((a, b) => (a.createdAt?.toMillis() || 0) - (b.createdAt?.toMillis() || 0));
+
+    const selectedIndex = sameProductBatches.findIndex(b => b.id === dropPoId);
+    if (selectedIndex === -1) return toast.error("Batch PO tidak valid!");
+
+    const batchesToAllocate = sameProductBatches.slice(selectedIndex);
+
+    // VALIDASI BATAS TOTAL STOK: Jumlah dropping tidak boleh melebihi stok yang tersedia dari batch ini dan batch selanjutnya
+    const totalAvailable = batchesToAllocate.reduce((sum, b) => sum + (b.realSisa || 0), 0);
+    if (totalPacks > totalAvailable) {
+      return toast.error(`Stok tidak cukup! Total stok tersedia pada batch ini dan batch selanjutnya hanya ${totalAvailable.toLocaleString("id-ID")} Pk. Anda mencoba mendistribusikan ${totalPacks.toLocaleString("id-ID")} Pk.`);
+    }
+
+    // Alokasikan kuantitas dropping (FIFO)
+    let remainingToAllocate = totalPacks;
+    let itemsToDrop = [];
+
+    for (const batch of batchesToAllocate) {
+      if (remainingToAllocate <= 0) break;
+
+      const take = Math.min(remainingToAllocate, batch.realSisa);
+      if (take > 0) {
+        const portionQty = take / conversionFactor;
+        const portionAmount = Math.round(take * price);
+
+        itemsToDrop.push({
+          poId: batch.id,
+          totalPacksDistributed: take,
+          jumlahKarton: take / (slopsPerKarton * packsPerSlop),
+          amount: portionAmount,
+          unit: dropUnit,
+          qtyOriginal: portionQty,
+          pricePerPack: price,
+          hppSnapshot: batch.hpp || 0,
+          customDate: dropTanggal || ""
+        });
+
+        remainingToAllocate -= take;
+      }
     }
 
     setIsDropping(true);
     try {
-      await addGoodsDropTransaction({
+      await addGoodsDropTransactionBatch({
         teamId: dropSales.id,
         teamName: dropSales.name,
         productId: po.productId,
         productName: po.productName,
         totalPacksDistributed: totalPacks,
-        jumlahKarton: totalPacks / (slopsPerKarton * packsPerSlop),
         amount: totalPacks * price,
-        unit: dropUnit,
-        qtyOriginal: rawQty,
-        pricePerPack: price,
-        hppSnapshot: po.hpp || 0,
-        poId: po.id,
-        source: 'admin_gudang',
-        customDate: dropTanggal || ""
+        items: itemsToDrop,
+        source: 'admin_gudang'
       });
       toast.success(`Berhasil dropping ${rawQty} ${dropUnit} ${product.name} ke ${dropSales.name}`);
       setDropSales(null);
