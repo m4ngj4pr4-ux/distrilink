@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { HiOutlineHome, HiOutlineMap, HiOutlineClipboardList, HiOutlineUser } from 'react-icons/hi';
+import { HiOutlineHome, HiOutlineMap, HiOutlineClipboardList, HiOutlineUser, HiOutlineCube } from 'react-icons/hi';
 
 export default function SalesLayoutClient({ children }) {
   const pathname = usePathname();
@@ -116,6 +116,15 @@ export default function SalesLayoutClient({ children }) {
                   <span className="text-[11px] mt-1 font-medium">Rute</span>
                 </Link>
               </>
+            )}
+            {userRole === 'admin_gudang' && (
+              <Link 
+                className={`flex flex-col items-center transition-all active:scale-95 ${pathname.startsWith('/sales/stok') ? 'text-emerald-500' : 'text-slate-400 hover:text-emerald-500'}`} 
+                href="/sales/stok"
+              >
+                <HiOutlineCube size={24} />
+                <span className="text-[11px] mt-1 font-medium">Stok</span>
+              </Link>
             )}
             <Link 
               className={`flex flex-col items-center transition-all active:scale-95 ${pathname.startsWith('/sales/profil') ? 'text-emerald-500' : 'text-slate-400 hover:text-emerald-500'}`} 
