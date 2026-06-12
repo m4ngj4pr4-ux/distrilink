@@ -708,13 +708,13 @@ function AdminGudangDashboard({ user, router }) {
     .reduce((sum, sales) => sum + ((sales.goodsDropped || 0) - (sales.totalDeposited || 0)), 0);
 
   return (
-    <div className="p-5 animate-fadeIn pb-24 w-full max-w-md">
+    <div className="p-5 animate-fadeIn pb-24 w-full max-w-md mx-auto">
       {/* Header Profile */}
-      <header className="flex justify-between items-center mb-8 pt-4">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <h1 className="text-2xl font-black text-white tracking-tight">Halo, {user.name.split(' ')[0]}!</h1>
-            <span className="text-[8px] bg-blue-500/20 text-blue-400 px-1.5 py-0.5 rounded font-black uppercase tracking-widest border border-blue-500/30">Admin Gudang</span>
+      <header className="flex justify-between items-center mb-8 pt-4 gap-4">
+        <div className="min-w-0">
+          <div className="flex items-center gap-2 mb-1 flex-wrap">
+            <h1 className="text-2xl font-black text-white tracking-tight whitespace-nowrap">Halo, {user.name.split(' ')[0]}!</h1>
+            <span className="text-[8px] bg-blue-500/20 text-blue-400 px-1.5 py-0.5 rounded font-black uppercase tracking-widest border border-blue-500/30 shrink-0">Admin Gudang</span>
           </div>
           <p className="text-xs text-slate-500 font-medium">Kelola dropping, setoran, retur & buku besar sales</p>
         </div>
@@ -814,9 +814,9 @@ function AdminGudangDashboard({ user, router }) {
                   {/* Info Header */}
                   <div 
                     onClick={() => setActiveLedgerSales(sales)}
-                    className="flex items-center justify-between cursor-pointer group"
+                    className="flex items-center justify-between cursor-pointer group gap-4"
                   >
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-3 min-w-0">
                       <div className="w-10 h-10 rounded-xl bg-dark-900 border border-slate-700 flex items-center justify-center text-lg font-bold text-blue-400 shrink-0">
                         {sales.photoURL ? (
                           <img src={sales.photoURL} className="w-full h-full object-cover rounded-xl" />
@@ -824,21 +824,21 @@ function AdminGudangDashboard({ user, router }) {
                           sales.name.charAt(0).toUpperCase()
                         )}
                       </div>
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <h4 className="font-black text-sm text-white group-hover:text-blue-400 transition-colors">{sales.name}</h4>
-                          <span className={`text-[7px] px-1 py-0.2 rounded font-bold uppercase ${sales.role === 'captain' ? 'bg-amber-500/10 text-amber-500' : 'bg-slate-700 text-slate-400'}`}>
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <h4 className="font-black text-sm text-white group-hover:text-blue-400 transition-colors truncate">{sales.name}</h4>
+                          <span className={`text-[7px] px-1 py-0.2 rounded font-bold uppercase shrink-0 ${sales.role === 'captain' ? 'bg-amber-500/10 text-amber-500' : 'bg-slate-700 text-slate-400'}`}>
                             {sales.role === 'captain' ? 'Captain' : 'Sales'}
                           </span>
                         </div>
-                        <p className="text-[9px] text-slate-500 mt-0.5">{sales.phone || "Tidak ada nomor WhatsApp"}</p>
+                        <p className="text-[9px] text-slate-500 mt-0.5 truncate">{sales.phone || "Tidak ada nomor WhatsApp"}</p>
                       </div>
                     </div>
                     
-                    <div className="text-right flex items-center gap-2">
+                    <div className="text-right flex items-center gap-2 shrink-0 ml-auto">
                       <div>
                         <p className="text-[8px] text-slate-500 uppercase font-black">Saldo Piutang</p>
-                        <p className={`text-sm font-black font-mono ${balance > 0 ? "text-amber-500" : "text-emerald-400"}`}>
+                        <p className={`text-sm font-black font-mono whitespace-nowrap ${balance > 0 ? "text-amber-500" : "text-emerald-400"}`}>
                           Rp {balance.toLocaleString('id-ID')}
                         </p>
                       </div>
