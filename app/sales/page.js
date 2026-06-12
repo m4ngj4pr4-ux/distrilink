@@ -457,6 +457,7 @@ function AdminGudangDashboard({ user, router }) {
   const [returReason, setReturReason] = useState("Sisa Tarikan Sales");
   const [isReturing, setIsReturing] = useState(false);
   const [returTanggal, setReturTanggal] = useState("");
+  const [returPrice, setReturPrice] = useState("");
 
   const [bayarSales, setBayarSales] = useState(null);
   const [bayarNominal, setBayarNominal] = useState("");
@@ -646,6 +647,33 @@ function AdminGudangDashboard({ user, router }) {
     return Math.round(totalPacks * priceNum);
   }, [dropPoId, dropQty, dropUnit, dropPrice, purchases, products]);
 
+  // Retur amount auto-fill when selection/qty changes
+  const computedReturAmount = useMemo(() => {
+    if (!returProduct || !returQty || !returPrice) return 0;
+    const product = products.find(p => p.id === returProduct);
+    if (!product) return 0;
+
+    const qtyNum = parseFloat(returQty) || 0;
+    const priceNum = parseFloat(returPrice.replace(/\D/g, "")) || 0;
+    const packsPerSlop = product.packsPerSlop || 10;
+    const slopsPerBall = product.slopsPerBall || 20;
+    const ballsPerKarton = product.ballsPerKarton || 5;
+    const slopsPerKarton = slopsPerBall * ballsPerKarton;
+    
+    let conversionFactor = 1;
+    if (returUnit === "Ct") {
+      conversionFactor = slopsPerKarton * packsPerSlop;
+    } else if (returUnit === "Bal") {
+      conversionFactor = slopsPerBall * packsPerSlop;
+    } else if (returUnit === "Slop") {
+      conversionFactor = packsPerSlop;
+    } else {
+      conversionFactor = 1;
+    }
+    
+    return Math.round(qtyNum * conversionFactor * priceNum);
+  }, [returProduct, returQty, returUnit, returPrice, products]);
+
   // Drop stock handler
   const handleDropSubmit = async (e) => {
     e.preventDefault();
@@ -754,7 +782,7 @@ function AdminGudangDashboard({ user, router }) {
   // Return handler
   const handleReturSubmit = async (e) => {
     e.preventDefault();
-    if (!returSales || !returProduct || !returQty) return toast.error("Lengkapi data retur!");
+    if (!returSales || !returProduct || !returQty || !returPrice) return toast.error("Lengkapi data retur!");
     
     const product = products.find(p => p.id === returProduct);
     if (!product) return toast.error("Produk tidak ditemukan!");
@@ -762,12 +790,27 @@ function AdminGudangDashboard({ user, router }) {
     const qty = parseFloat(returQty) || 0;
     if (qty <= 0) return toast.error("Jumlah tidak valid");
 
-    const packsPerSlop = product.packsPerSlop || 10;
-    const slopsPerKarton = (product.slopsPerBall || 20) * (product.ballsPerKarton || 5);
+    const price = parseInt(returPrice.replace(/\D/g, "")) || 0;
+    if (price <= 0) return toast.error("Harga tidak valid");
 
-    let totalPacksReturned = returUnit === "Ct" ? qty * slopsPerKarton * packsPerSlop : returUnit === "Bal" ? qty * 10 * packsPerSlop : qty * packsPerSlop;
-    totalPacksReturned = Math.round(totalPacksReturned);
-    const returnAmount = totalPacksReturned * (product.currentSellingPrice || 0);
+    const packsPerSlop = product.packsPerSlop || 10;
+    const slopsPerBall = product.slopsPerBall || 20;
+    const ballsPerKarton = product.ballsPerKarton || 5;
+    const slopsPerKarton = slopsPerBall * ballsPerKarton;
+
+    let conversionFactor = 1;
+    if (returUnit === "Ct") {
+      conversionFactor = slopsPerKarton * packsPerSlop;
+    } else if (returUnit === "Bal") {
+      conversionFactor = slopsPerBall * packsPerSlop;
+    } else if (returUnit === "Slop") {
+      conversionFactor = packsPerSlop;
+    } else {
+      conversionFactor = 1; // Pk
+    }
+
+    const totalPacksReturned = Math.round(qty * conversionFactor);
+    const returnAmount = totalPacksReturned * price;
 
     setIsReturing(true);
     try {
@@ -781,6 +824,7 @@ function AdminGudangDashboard({ user, router }) {
         totalPacksReturned,
         returnAmount,
         reason: returReason || "Sisa Tarikan Sales",
+        pricePerPack: price,
         hppSnapshot: product.lastHPP || product.currentSellingPrice || 0,
         customDate: returTanggal || ""
       });
@@ -788,6 +832,7 @@ function AdminGudangDashboard({ user, router }) {
       setReturSales(null);
       setReturProduct("");
       setReturQty("");
+      setReturPrice("");
       setReturReason("Sisa Tarikan Sales");
       setReturTanggal("");
     } catch (err) {
@@ -1022,6 +1067,8 @@ function AdminGudangDashboard({ user, router }) {
                         setReturSales(sales);
                         setReturProduct("");
                         setReturQty("");
+                        setReturPrice("");
+                        setReturUnit("Ct");
                         setReturReason("Sisa Tarikan Sales");
                       }}
                       className="bg-amber-950 border border-amber-800 hover:bg-amber-900 text-amber-500 text-[10px] font-black py-2.5 rounded-xl flex items-center justify-center gap-1 active:scale-95"
@@ -1288,7 +1335,17 @@ function AdminGudangDashboard({ user, router }) {
               <div>
                 <label className="block text-[10px] uppercase font-bold text-slate-500 mb-1.5">Pilih Produk</label>
                 <select 
-                  value={returProduct} onChange={(e) => setReturProduct(e.target.value)}
+                  value={returProduct} 
+                  onChange={(e) => {
+                    const prodId = e.target.value;
+                    setReturProduct(prodId);
+                    const prod = products.find(p => p.id === prodId);
+                    if (prod) {
+                      setReturPrice(prod.currentSellingPrice?.toString() || "");
+                    } else {
+                      setReturPrice("");
+                    }
+                  }}
                   className="input-field w-full text-xs"
                   required
                 >
@@ -1325,6 +1382,17 @@ function AdminGudangDashboard({ user, router }) {
               </div>
 
               <div>
+                <label className="block text-[10px] uppercase font-bold text-slate-500 mb-1.5">Harga per Pack (Rp)</label>
+                <input 
+                  type="text" inputMode="numeric"
+                  value={formatInputNumber(returPrice)} 
+                  onChange={(e) => setReturPrice(parseInputNumber(e.target.value))}
+                  placeholder="0" className="w-full bg-dark-800 border border-slate-700 rounded-2xl px-4 py-3 text-lg font-black text-white focus:border-blue-500 outline-none text-center h-[50px]"
+                  required
+                />
+              </div>
+
+              <div>
                 <label className="block text-[10px] uppercase font-bold text-slate-500 mb-1.5">Keterangan / Kondisi</label>
                 <select 
                   value={returReason} onChange={(e) => setReturReason(e.target.value)}
@@ -1335,6 +1403,13 @@ function AdminGudangDashboard({ user, router }) {
                   <option value="Salah Bawa Barang">Salah Bawa Barang</option>
                 </select>
               </div>
+
+              {computedReturAmount > 0 && (
+                <div className="bg-dark-800 rounded-xl p-3 border border-slate-700/50 flex justify-between items-center text-xs">
+                  <span className="font-bold text-slate-400">Total Nilai Retur</span>
+                  <span className="font-black text-amber-400 text-sm font-mono">Rp {computedReturAmount.toLocaleString('id-ID')}</span>
+                </div>
+              )}
 
               <div>
                 <label className="block text-[10px] uppercase font-bold text-slate-500 mb-1.5">Tanggal Retur (Kosongkan untuk hari ini)</label>
