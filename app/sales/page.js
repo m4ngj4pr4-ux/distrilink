@@ -416,6 +416,7 @@ function AdminGudangDashboard({ user, router }) {
   const [dropPrice, setDropPrice] = useState("");
   const [dropPoId, setDropPoId] = useState("");
   const [isDropping, setIsDropping] = useState(false);
+  const [dropTanggal, setDropTanggal] = useState("");
 
   const [returSales, setReturSales] = useState(null);
   const [returProduct, setReturProduct] = useState("");
@@ -423,6 +424,7 @@ function AdminGudangDashboard({ user, router }) {
   const [returUnit, setReturUnit] = useState("Ct");
   const [returReason, setReturReason] = useState("Sisa Tarikan Sales");
   const [isReturing, setIsReturing] = useState(false);
+  const [returTanggal, setReturTanggal] = useState("");
 
   const [bayarSales, setBayarSales] = useState(null);
   const [bayarNominal, setBayarNominal] = useState("");
@@ -667,7 +669,8 @@ function AdminGudangDashboard({ user, router }) {
         pricePerPack: price,
         hppSnapshot: po.hpp || 0,
         poId: po.id,
-        source: 'admin_gudang'
+        source: 'admin_gudang',
+        customDate: dropTanggal || ""
       });
       toast.success(`Berhasil dropping ${rawQty} ${dropUnit} ${product.name} ke ${dropSales.name}`);
       setDropSales(null);
@@ -675,6 +678,7 @@ function AdminGudangDashboard({ user, router }) {
       setDropQty("");
       setDropPrice("");
       setDropPoId("");
+      setDropTanggal("");
     } catch (err) {
       toast.error("Gagal dropping: " + err.message);
     } finally {
@@ -712,13 +716,15 @@ function AdminGudangDashboard({ user, router }) {
         totalPacksReturned,
         returnAmount,
         reason: returReason || "Sisa Tarikan Sales",
-        hppSnapshot: product.lastHPP || product.currentSellingPrice || 0
+        hppSnapshot: product.lastHPP || product.currentSellingPrice || 0,
+        customDate: returTanggal || ""
       });
       toast.success(`Berhasil retur ${qty} ${returUnit} ${product.name} dari ${returSales.name}`);
       setReturSales(null);
       setReturProduct("");
       setReturQty("");
       setReturReason("Sisa Tarikan Sales");
+      setReturTanggal("");
     } catch (err) {
       toast.error("Gagal retur: " + err.message);
     } finally {
@@ -1167,6 +1173,15 @@ function AdminGudangDashboard({ user, router }) {
                 </div>
               )}
 
+              <div>
+                <label className="block text-[10px] uppercase font-bold text-slate-500 mb-1.5">Tanggal Dropping (Kosongkan untuk hari ini)</label>
+                <input 
+                  type="date"
+                  value={dropTanggal} onChange={(e) => setDropTanggal(e.target.value)}
+                  className="w-full bg-dark-800 border border-slate-700 rounded-2xl px-4 py-3 text-xs text-white focus:border-blue-500 outline-none text-center h-[50px]"
+                />
+              </div>
+
               <div className="flex gap-3 pt-4">
                 <button type="button" onClick={() => setDropSales(null)} className="flex-1 py-3 text-slate-400 font-bold uppercase text-[10px]">Batal</button>
                 <button type="submit" disabled={isDropping} className="flex-1 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold uppercase text-[10px] tracking-wider disabled:opacity-50">
@@ -1240,6 +1255,15 @@ function AdminGudangDashboard({ user, router }) {
                   <option value="Barang Cacat/Rusak">Barang Cacat / Rusak</option>
                   <option value="Salah Bawa Barang">Salah Bawa Barang</option>
                 </select>
+              </div>
+
+              <div>
+                <label className="block text-[10px] uppercase font-bold text-slate-500 mb-1.5">Tanggal Retur (Kosongkan untuk hari ini)</label>
+                <input 
+                  type="date"
+                  value={returTanggal} onChange={(e) => setReturTanggal(e.target.value)}
+                  className="w-full bg-dark-800 border border-slate-700 rounded-2xl px-4 py-3 text-xs text-white focus:border-blue-500 outline-none text-center h-[50px]"
+                />
               </div>
 
               <div className="flex gap-3 pt-4">
