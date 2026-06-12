@@ -63,12 +63,12 @@ export default function SalesLayoutClient({ children }) {
   const isLoginPage = pathname === '/sales/login';
 
   return (
-    <div className="bg-black min-h-screen flex justify-center overflow-x-hidden sales-app">
-      <div className="w-full max-w-md bg-dark-900 min-h-screen relative shadow-2xl pb-20 overflow-x-hidden border-x border-slate-800/30">
+    <div className="bg-black h-screen h-[100dvh] w-full flex justify-center overflow-hidden sales-app">
+      <div className="w-full max-w-md bg-dark-900 h-full flex flex-col relative shadow-2xl border-x border-slate-800/30">
         
         {/* ── Offline Banner ── */}
         {isOffline && !isLoginPage && (
-          <div className="sticky top-0 z-[60] bg-amber-700 px-4 py-2 flex items-center justify-center gap-2">
+          <div className="sticky top-0 z-[60] bg-amber-700 px-4 py-2 flex items-center justify-center gap-2 shrink-0">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4 text-amber-100 flex-shrink-0">
               <path fillRule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 5a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 5zm0 9a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
             </svg>
@@ -76,12 +76,12 @@ export default function SalesLayoutClient({ children }) {
           </div>
         )}
 
-        <main className={isLoginPage ? "min-h-screen flex items-center justify-center" : "min-h-screen"}>
+        <main className={`flex-1 overflow-y-auto custom-scrollbar ${isLoginPage ? "flex items-center justify-center h-full" : ""}`}>
           {children}
         </main>
 
         {!isLoginPage && (
-          <nav className="fixed bottom-0 w-full max-w-md bg-dark-800 border-t border-slate-800 flex justify-around items-center h-16 z-50">
+          <nav className="bg-dark-800 border-t border-slate-800 flex justify-around items-center h-16 shrink-0 z-50 relative">
             {/* Offline cloud icon indicator in navbar */}
             {isOffline && (
               <div className="absolute -top-3 right-4 bg-amber-600 rounded-full p-1 shadow-lg shadow-amber-600/30 animate-pulse">
