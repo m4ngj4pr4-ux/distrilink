@@ -29,6 +29,7 @@ import {
   subscribePendingSetoran,
   addGoodsDropTransactionBatch,
   addReturnTransaction,
+  recalculateSummary,
   addSetoranDana,
   getSalesLedgerBookData,
   acceptCashDeposit,
@@ -408,6 +409,37 @@ function AdminGudangDashboard({ user, router }) {
   const [activeLedgerSales, setActiveLedgerSales] = useState(null);
   const [ledgerData, setLedgerData] = useState([]);
   const [isLedgerLoading, setIsLedgerLoading] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
+
+  const currentSalesData = useMemo(() => {
+    if (!activeLedgerSales || !salesTeams) return null;
+    return salesTeams.find(t => t.id === activeLedgerSales.id) || activeLedgerSales;
+  }, [activeLedgerSales, salesTeams]);
+
+  const handleSyncLedger = async () => {
+    setIsSyncing(true);
+    const toastId = toast.loading("Sinkronisasi & rekonsiliasi data...");
+    try {
+      await recalculateSummary();
+      if (activeLedgerSales) {
+        const freshData = await getSalesLedgerBookData(activeLedgerSales.id);
+        setLedgerData(freshData);
+      }
+      toast.success("Buku besar & keuangan disinkronkan!", { id: toastId });
+    } catch (err) {
+      toast.error("Gagal sinkronisasi: " + err.message, { id: toastId });
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
+  const displayedBalance = useMemo(() => {
+    if (!currentSalesData) return 0;
+    if (ledgerData.length > 0) {
+      return ledgerData[ledgerData.length - 1].saldo;
+    }
+    return (currentSalesData.goodsDropped || 0) - (currentSalesData.totalDeposited || 0);
+  }, [currentSalesData, ledgerData]);
 
   const [dropSales, setDropSales] = useState(null);
   const [dropProduct, setDropProduct] = useState("");
@@ -1021,7 +1053,7 @@ function AdminGudangDashboard({ user, router }) {
       </section>
 
       {/* ── MODAL BUKU BESAR (LEDGER BOOK) ── */}
-      {activeLedgerSales && (
+      {activeLedgerSales && currentSalesData && (
         <div className="fixed inset-0 bg-dark-900 z-[150] flex flex-col" onClick={(e) => e.stopPropagation()}>
           <div className="flex-1 pt-5 pb-5 px-3 flex flex-col h-full max-w-lg mx-auto w-full overflow-hidden">
             {/* Header */}
@@ -1030,7 +1062,7 @@ function AdminGudangDashboard({ user, router }) {
                 <h2 className="text-lg font-black text-white tracking-tight flex items-center gap-1.5">
                   📖 Buku Besar Sales
                 </h2>
-                <p className="text-xs text-slate-400 mt-0.5">{activeLedgerSales.name}</p>
+                <p className="text-xs text-slate-400 mt-0.5">{currentSalesData.name}</p>
               </div>
               <button onClick={() => setActiveLedgerSales(null)} className="text-slate-500 hover:text-white transition-colors p-1.5 rounded-xl bg-dark-800 border border-slate-700/60 hover:bg-slate-700">
                 <HiOutlineX size={20}/>
@@ -1041,13 +1073,27 @@ function AdminGudangDashboard({ user, router }) {
             <div className="bg-dark-800 rounded-2xl p-4 border border-slate-700/50 mb-4 flex justify-between items-center shrink-0 mx-2">
               <div>
                 <span className="text-[8px] text-slate-500 font-black uppercase tracking-wider block">Saldo Akhir</span>
-                <span className={`text-xl font-mono font-black ${((activeLedgerSales.goodsDropped || 0) - (activeLedgerSales.totalDeposited || 0)) > 0 ? "text-amber-500" : "text-emerald-400"}`}>
-                  Rp {((activeLedgerSales.goodsDropped || 0) - (activeLedgerSales.totalDeposited || 0)).toLocaleString('id-ID')}
+                <span className={`text-xl font-mono font-black ${displayedBalance > 0 ? "text-amber-500" : "text-emerald-400"}`}>
+                  Rp {displayedBalance.toLocaleString('id-ID')}
                 </span>
               </div>
-              <div className="text-[8px] bg-dark-900 text-slate-400 border border-slate-700 rounded-lg px-2 py-1 font-bold">
-                Live Sinkron
-              </div>
+              <button 
+                onClick={handleSyncLedger}
+                disabled={isSyncing}
+                className="text-[8px] bg-dark-900 hover:bg-dark-700 active:scale-95 text-slate-300 border border-slate-700 rounded-lg px-2.5 py-1.5 font-bold flex items-center gap-1 transition-all disabled:opacity-50"
+              >
+                {isSyncing ? (
+                  <>
+                    <div className="w-2.5 h-2.5 border-2 border-slate-400/30 border-t-slate-300 rounded-full animate-spin"></div>
+                    <span>Sinkron...</span>
+                  </>
+                ) : (
+                  <>
+                    <HiOutlineRefresh className="animate-pulse text-amber-500" size={10} />
+                    <span>Live Sinkron</span>
+                  </>
+                )}
+              </button>
             </div>
 
             {/* Ledger Table Container */}
@@ -1110,7 +1156,7 @@ function AdminGudangDashboard({ user, router }) {
             {/* Footer Buttons */}
             <div className="mt-4 flex gap-3 shrink-0 pt-4 border-t border-slate-800 px-2">
               <button 
-                onClick={() => handleDownloadPDF(activeLedgerSales, ledgerData)}
+                onClick={() => handleDownloadPDF(currentSalesData, ledgerData)}
                 disabled={isLedgerLoading || ledgerData.length === 0}
                 className="flex-1 py-4 bg-blue-600 hover:bg-blue-500 active:scale-95 text-white font-black rounded-2xl text-xs uppercase tracking-widest transition-all disabled:opacity-50 flex items-center justify-center gap-1.5 shadow-lg shadow-blue-900/20"
               >
