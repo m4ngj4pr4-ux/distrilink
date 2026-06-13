@@ -15,12 +15,106 @@ export default function ProfitLossReport({ products, purchases }) {
     return () => { unsubDist(); unsubRet(); };
   }, []);
 
+  // --- PREPROCESS DISTRIBUTIONS DEDUCTING RETURNS (LIFO per team & product) ---
+  const netDistributions = (() => {
+    // Group returns by teamId and productId
+    const returnSummary = {};
+    returns.forEach(r => {
+      const key = `${r.teamId || "unknown"}_${r.productId}`;
+      returnSummary[key] = (returnSummary[key] || 0) + Math.abs(r.totalPacksReturned || 0);
+    });
+
+    // Group distributions by teamId and productId
+    const distGroups = {};
+    distributions.forEach(d => {
+      const key = `${d.teamId || "unknown"}_${d.productId}`;
+      if (!distGroups[key]) distGroups[key] = [];
+      distGroups[key].push({ ...d });
+    });
+
+    // Sort each group LIFO (newest first)
+    for (const key of Object.keys(distGroups)) {
+      distGroups[key].sort((a, b) => {
+        const timeA = a.createdAt?.toMillis ? a.createdAt.toMillis() : (a.createdAt instanceof Date ? a.createdAt.getTime() : 0);
+        const timeB = b.createdAt?.toMillis ? b.createdAt.toMillis() : (b.createdAt instanceof Date ? b.createdAt.getTime() : 0);
+        return timeB - timeA;
+      });
+    }
+
+    // Step 1: Deduct returns per team
+    for (const key of Object.keys(returnSummary)) {
+      let remainingReturn = returnSummary[key];
+      if (remainingReturn <= 0) continue;
+
+      const group = distGroups[key];
+      if (group) {
+        for (const d of group) {
+          if (remainingReturn <= 0) break;
+          const qty = d.totalPacksDistributed || 0;
+          if (qty > 0) {
+            const deduct = Math.min(qty, remainingReturn);
+            d.totalPacksDistributed = qty - deduct;
+            // Pro-rate the amount (revenue)
+            const pricePerPack = d.pricePerPack || (qty > 0 ? (d.amount || 0) / qty : 0);
+            d.amount = Math.max(0, d.totalPacksDistributed * pricePerPack);
+            remainingReturn -= deduct;
+          }
+        }
+      }
+      returnSummary[key] = remainingReturn;
+    }
+
+    // Step 2: Global unmatched returns deduction
+    const globalUnmatchedReturns = {};
+    for (const key of Object.keys(returnSummary)) {
+      const remaining = returnSummary[key];
+      if (remaining > 0) {
+        const productId = key.split("_")[1];
+        globalUnmatchedReturns[productId] = (globalUnmatchedReturns[productId] || 0) + remaining;
+      }
+    }
+
+    for (const productId of Object.keys(globalUnmatchedReturns)) {
+      let remainingReturn = globalUnmatchedReturns[productId];
+      if (remainingReturn <= 0) continue;
+
+      const productDists = [];
+      for (const key of Object.keys(distGroups)) {
+        if (key.endsWith(`_${productId}`)) {
+          productDists.push(...distGroups[key]);
+        }
+      }
+
+      productDists.sort((a, b) => {
+        const timeA = a.createdAt?.toMillis ? a.createdAt.toMillis() : (a.createdAt instanceof Date ? a.createdAt.getTime() : 0);
+        const timeB = b.createdAt?.toMillis ? b.createdAt.toMillis() : (b.createdAt instanceof Date ? b.createdAt.getTime() : 0);
+        return timeB - timeA;
+      });
+
+      for (const d of productDists) {
+        if (remainingReturn <= 0) break;
+        const qty = d.totalPacksDistributed || 0;
+        if (qty > 0) {
+          const deduct = Math.min(qty, remainingReturn);
+          d.totalPacksDistributed = qty - deduct;
+          const pricePerPack = d.pricePerPack || (qty > 0 ? (d.amount || 0) / qty : 0);
+          d.amount = Math.max(0, d.totalPacksDistributed * pricePerPack);
+          remainingReturn -= deduct;
+        }
+      }
+    }
+
+    const netDists = [];
+    for (const key of Object.keys(distGroups)) {
+      netDists.push(...distGroups[key]);
+    }
+    return netDists;
+  })();
+
   // HITUNG DATA PER BATCH PO
-  console.log("Raw POs from DB:", purchases);
-  
   const batchData = purchases.map(po => {
     // Filter out internal captain-to-sales distributions to prevent double counting in P&L
-    const poDist = distributions.filter(d => d.poId === po.id && d.source !== "captain");
+    const poDist = netDistributions.filter(d => d.poId === po.id && d.source !== "captain");
     const qtyPacks = poDist.reduce((sum, d) => sum + (d.totalPacksDistributed || 0), 0);
     const revenue = poDist.reduce((sum, d) => sum + (d.amount || 0), 0);
     const cogs = poDist.reduce((sum, d) => sum + ((d.totalPacksDistributed || 0) * (d.hppSnapshot || po.hpp || 0)), 0);
@@ -34,13 +128,15 @@ export default function ProfitLossReport({ products, purchases }) {
     return { 
       id: po.id, 
       name: `${tgl} — ${po.productName || "Produk Tidak Diketahui"}`, 
-      qtyPacks, revenue, cogs, profit,
+      qtyPacks, 
+      totalPack: po.totalPack || 0,
+      revenue, cogs, profit,
       margin: revenue > 0 ? (profit / revenue) * 100 : 0
     };
-  }); // Removed .filter(item => item.qtyPacks > 0) to ensure ALL POs show up
+  });
 
   // HITUNG DATA LAMA (Tanpa poId)
-  const legacyDist = distributions.filter(d => !d.poId && d.source !== "captain");
+  const legacyDist = netDistributions.filter(d => !d.poId && d.source !== "captain");
   const legacyData = [];
   if (legacyDist.length > 0) {
     const qtyPacks = legacyDist.reduce((sum, d) => sum + (d.totalPacksDistributed || 0), 0);
@@ -53,36 +149,14 @@ export default function ProfitLossReport({ products, purchases }) {
     legacyData.push({
       id: "legacy-batch",
       name: "Data Historis (Legacy)",
-      qtyPacks, revenue, cogs, profit,
+      qtyPacks, 
+      totalPack: 0,
+      revenue, cogs, profit,
       margin: revenue > 0 ? (profit / revenue) * 100 : 0
     });
   }
 
-  // HITUNG RETUR (Pengurang)
-  const returnData = [];
-  if (returns.length > 0) {
-    const qtyPacks = returns.reduce((sum, d) => sum + Math.abs(d.totalPacksReturned || 0), 0);
-    const revenueReversed = returns.reduce((sum, d) => sum + (d.returnAmount || 0), 0);
-    const cogsReversed = returns.reduce((sum, d) => {
-      const p = products.find(prod => prod.id === d.productId);
-      return sum + (Math.abs(d.totalPacksReturned || 0) * (d.hppSnapshot || p?.lastHPP || p?.currentSellingPrice || 0));
-    }, 0);
-    const profitReversed = revenueReversed - cogsReversed;
-    
-    if (qtyPacks > 0 || revenueReversed > 0) {
-      returnData.push({
-        id: "sales-returns",
-        name: "Retur Sales (Pembatalan Laba)",
-        qtyPacks: -qtyPacks, 
-        revenue: -revenueReversed, 
-        cogs: -cogsReversed, 
-        profit: -profitReversed,
-        margin: 0
-      });
-    }
-  }
-
-  const reportData = [...batchData, ...legacyData, ...returnData];
+  const reportData = [...batchData, ...legacyData];
   
   console.log("Processed P&L Data:", reportData);
 
@@ -141,9 +215,14 @@ export default function ProfitLossReport({ products, purchases }) {
                   <tr key={item.id} className="hover:bg-white/5 transition-colors">
                     <td className="py-3 px-4 font-bold text-white text-sm">{item.name}</td>
                     <td className="py-3 px-4 text-center">
-                      {item.qtyPacks > 0 ? (
+                      {item.qtyPacks > 0 || (item.totalPack && item.totalPack > 0) ? (
                         <>
                           <span className="font-mono text-emerald-400 font-bold">{item.qtyPacks.toLocaleString("id-ID")}</span> 
+                          {item.totalPack ? (
+                            <span className="font-mono text-slate-500">
+                              {" / "}{item.totalPack.toLocaleString("id-ID")}
+                            </span>
+                          ) : null}
                           <span className="text-[10px] text-slate-500 ml-1">Pk</span>
                         </>
                       ) : (
