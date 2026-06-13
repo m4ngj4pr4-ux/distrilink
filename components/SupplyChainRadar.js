@@ -165,9 +165,9 @@ export default function SupplyChainRadar() {
         };
       } else {
         // REGULAR SALES FORMULA:
-        // Bawaan Netto = stok diterima dari Captain (source === 'captain')
-        const fromCaptain = distributions.filter(d => d.teamId === team.id && d.source === 'captain');
-        const bawaanNetto = fromCaptain.reduce((s, d) => s + (d.totalPacksDistributed || 0), 0);
+        // Bawaan Netto = semua stok yang didistribusikan ke tim sales ini
+        const teamDists = distributions.filter(d => d.teamId === team.id);
+        const bawaanNetto = teamDists.reduce((s, d) => s + (d.totalPacksDistributed || 0), 0);
 
         // Terjual = drop ke toko retail
         const retailDrops = transactions.filter(tx => tx.tipe === 'drop' && tx.teamId === team.id);
