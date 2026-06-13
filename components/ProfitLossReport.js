@@ -15,86 +15,67 @@ export default function ProfitLossReport({ products, purchases }) {
     return () => { unsubDist(); unsubRet(); };
   }, []);
 
-  // --- PREPROCESS DISTRIBUTIONS DEDUCTING RETURNS (LIFO per team & product) ---
+  // --- PREPROCESS DISTRIBUTIONS DEDUCTING RETURNS (CHRONOLOGICAL LIFO per team & product) ---
   const netDistributions = (() => {
-    // Group returns by teamId and productId
-    const returnSummary = {};
-    returns.forEach(r => {
-      const key = `${r.teamId || "unknown"}_${r.productId}`;
-      returnSummary[key] = (returnSummary[key] || 0) + Math.abs(r.totalPacksReturned || 0);
-    });
+    // Helper to extract epoch milliseconds from Firestore Timestamp / Date / milliseconds
+    const getMillis = (timeObj) => {
+      if (!timeObj) return 0;
+      if (typeof timeObj.toMillis === "function") return timeObj.toMillis();
+      if (typeof timeObj.toDate === "function") return timeObj.toDate().getTime();
+      if (timeObj instanceof Date) return timeObj.getTime();
+      return 0;
+    };
 
-    // Group distributions by teamId and productId
-    const distGroups = {};
-    distributions.forEach(d => {
-      const key = `${d.teamId || "unknown"}_${d.productId}`;
-      if (!distGroups[key]) distGroups[key] = [];
-      distGroups[key].push({ ...d });
-    });
+    // Clone distributions to prevent state mutation
+    const distClones = distributions.map(d => ({ ...d }));
 
-    // Sort each group LIFO (newest first)
-    for (const key of Object.keys(distGroups)) {
-      distGroups[key].sort((a, b) => {
-        const timeA = a.createdAt?.toMillis ? a.createdAt.toMillis() : (a.createdAt instanceof Date ? a.createdAt.getTime() : 0);
-        const timeB = b.createdAt?.toMillis ? b.createdAt.toMillis() : (b.createdAt instanceof Date ? b.createdAt.getTime() : 0);
-        return timeB - timeA;
-      });
-    }
+    // Sort all returns chronologically (OLDEST to NEWEST)
+    const sortedReturns = [...returns];
+    sortedReturns.sort((a, b) => getMillis(a.createdAt) - getMillis(b.createdAt));
 
-    // Step 1: Deduct returns per team
-    for (const key of Object.keys(returnSummary)) {
-      let remainingReturn = returnSummary[key];
-      if (remainingReturn <= 0) continue;
+    // Deduct returns LIFO style but restricting only to distributions on or before return date
+    sortedReturns.forEach(ret => {
+      const retTeamId = ret.teamId;
+      const retProductId = ret.productId;
+      const retTime = getMillis(ret.createdAt);
+      let remainingReturn = Math.abs(ret.totalPacksReturned || 0);
 
-      const group = distGroups[key];
-      if (group) {
-        for (const d of group) {
-          if (remainingReturn <= 0) break;
-          const qty = d.totalPacksDistributed || 0;
-          if (qty > 0) {
-            const deduct = Math.min(qty, remainingReturn);
-            d.totalPacksDistributed = qty - deduct;
-            // Pro-rate the amount (revenue)
-            const pricePerPack = d.pricePerPack || (qty > 0 ? (d.amount || 0) / qty : 0);
-            d.amount = Math.max(0, d.totalPacksDistributed * pricePerPack);
-            remainingReturn -= deduct;
-          }
-        }
-      }
-      returnSummary[key] = remainingReturn;
-    }
+      if (remainingReturn <= 0) return;
 
-    // Step 2: Global unmatched returns deduction
-    const globalUnmatchedReturns = {};
-    for (const key of Object.keys(returnSummary)) {
-      const remaining = returnSummary[key];
-      if (remaining > 0) {
-        const productId = key.split("_")[1];
-        globalUnmatchedReturns[productId] = (globalUnmatchedReturns[productId] || 0) + remaining;
-      }
-    }
+      // Step 1: Deduct from team-specific distributions that happened on or before return date
+      const eligibleDists = distClones.filter(d =>
+        d.teamId === retTeamId &&
+        d.productId === retProductId &&
+        getMillis(d.createdAt) <= retTime &&
+        d.totalPacksDistributed > 0
+      );
 
-    for (const productId of Object.keys(globalUnmatchedReturns)) {
-      let remainingReturn = globalUnmatchedReturns[productId];
-      if (remainingReturn <= 0) continue;
+      // Sort eligible LIFO (newest first)
+      eligibleDists.sort((a, b) => getMillis(b.createdAt) - getMillis(a.createdAt));
 
-      const productDists = [];
-      for (const key of Object.keys(distGroups)) {
-        if (key.endsWith(`_${productId}`)) {
-          productDists.push(...distGroups[key]);
-        }
-      }
-
-      productDists.sort((a, b) => {
-        const timeA = a.createdAt?.toMillis ? a.createdAt.toMillis() : (a.createdAt instanceof Date ? a.createdAt.getTime() : 0);
-        const timeB = b.createdAt?.toMillis ? b.createdAt.toMillis() : (b.createdAt instanceof Date ? b.createdAt.getTime() : 0);
-        return timeB - timeA;
-      });
-
-      for (const d of productDists) {
+      for (const d of eligibleDists) {
         if (remainingReturn <= 0) break;
         const qty = d.totalPacksDistributed || 0;
-        if (qty > 0) {
+        const deduct = Math.min(qty, remainingReturn);
+        d.totalPacksDistributed = qty - deduct;
+        const pricePerPack = d.pricePerPack || (qty > 0 ? (d.amount || 0) / qty : 0);
+        d.amount = Math.max(0, d.totalPacksDistributed * pricePerPack);
+        remainingReturn -= deduct;
+      }
+
+      // Step 2: Global unmatched fallback (deduct from other teams' distributions of same product on or before return date)
+      if (remainingReturn > 0) {
+        const globalEligibleDists = distClones.filter(d =>
+          d.productId === retProductId &&
+          getMillis(d.createdAt) <= retTime &&
+          d.totalPacksDistributed > 0
+        );
+
+        globalEligibleDists.sort((a, b) => getMillis(b.createdAt) - getMillis(a.createdAt));
+
+        for (const d of globalEligibleDists) {
+          if (remainingReturn <= 0) break;
+          const qty = d.totalPacksDistributed || 0;
           const deduct = Math.min(qty, remainingReturn);
           d.totalPacksDistributed = qty - deduct;
           const pricePerPack = d.pricePerPack || (qty > 0 ? (d.amount || 0) / qty : 0);
@@ -102,13 +83,9 @@ export default function ProfitLossReport({ products, purchases }) {
           remainingReturn -= deduct;
         }
       }
-    }
+    });
 
-    const netDists = [];
-    for (const key of Object.keys(distGroups)) {
-      netDists.push(...distGroups[key]);
-    }
-    return netDists;
+    return distClones;
   })();
 
   // HITUNG DATA PER BATCH PO
