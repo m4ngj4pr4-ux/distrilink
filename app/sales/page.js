@@ -33,7 +33,10 @@ import {
   addSetoranDana,
   getSalesLedgerBookData,
   acceptCashDeposit,
-  captainDepositToAdmin
+  captainDepositToAdmin,
+  subscribeAllDistributions,
+  subscribeReturns,
+  calculatePOBatchesWithRealSisa
 } from '@/lib/firestore';
 import { formatRupiah, formatNumber, formatInputNumber, parseInputNumber } from '@/lib/utils';
 import toast from 'react-hot-toast';
@@ -403,6 +406,8 @@ function AdminGudangDashboard({ user, router }) {
   const [products, setProducts] = useState([]);
   const [purchases, setPurchases] = useState([]);
   const [pendingSetorans, setPendingSetorans] = useState([]);
+  const [allDistributions, setAllDistributions] = useState([]);
+  const [returns, setReturns] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
   // Modal states
@@ -562,12 +567,16 @@ function AdminGudangDashboard({ user, router }) {
     const unsubProducts = subscribeProducts(setProducts);
     const unsubPurchases = subscribePurchases(setPurchases);
     const unsubPendingSetorans = subscribePendingSetoran(setPendingSetorans);
+    const unsubAllDist = subscribeAllDistributions(setAllDistributions);
+    const unsubReturns = subscribeReturns(setReturns);
 
     return () => {
       unsubTeams();
       unsubProducts();
       unsubPurchases();
       unsubPendingSetorans();
+      unsubAllDist();
+      unsubReturns();
     };
   }, []);
 
@@ -590,35 +599,12 @@ function AdminGudangDashboard({ user, router }) {
       });
   }, [activeLedgerSales]);
 
-  // FIFO available batches calculation (identical to SalesLedger.js)
+  // Centralized PO batches sisa calculation using the helper
   const availableBatches = useMemo(() => {
     if (!purchases || !products) return [];
-    let resultBatches = [];
-    products.forEach(product => {
-      const productPOs = purchases
-        .filter(po => po.productId === product.id && po.status !== "pengiriman")
-        .sort((a, b) => (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0));
-        
-      const totalPurchased = productPOs.reduce((sum, po) => sum + (po.totalPack || 0), 0);
-      let remainingGlobalStock = totalPurchased - (product.adminDistributedPacks || 0);
-      
-      if (remainingGlobalStock <= 0) return;
-      
-      productPOs.forEach(po => {
-        if (remainingGlobalStock <= 0) return;
-        const poOriginalCapacity = po.totalPack || 0;
-        const allocated = Math.min(remainingGlobalStock, poOriginalCapacity);
-        if (allocated > 0) {
-          resultBatches.push({
-            ...po,
-            realSisa: allocated
-          });
-          remainingGlobalStock -= allocated;
-        }
-      });
-    });
-    return resultBatches;
-  }, [purchases, products]);
+    return calculatePOBatchesWithRealSisa(purchases, allDistributions, returns)
+      .filter(b => b.realSisa > 0);
+  }, [purchases, allDistributions, returns, products]);
 
   // Drop amount auto-fill when selection/qty changes
   const computedDropAmount = useMemo(() => {

@@ -33,7 +33,8 @@ import {
   subscribeAdminUsers,
   seedDefaultOwner,
   subscribeAllSalesTransactions,
-  subscribeAllStoreInventory
+  subscribeAllStoreInventory,
+  calculatePOBatchesWithRealSisa
 } from "@/lib/firestore";
 import { db } from "@/lib/firebase";
 import { collection, query, where, getDocs, deleteDoc, doc, setDoc } from "firebase/firestore";
@@ -68,6 +69,10 @@ export default function DashboardPage() {
   const [pendingCount, setPendingCount] = useState(0);
   const [pendingList, setPendingList] = useState([]);
   const [isVerificationQueueOpen, setIsVerificationQueueOpen] = useState(false);
+
+  const allAvailableBatches = useMemo(() => {
+    return calculatePOBatchesWithRealSisa(purchases, allDistributions, returns);
+  }, [purchases, allDistributions, returns]);
 
   useEffect(() => {
     if (adminUser?.role === 'investor' && activeSection === 'settings') {
@@ -225,32 +230,13 @@ export default function DashboardPage() {
                   </thead>
                   <tbody className="divide-y divide-slate-400/5">
                     {products.map((p) => {
-                      // 1. Ambil semua PO untuk produk ini, urutkan dari yang TERBARU (Descending)
-                      const productPOs = purchases
-                        .filter(po => po.productId === p.id && po.status !== "pengiriman")
+                      // 1. Ambil semua batch PO aktif untuk produk ini dengan sisa stok riil, urutkan dari yang TERBARU (Descending)
+                      const batches = allAvailableBatches
+                        .filter(b => b.productId === p.id && b.realSisa > 0)
                         .sort((a, b) => (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0));
                         
-                      // 2. Hitung stok aktual Gudang berdasarkan histori valid (mengabaikan double-deduction dari operan captain)
-                      const totalPurchased = productPOs.reduce((sum, po) => sum + (po.totalPack || 0), 0);
-                      const totalPacks = Math.max(0, totalPurchased - (p.adminDistributedPacks || 0));
-                      
-                      // 3. Alokasikan stok global ke batch PO (mengisi PO terbaru lebih dulu) secara FIFO/LIFO
-                      let remainingGlobalStock = totalPacks;
-                      const batches = [];
-                      if (remainingGlobalStock > 0) {
-                        productPOs.forEach(po => {
-                          if (remainingGlobalStock <= 0) return;
-                          const poOriginalCapacity = po.totalPack || 0;
-                          const allocated = Math.min(remainingGlobalStock, poOriginalCapacity);
-                          if (allocated > 0) {
-                            batches.push({
-                              ...po,
-                              realSisa: allocated
-                            });
-                            remainingGlobalStock -= allocated;
-                          }
-                        });
-                      }
+                      // 2. Total pack sisa di gudang adalah jumlah sisa dari seluruh batch aktif
+                      const totalPacks = batches.reduce((sum, b) => sum + b.realSisa, 0);
 
                       const packsPerSlop = p.packsPerSlop || 10;
                       const totalSlops = Math.floor(totalPacks / packsPerSlop);
@@ -442,7 +428,7 @@ export default function DashboardPage() {
       case "sales":
         return (
           <div className="space-y-8 animate-fadeIn">
-            <SalesLedger teams={teams} products={products} purchases={purchases} allDistributions={allDistributions} />
+            <SalesLedger teams={teams} products={products} purchases={purchases} allDistributions={allDistributions} returns={returns} />
           </div>
         );
       case "retail":

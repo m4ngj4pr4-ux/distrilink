@@ -28,11 +28,12 @@ import {
   updateSetoranDate,
   deleteSetoranTransaction,
   addGoodsDropTransactionBatch,
+  calculatePOBatchesWithRealSisa
 } from "@/lib/firestore";
 import toast from "react-hot-toast";
 import { usePermissions } from "@/hooks/usePermissions";
 
-export default function SalesLedger({ teams, products, purchases, allDistributions }) {
+export default function SalesLedger({ teams, products, purchases, allDistributions, returns }) {
   const { checkWritePermission } = usePermissions();
   const [depositModal, setDepositModal] = useState(null);
   const [dropModal, setDropModal] = useState(null);
@@ -79,46 +80,10 @@ export default function SalesLedger({ teams, products, purchases, allDistributio
     };
   }, [detailModal]);
 
-  // HITUNG SISA STOK PO REAL-TIME (METODE FIFO)
-  // Menjamin sinkronisasi absolut dengan Stok Gudang (product.totalPacks)
+  // HITUNG SISA STOK PO REAL-TIME (SINKRONISASI DENGAN TRANSAKSI DISTRIBUSI & RETUR)
   const availableBatches = useMemo(() => {
-    if (!purchases || !products) return [];
-    
-    let resultBatches = [];
-    
-    // Kelompokkan PO berdasarkan produk
-    products.forEach(product => {
-      // Ambil semua PO untuk produk ini, urutkan dari yang TERBARU (Descending)
-      const productPOs = purchases
-        .filter(po => po.productId === product.id && po.status !== "pengiriman")
-        .sort((a, b) => (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0));
-        
-      // Hitung sisa stok Gudang Aktual (mengabaikan double-deduction dari operan captain)
-      const totalPurchased = productPOs.reduce((sum, po) => sum + (po.totalPack || 0), 0);
-      let remainingGlobalStock = totalPurchased - (product.adminDistributedPacks || 0);
-      
-      if (remainingGlobalStock <= 0) return; // Lewati jika stok gudang habis
-      
-
-      // Alokasikan stok global ke batch PO (mengisi PO terbaru lebih dulu)
-      productPOs.forEach(po => {
-        if (remainingGlobalStock <= 0) return;
-        
-        const poOriginalCapacity = po.totalPack || 0;
-        const allocated = Math.min(remainingGlobalStock, poOriginalCapacity);
-        
-        if (allocated > 0) {
-          resultBatches.push({
-            ...po,
-            realSisa: allocated
-          });
-          remainingGlobalStock -= allocated;
-        }
-      });
-    });
-    
-    return resultBatches;
-  }, [purchases, products]);
+    return calculatePOBatchesWithRealSisa(purchases, allDistributions || [], returns || []);
+  }, [purchases, allDistributions, returns]);
 
   // AUTO-RECALCULATE TOTAL NILAI DISTRIBUSI
   useEffect(() => {

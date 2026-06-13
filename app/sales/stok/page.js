@@ -2,7 +2,14 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { HiOutlineSearch, HiCube, HiChevronDown, HiChevronUp, HiOutlineRefresh } from 'react-icons/hi';
-import { subscribeProducts, subscribePurchases, receivePurchaseAtomic } from '@/lib/firestore';
+import { 
+  subscribeProducts, 
+  subscribePurchases, 
+  receivePurchaseAtomic,
+  subscribeAllDistributions,
+  subscribeReturns,
+  calculatePOBatchesWithRealSisa
+} from '@/lib/firestore';
 import toast from 'react-hot-toast';
 
 export default function StokGudangPage() {
@@ -10,6 +17,8 @@ export default function StokGudangPage() {
   const [user, setUser] = useState(null);
   const [products, setProducts] = useState([]);
   const [purchases, setPurchases] = useState([]);
+  const [allDistributions, setAllDistributions] = useState([]);
+  const [returns, setReturns] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [expandedProducts, setExpandedProducts] = useState({});
@@ -50,9 +59,14 @@ export default function StokGudangPage() {
       setIsLoading(false);
     });
 
+    const unsubAllDist = subscribeAllDistributions(setAllDistributions);
+    const unsubReturns = subscribeReturns(setReturns);
+
     return () => {
       unsubProducts();
       unsubPurchases();
+      unsubAllDist();
+      unsubReturns();
     };
   }, [user]);
 
@@ -61,33 +75,13 @@ export default function StokGudangPage() {
   };
 
   const getProductStockData = (p) => {
-    // 1. Ambil semua PO untuk produk ini yang SUDAH DITERIMA, urutkan dari yang TERBARU (Descending)
-    const productPOs = purchases
-      .filter(po => po.productId === p.id && po.status !== "pengiriman")
+    // 1. Ambil semua batch PO aktif untuk produk ini dengan sisa stok riil, urutkan dari yang TERBARU (Descending)
+    const batches = calculatePOBatchesWithRealSisa(purchases, allDistributions, returns)
+      .filter(b => b.productId === p.id && b.realSisa > 0)
       .sort((a, b) => (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0));
       
-    // 2. Hitung stok aktual Gudang berdasarkan PO dan barang terdistribusi
-    const totalPurchased = productPOs.reduce((sum, po) => sum + (po.totalPack || 0), 0);
-    const totalPacks = Math.max(0, totalPurchased - (p.adminDistributedPacks || 0));
-    
-    // 3. Alokasikan sisa stok global ke batch PO secara FIFO (dari PO terlama)
-    // Untuk alokasi sisa stok per batch, kita urutkan PO dari yang TERBARU agar stok tersisa dialokasikan ke PO paling baru dulu
-    let remainingGlobalStock = totalPacks;
-    const batches = [];
-    if (remainingGlobalStock > 0) {
-      productPOs.forEach(po => {
-        if (remainingGlobalStock <= 0) return;
-        const poOriginalCapacity = po.totalPack || 0;
-        const allocated = Math.min(remainingGlobalStock, poOriginalCapacity);
-        if (allocated > 0) {
-          batches.push({
-            ...po,
-            realSisa: allocated
-          });
-          remainingGlobalStock -= allocated;
-        }
-      });
-    }
+    // 2. Total pack sisa di gudang adalah jumlah sisa dari seluruh batch aktif
+    const totalPacks = batches.reduce((sum, b) => sum + b.realSisa, 0);
 
     const packsPerSlop = p.packsPerSlop || 10;
     const totalSlops = Math.floor(totalPacks / packsPerSlop);
