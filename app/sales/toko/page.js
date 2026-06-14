@@ -29,7 +29,7 @@ export default function SalesTokoPage() {
   // Add/Edit Store State
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingStoreId, setEditingStoreId] = useState(null);
-  const [formData, setFormData] = useState({ namaToko: "", alamat: "", koordinat: "" });
+  const [formData, setFormData] = useState({ namaToko: "", alamat: "", koordinat: "", jenisToko: "Lainnya" });
   const [isLocating, setIsLocating] = useState(false);
   const [gpsStatus, setGpsStatus] = useState(null); // null | 'loading' | 'ok' | 'failed'
 
@@ -131,7 +131,8 @@ export default function SalesTokoPage() {
         latitude: lat,
         longitude: lng,
         diinputOleh: user.name,
-        teamId: user.id
+        teamId: user.id,
+        jenisToko: formData.jenisToko || "Lainnya"
       };
       if (editingStoreId) {
         await updateRetailStore(editingStoreId, data);
@@ -151,7 +152,7 @@ export default function SalesTokoPage() {
 
   const openAddModal = () => {
     setEditingStoreId(null);
-    setFormData({ namaToko: "", alamat: "", koordinat: "" });
+    setFormData({ namaToko: "", alamat: "", koordinat: "", jenisToko: "Lainnya" });
     setGpsStatus(null);
     setIsModalOpen(true);
     // Auto-fetch GPS dipicu oleh useEffect di atas
@@ -163,7 +164,8 @@ export default function SalesTokoPage() {
     setFormData({ 
       namaToko: store.namaToko, 
       alamat: store.alamat, 
-      koordinat: (store.latitude && store.longitude) ? `${store.latitude}, ${store.longitude}` : "" 
+      koordinat: (store.latitude && store.longitude) ? `${store.latitude}, ${store.longitude}` : "",
+      jenisToko: store.jenisToko || "Lainnya"
     });
     setGpsStatus(store.latitude && store.longitude ? 'ok' : null);
     setIsModalOpen(true);
@@ -172,7 +174,7 @@ export default function SalesTokoPage() {
   const closeModal = () => {
     setIsModalOpen(false);
     setEditingStoreId(null);
-    setFormData({ namaToko: "", alamat: "", koordinat: "" });
+    setFormData({ namaToko: "", alamat: "", koordinat: "", jenisToko: "Lainnya" });
     setGpsStatus(null);
   };
 
@@ -255,6 +257,11 @@ export default function SalesTokoPage() {
                   <h3 className="font-bold text-sm text-emerald-400 truncate">{store.namaToko}</h3>
                   <p className="text-[10px] text-slate-400 mt-1 line-clamp-1">{store.alamat}</p>
                   <div className="flex items-center gap-2 mt-1.5">
+                    {store.jenisToko && (
+                      <span className="text-[8px] bg-purple-500/10 text-purple-400 px-1.5 py-0.5 rounded uppercase font-bold">
+                        {store.jenisToko}
+                      </span>
+                    )}
                     {!isMine && (
                       <span className="text-[8px] bg-slate-700/80 text-slate-300 px-1.5 py-0.5 rounded uppercase font-bold">
                         Binaan: {store.diinputOleh || "Admin"}
@@ -336,6 +343,19 @@ export default function SalesTokoPage() {
                   className="w-full bg-dark-800 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white focus:border-emerald-500 outline-none"
                   placeholder="Contoh: Warung Barokah"
                 />
+              </div>
+              <div className="mb-4">
+                <label className="block text-xs font-medium text-slate-400 mb-1.5">Jenis Toko</label>
+                <select 
+                  value={formData.jenisToko}
+                  onChange={(e) => setFormData({...formData, jenisToko: e.target.value})}
+                  className="w-full bg-dark-800 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white focus:border-emerald-500 outline-none cursor-pointer"
+                >
+                  <option value="WS">WS</option>
+                  <option value="KS">KS</option>
+                  <option value="TK">TK</option>
+                  <option value="Lainnya">Lainnya</option>
+                </select>
               </div>
               <div className="mb-4">
                 <label className="block text-xs font-medium text-slate-400 mb-1.5">Alamat Lengkap</label>
