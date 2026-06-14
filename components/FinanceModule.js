@@ -357,6 +357,7 @@ export default function FinanceModule({ products = [], purchases = [] }) {
           <div className="absolute top-0 right-0 w-24 h-24 bg-rose-500/10 rounded-full -mr-8 -mt-8 blur-xl"></div>
           <p className="text-[10px] text-slate-500 uppercase tracking-wider font-bold mb-1">Total Biaya Operasional</p>
           <p className={`text-2xl font-black ${summary.totalBiayaOperasional > 0 ? 'text-rose-500' : 'text-slate-500'}`}>{fmtRp(summary.totalBiayaOperasional)}</p>
+          <p className="text-[10px] text-slate-400 mt-1">Lain-lain: {fmtRp(summary.totalPengeluaranLain)}</p>
         </div>
         <div className="glass-card p-5 relative overflow-hidden">
           <div className="absolute top-0 right-0 w-24 h-24 bg-purple-500/10 rounded-full -mr-8 -mt-8 blur-xl"></div>
@@ -364,7 +365,7 @@ export default function FinanceModule({ products = [], purchases = [] }) {
           <p className={`text-2xl font-black ${(globalSummary?.sisaLabaBelumDibagikan || 0) > 0 ? 'text-purple-400' : 'text-slate-500'}`}>
             {fmtRp(globalSummary?.sisaLabaBelumDibagikan || 0)}
           </p>
-          <p className="text-[10px] text-slate-400 mt-1">Laba: {fmtRp(globalSummary?.totalLabaKotor || 0)} - Ops: {fmtRp((globalSummary?.totalBiayaOperasional || 0) + (globalSummary?.totalPengeluaranLain || 0))}</p>
+          <p className="text-[10px] text-slate-400 mt-1">Laba: {fmtRp(globalSummary?.totalLabaKotor || 0)} - (Ops: {fmtRp(globalSummary?.totalBiayaOperasional || 0)} + Lain: {fmtRp(globalSummary?.totalPengeluaranLain || 0)})</p>
         </div>
       </div>
 
