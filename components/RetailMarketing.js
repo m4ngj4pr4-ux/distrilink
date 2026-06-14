@@ -36,7 +36,8 @@ export default function RetailMarketing() {
   const [newStore, setNewStore] = useState({
     namaToko: "",
     alamat: "",
-    coordinates: ""
+    coordinates: "",
+    jenisToko: "Lainnya"
   });
 
   useEffect(() => {
@@ -91,7 +92,8 @@ export default function RetailMarketing() {
       namaToko: newStore.namaToko,
       alamat: newStore.alamat,
       latitude: lat,
-      longitude: lng
+      longitude: lng,
+      jenisToko: newStore.jenisToko || "Lainnya"
     };
 
     try {
@@ -103,7 +105,7 @@ export default function RetailMarketing() {
         toast.success("Toko berhasil didaftarkan");
       }
       
-      setNewStore({ namaToko: "", alamat: "", coordinates: "" });
+      setNewStore({ namaToko: "", alamat: "", coordinates: "", jenisToko: "Lainnya" });
       setTempCoords(null);
       setShowAddForm(false);
       setEditingStoreId(null);
@@ -117,7 +119,8 @@ export default function RetailMarketing() {
     setNewStore({
       namaToko: store.namaToko,
       alamat: store.alamat,
-      coordinates: hasCoords ? `${store.latitude}, ${store.longitude}` : ""
+      coordinates: hasCoords ? `${store.latitude}, ${store.longitude}` : "",
+      jenisToko: store.jenisToko || "Lainnya"
     });
     setEditingStoreId(store.id);
     if (hasCoords) {
@@ -174,7 +177,7 @@ export default function RetailMarketing() {
                 if (!showAddForm) {
                   setTempCoords(null);
                   setEditingStoreId(null);
-                  setNewStore({ namaToko: "", alamat: "", coordinates: "" });
+                  setNewStore({ namaToko: "", alamat: "", coordinates: "", jenisToko: "Lainnya" });
                 }
               }}
               className={`p-1.5 rounded-lg transition-colors ${showAddForm ? "bg-rose-500/10 text-rose-400" : "bg-blue-500/10 text-blue-400 hover:bg-blue-500/20"}`}
@@ -249,9 +252,16 @@ export default function RetailMarketing() {
                   </div>
                 </div>
                 <p className="text-[11px] text-slate-500 line-clamp-2 mb-2">{store.alamat}</p>
-                <span className="inline-flex items-center gap-1 text-[9px] bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded-md border border-emerald-500/20 font-black uppercase">
-                  📋 Pembina: {store.diinputOleh || "Admin"}
-                </span>
+                <div className="flex flex-wrap gap-1.5 items-center">
+                  <span className="inline-flex items-center gap-1 text-[9px] bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded-md border border-emerald-500/20 font-black uppercase">
+                    📋 Pembina: {store.diinputOleh || "Admin"}
+                  </span>
+                  {store.jenisToko && (
+                    <span className="inline-flex items-center gap-1 text-[9px] bg-purple-500/10 text-purple-400 px-2 py-0.5 rounded-md border border-purple-500/20 font-black uppercase">
+                      {store.jenisToko}
+                    </span>
+                  )}
+                </div>
               </div>
             ))}
             {filteredStores.length === 0 && (
@@ -304,6 +314,18 @@ export default function RetailMarketing() {
                   value={newStore.namaToko} onChange={e => setNewStore({...newStore, namaToko: e.target.value})}
                   className="input-field text-xs" 
                 />
+              </div>
+              <div>
+                <label className="block text-[10px] font-bold text-slate-500 mb-1 uppercase tracking-wider">Jenis Toko</label>
+                <select 
+                  value={newStore.jenisToko} onChange={e => setNewStore({...newStore, jenisToko: e.target.value})}
+                  className="w-full bg-dark-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:border-blue-500 outline-none cursor-pointer"
+                >
+                  <option value="WS">WS</option>
+                  <option value="KS">KS</option>
+                  <option value="TK">TK</option>
+                  <option value="Lainnya">Lainnya</option>
+                </select>
               </div>
               <div>
                 <label className="block text-[10px] font-bold text-slate-500 mb-1 uppercase tracking-wider">Alamat Lengkap</label>
