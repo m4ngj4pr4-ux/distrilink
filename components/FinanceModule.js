@@ -322,7 +322,7 @@ export default function FinanceModule({ products = [], purchases = [] }) {
     }
   };
 
-  const fmtRp = (n) => `Rp ${(n || 0).toLocaleString("id-ID")}`;
+  const fmtRp = (n) => `Rp ${Math.round(n || 0).toLocaleString("id-ID")}`;
   const fmtInput = (val) => val.replace(/\D/g, "").replace(/\B(?=(\d{3})+(?!\d))/g, ".");
 
   // ── Investor dividend history ──
