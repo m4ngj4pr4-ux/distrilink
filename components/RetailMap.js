@@ -77,46 +77,44 @@ const getStoreMarkerIcon = (jenisToko) => {
 
   switch (jenisToko) {
     case "WS":
-      colorClass = "text-purple-600";
+      colorClass = "bg-purple-600";
       break;
     case "KS":
-      colorClass = "text-orange-500";
+      colorClass = "bg-orange-500";
       break;
     case "TK":
-      colorClass = "text-emerald-600";
+      colorClass = "bg-emerald-600";
       break;
     default:
-      colorClass = "text-blue-600";
+      colorClass = "bg-blue-600";
       break;
   }
 
   return L.divIcon({
     html: `
-      <svg class="${colorClass} drop-shadow-[0_4px_6px_rgba(0,0,0,0.4)]" viewBox="0 0 24 28" width="36" height="42" style="display: block;">
-        <path d="M12 2C6.5 2 2 6.5 2 12c0 7.5 10 16 10 16s10-8.5 10-16c0-5.5-4.5-10-10-10z" fill="currentColor"/>
-        <g transform="translate(4, 4) scale(0.667)">
-          <path d="M4 4h16v2H4zm16 3H4L2 11v1c0 1.66 1.34 3 3 3s3-1.34 3-3V11h2v1c0 1.66 1.34 3 3 3s3-1.34 3-3V11h2v1c0 1.66 1.34 3 3 3s3-1.34 3-3v-1L20 7zm-2 10H6v3h12v-3z" fill="white"/>
-        </g>
-      </svg>
+      <div class="w-9 h-9 rounded-full border-2 border-white shadow-lg shadow-black/30 flex items-center justify-center ${colorClass}">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="white">
+          <path d="M4 4h16v2H4zm16 3H4L2 11v1c0 1.66 1.34 3 3 3s3-1.34 3-3V11h2v1c0 1.66 1.34 3 3 3s3-1.34 3-3V11h2v1c0 1.66 1.34 3 3 3s3-1.34 3-3v-1L20 7zm-2 10H6v3h12v-3z"/>
+        </svg>
+      </div>
     `,
     className: "custom-store-pin",
-    iconSize: [36, 42],
-    iconAnchor: [18, 42],
-    popupAnchor: [0, -38],
+    iconSize: [36, 36],
+    iconAnchor: [18, 18],
+    popupAnchor: [0, -20],
   });
 };
 
 const tempStoreIcon = L.divIcon({
   html: `
-    <svg class="text-rose-600 drop-shadow-[0_4px_6px_rgba(0,0,0,0.4)]" viewBox="0 0 24 28" width="36" height="42" style="display: block;">
-      <path d="M12 2C6.5 2 2 6.5 2 12c0 7.5 10 16 10 16s10-8.5 10-16c0-5.5-4.5-10-10-10z" fill="currentColor"/>
-      <text x="12" y="12" font-size="12" text-anchor="middle" dominant-baseline="central">📍</text>
-    </svg>
+    <div class="w-9 h-9 rounded-full border-2 border-white shadow-lg shadow-black/30 flex items-center justify-center bg-rose-600 text-white text-base">
+      📍
+    </div>
   `,
   className: "custom-store-pin",
-  iconSize: [36, 42],
-  iconAnchor: [18, 42],
-  popupAnchor: [0, -38],
+  iconSize: [36, 36],
+  iconAnchor: [18, 18],
+  popupAnchor: [0, -20],
 });
 
 // Marker that auto-opens popup when selected
@@ -247,19 +245,19 @@ export default function RetailMap({ stores, center, onMarkerClick, onMapClick, t
         <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Kategori Toko</p>
         <div className="space-y-2 text-xs text-white">
           <div className="flex items-center gap-2">
-            <span className="w-3.5 h-3.5 rounded-full bg-purple-600 shadow-sm flex-shrink-0"></span>
+            <span className="w-3.5 h-3.5 rounded-full bg-purple-600 border border-white shadow-sm flex-shrink-0"></span>
             <span className="font-bold text-slate-200">WS (Wholesaler / Grosir)</span>
           </div>
           <div className="flex items-center gap-2">
-            <span className="w-3.5 h-3.5 rounded-full bg-orange-500 shadow-sm flex-shrink-0"></span>
+            <span className="w-3.5 h-3.5 rounded-full bg-orange-500 border border-white shadow-sm flex-shrink-0"></span>
             <span className="font-bold text-slate-200">KS (Kelontong Sedang)</span>
           </div>
           <div className="flex items-center gap-2">
-            <span className="w-3.5 h-3.5 rounded-full bg-emerald-600 shadow-sm flex-shrink-0"></span>
+            <span className="w-3.5 h-3.5 rounded-full bg-emerald-600 border border-white shadow-sm flex-shrink-0"></span>
             <span className="font-bold text-slate-200">TK (Toko Kecil)</span>
           </div>
           <div className="flex items-center gap-2">
-            <span className="w-3.5 h-3.5 rounded-full bg-blue-600 shadow-sm flex-shrink-0"></span>
+            <span className="w-3.5 h-3.5 rounded-full bg-blue-600 border border-white shadow-sm flex-shrink-0"></span>
             <span className="font-bold text-slate-200">Lainnya</span>
           </div>
         </div>
