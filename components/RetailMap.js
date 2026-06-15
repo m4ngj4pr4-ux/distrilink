@@ -74,32 +74,36 @@ function InvalidateSize({ isFullscreen }) {
 // Helper to create custom HTML markers based on store type
 const getStoreMarkerIcon = (jenisToko) => {
   let colorClass = "";
-  let label = "";
+  let iconColor = "";
 
   switch (jenisToko) {
     case "WS":
-      colorClass = "bg-purple-600 border-purple-800 text-white";
-      label = "WS";
+      colorClass = "bg-purple-600 border-purple-800";
+      iconColor = "text-purple-600";
       break;
     case "KS":
-      colorClass = "bg-teal-600 border-teal-800 text-white";
-      label = "KS";
+      colorClass = "bg-teal-600 border-teal-800";
+      iconColor = "text-teal-600";
       break;
     case "TK":
-      colorClass = "bg-emerald-600 border-emerald-800 text-white";
-      label = "TK";
+      colorClass = "bg-emerald-600 border-emerald-800";
+      iconColor = "text-emerald-600";
       break;
     default:
-      colorClass = "bg-slate-600 border-slate-800 text-white";
-      label = "LY";
+      colorClass = "bg-slate-600 border-slate-800";
+      iconColor = "text-slate-600";
       break;
   }
 
   return L.divIcon({
     html: `
       <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; width: 36px; height: 42px;">
-        <div class="w-8 h-8 rounded-full shadow-lg flex items-center justify-center border-2 border-white text-[10px] font-black tracking-tight ${colorClass}">
-          ${label}
+        <div class="w-8 h-8 rounded-full shadow-lg flex items-center justify-center border-2 border-white ${colorClass}">
+          <div class="w-5.5 h-5.5 rounded-full bg-white flex items-center justify-center shadow-inner ${iconColor}">
+            <svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor">
+              <path d="M4 4h16v2H4zm16 3H4L2 11v1c0 1.66 1.34 3 3 3s3-1.34 3-3V11h2v1c0 1.66 1.34 3 3 3s3-1.34 3-3V11h2v1c0 1.66 1.34 3 3 3s3-1.34 3-3v-1L20 7zm-2 10H6v3h12v-3z"/>
+            </svg>
+          </div>
         </div>
         <div class="w-2.5 h-2.5 rotate-45 -mt-1.5 border-r-2 border-b-2 border-white ${colorClass}"></div>
       </div>
@@ -114,8 +118,10 @@ const getStoreMarkerIcon = (jenisToko) => {
 const tempStoreIcon = L.divIcon({
   html: `
     <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; width: 36px; height: 42px;">
-      <div class="w-8 h-8 rounded-full shadow-lg flex items-center justify-center border-2 border-white text-xs bg-rose-600 text-white font-bold">
-        📍
+      <div class="w-8 h-8 rounded-full shadow-lg flex items-center justify-center border-2 border-white bg-rose-600">
+        <div class="w-5.5 h-5.5 rounded-full bg-white flex items-center justify-center shadow-inner text-rose-600">
+          📍
+        </div>
       </div>
       <div class="w-2.5 h-2.5 rotate-45 -mt-1.5 border-r-2 border-b-2 border-white bg-rose-600"></div>
     </div>
