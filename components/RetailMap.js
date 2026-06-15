@@ -77,29 +77,27 @@ const getStoreMarkerIcon = (jenisToko) => {
 
   switch (jenisToko) {
     case "WS":
-      colorClass = "bg-purple-600 border-purple-800 text-white";
+      colorClass = "text-purple-600";
       break;
     case "KS":
-      colorClass = "bg-orange-500 border-orange-700 text-white";
+      colorClass = "text-orange-500";
       break;
     case "TK":
-      colorClass = "bg-emerald-600 border-emerald-800 text-white";
+      colorClass = "text-emerald-600";
       break;
     default:
-      colorClass = "bg-blue-600 border-blue-800 text-white";
+      colorClass = "text-blue-600";
       break;
   }
 
   return L.divIcon({
     html: `
-      <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; width: 36px; height: 42px;">
-        <div class="w-8 h-8 rounded-full shadow-lg shadow-black/40 flex items-center justify-center ${colorClass}">
-          <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
-            <path d="M4 4h16v2H4zm16 3H4L2 11v1c0 1.66 1.34 3 3 3s3-1.34 3-3V11h2v1c0 1.66 1.34 3 3 3s3-1.34 3-3V11h2v1c0 1.66 1.34 3 3 3s3-1.34 3-3v-1L20 7zm-2 10H6v3h12v-3z"/>
-          </svg>
-        </div>
-        <div class="w-2.5 h-2.5 rotate-45 -mt-1.5 shadow-md ${colorClass}"></div>
-      </div>
+      <svg class="${colorClass} drop-shadow-[0_4px_6px_rgba(0,0,0,0.4)]" viewBox="0 0 24 28" width="36" height="42" style="display: block;">
+        <path d="M12 2C6.5 2 2 6.5 2 12c0 7.5 10 16 10 16s10-8.5 10-16c0-5.5-4.5-10-10-10z" fill="currentColor"/>
+        <g transform="translate(4, 4) scale(0.667)">
+          <path d="M4 4h16v2H4zm16 3H4L2 11v1c0 1.66 1.34 3 3 3s3-1.34 3-3V11h2v1c0 1.66 1.34 3 3 3s3-1.34 3-3V11h2v1c0 1.66 1.34 3 3 3s3-1.34 3-3v-1L20 7zm-2 10H6v3h12v-3z" fill="white"/>
+        </g>
+      </svg>
     `,
     className: "custom-store-pin",
     iconSize: [36, 42],
@@ -110,12 +108,10 @@ const getStoreMarkerIcon = (jenisToko) => {
 
 const tempStoreIcon = L.divIcon({
   html: `
-    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; width: 36px; height: 42px;">
-      <div class="w-8 h-8 rounded-full shadow-lg shadow-black/40 flex items-center justify-center bg-rose-600 text-white">
-        📍
-      </div>
-      <div class="w-2.5 h-2.5 rotate-45 -mt-1.5 bg-rose-600 shadow-md"></div>
-    </div>
+    <svg class="text-rose-600 drop-shadow-[0_4px_6px_rgba(0,0,0,0.4)]" viewBox="0 0 24 28" width="36" height="42" style="display: block;">
+      <path d="M12 2C6.5 2 2 6.5 2 12c0 7.5 10 16 10 16s10-8.5 10-16c0-5.5-4.5-10-10-10z" fill="currentColor"/>
+      <text x="12" y="12" font-size="12" text-anchor="middle" dominant-baseline="central">📍</text>
+    </svg>
   `,
   className: "custom-store-pin",
   iconSize: [36, 42],
