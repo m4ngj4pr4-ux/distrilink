@@ -93,12 +93,12 @@ const getStoreMarkerIcon = (jenisToko) => {
   return L.divIcon({
     html: `
       <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; width: 36px; height: 42px;">
-        <div class="w-8 h-8 rounded-full shadow-lg shadow-black/40 flex items-center justify-center border-2 border-white ${colorClass}">
+        <div class="w-8 h-8 rounded-full shadow-lg shadow-black/40 flex items-center justify-center ${colorClass}">
           <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
             <path d="M4 4h16v2H4zm16 3H4L2 11v1c0 1.66 1.34 3 3 3s3-1.34 3-3V11h2v1c0 1.66 1.34 3 3 3s3-1.34 3-3V11h2v1c0 1.66 1.34 3 3 3s3-1.34 3-3v-1L20 7zm-2 10H6v3h12v-3z"/>
           </svg>
         </div>
-        <div class="w-2.5 h-2.5 rotate-45 -mt-1.5 border-r-2 border-b-2 border-white shadow-md ${colorClass}"></div>
+        <div class="w-2.5 h-2.5 rotate-45 -mt-1.5 shadow-md ${colorClass}"></div>
       </div>
     `,
     className: "custom-store-pin",
@@ -111,10 +111,10 @@ const getStoreMarkerIcon = (jenisToko) => {
 const tempStoreIcon = L.divIcon({
   html: `
     <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; width: 36px; height: 42px;">
-      <div class="w-8 h-8 rounded-full shadow-lg shadow-black/40 flex items-center justify-center border-2 border-white bg-rose-600 text-white">
+      <div class="w-8 h-8 rounded-full shadow-lg shadow-black/40 flex items-center justify-center bg-rose-600 text-white">
         📍
       </div>
-      <div class="w-2.5 h-2.5 rotate-45 -mt-1.5 border-r-2 border-b-2 border-white bg-rose-600 shadow-md"></div>
+      <div class="w-2.5 h-2.5 rotate-45 -mt-1.5 bg-rose-600 shadow-md"></div>
     </div>
   `,
   className: "custom-store-pin",
@@ -251,19 +251,19 @@ export default function RetailMap({ stores, center, onMarkerClick, onMapClick, t
         <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Kategori Toko</p>
         <div className="space-y-2 text-xs text-white">
           <div className="flex items-center gap-2">
-            <span className="w-3.5 h-3.5 rounded-full bg-purple-600 border border-white shadow-sm flex-shrink-0"></span>
+            <span className="w-3.5 h-3.5 rounded-full bg-purple-600 shadow-sm flex-shrink-0"></span>
             <span className="font-bold text-slate-200">WS (Wholesaler / Grosir)</span>
           </div>
           <div className="flex items-center gap-2">
-            <span className="w-3.5 h-3.5 rounded-full bg-orange-500 border border-white shadow-sm flex-shrink-0"></span>
+            <span className="w-3.5 h-3.5 rounded-full bg-orange-500 shadow-sm flex-shrink-0"></span>
             <span className="font-bold text-slate-200">KS (Kelontong Sedang)</span>
           </div>
           <div className="flex items-center gap-2">
-            <span className="w-3.5 h-3.5 rounded-full bg-emerald-600 border border-white shadow-sm flex-shrink-0"></span>
+            <span className="w-3.5 h-3.5 rounded-full bg-emerald-600 shadow-sm flex-shrink-0"></span>
             <span className="font-bold text-slate-200">TK (Toko Kecil)</span>
           </div>
           <div className="flex items-center gap-2">
-            <span className="w-3.5 h-3.5 rounded-full bg-blue-600 border border-white shadow-sm flex-shrink-0"></span>
+            <span className="w-3.5 h-3.5 rounded-full bg-blue-600 shadow-sm flex-shrink-0"></span>
             <span className="font-bold text-slate-200">Lainnya</span>
           </div>
         </div>
