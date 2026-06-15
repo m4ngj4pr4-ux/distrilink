@@ -4,6 +4,8 @@ import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { HiOutlineHome, HiOutlineMap, HiOutlineClipboardList, HiOutlineUser, HiOutlineCube } from 'react-icons/hi';
 
+let lastCheckTime = 0;
+
 export default function SalesLayoutClient({ children }) {
   const pathname = usePathname();
   const router = useRouter();
@@ -28,6 +30,62 @@ export default function SalesLayoutClient({ children }) {
         }
       }
     }
+  }, [pathname, router]);
+
+  // ── Sync User Role/Info from Firestore ──
+  useEffect(() => {
+    const userStr = localStorage.getItem('sales_user');
+    if (!userStr) return;
+
+    const now = Date.now();
+    if (now - lastCheckTime < 60000) {
+      return;
+    }
+    lastCheckTime = now;
+
+    let active = true;
+
+    async function syncUser() {
+      try {
+        const parsed = JSON.parse(userStr);
+        if (!parsed.id) return;
+
+        const { getSalesUser } = await import('@/lib/firestore');
+        const dbUser = await getSalesUser(parsed.id);
+
+        if (!active) return;
+
+        if (!dbUser) {
+          // User deleted, force logout
+          localStorage.removeItem('sales_user');
+          router.replace('/sales/login');
+          window.location.reload();
+          return;
+        }
+
+        // Compare role, name, pin
+        if (dbUser.role !== parsed.role || dbUser.name !== parsed.name || dbUser.pin !== parsed.pin) {
+          console.log("Detecting user role/info change, updating cache...", dbUser.role);
+          const updatedUser = {
+            ...parsed,
+            role: dbUser.role,
+            name: dbUser.name,
+            pin: dbUser.pin,
+          };
+          localStorage.setItem('sales_user', JSON.stringify(updatedUser));
+          setUserRole(dbUser.role);
+          window.location.reload();
+        }
+      } catch (error) {
+        console.error("Failed to sync user role:", error);
+      }
+    }
+
+    syncUser();
+
+    return () => {
+      active = false;
+    };
   }, [pathname, router]);
 
   // ── Register Service Worker ──

@@ -71,6 +71,61 @@ function InvalidateSize({ isFullscreen }) {
   return null;
 }
 
+// Helper to create custom HTML markers based on store type
+const getStoreMarkerIcon = (jenisToko) => {
+  let colorClass = "";
+  let label = "";
+
+  switch (jenisToko) {
+    case "WS":
+      colorClass = "bg-purple-600 border-purple-800 text-white";
+      label = "WS";
+      break;
+    case "KS":
+      colorClass = "bg-teal-600 border-teal-800 text-white";
+      label = "KS";
+      break;
+    case "TK":
+      colorClass = "bg-emerald-600 border-emerald-800 text-white";
+      label = "TK";
+      break;
+    default:
+      colorClass = "bg-slate-600 border-slate-800 text-white";
+      label = "LY";
+      break;
+  }
+
+  return L.divIcon({
+    html: `
+      <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; width: 36px; height: 42px;">
+        <div class="w-8 h-8 rounded-full shadow-lg flex items-center justify-center border-2 border-white text-[10px] font-black tracking-tight ${colorClass}">
+          ${label}
+        </div>
+        <div class="w-2.5 h-2.5 rotate-45 -mt-1.5 border-r-2 border-b-2 border-white ${colorClass}"></div>
+      </div>
+    `,
+    className: "custom-store-pin",
+    iconSize: [36, 42],
+    iconAnchor: [18, 42],
+    popupAnchor: [0, -38],
+  });
+};
+
+const tempStoreIcon = L.divIcon({
+  html: `
+    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; width: 36px; height: 42px;">
+      <div class="w-8 h-8 rounded-full shadow-lg flex items-center justify-center border-2 border-white text-xs bg-rose-600 text-white font-bold">
+        📍
+      </div>
+      <div class="w-2.5 h-2.5 rotate-45 -mt-1.5 border-r-2 border-b-2 border-white bg-rose-600"></div>
+    </div>
+  `,
+  className: "custom-store-pin",
+  iconSize: [36, 42],
+  iconAnchor: [18, 42],
+  popupAnchor: [0, -38],
+});
+
 // Marker that auto-opens popup when selected
 function StoreMarker({ store, isSelected, onMarkerClick }) {
   const markerRef = useRef(null);
@@ -95,6 +150,7 @@ function StoreMarker({ store, isSelected, onMarkerClick }) {
       key={store.id} 
       ref={markerRef}
       position={[lat, lng]}
+      icon={getStoreMarkerIcon(store.jenisToko)}
       eventHandlers={{
         click: () => onMarkerClick && onMarkerClick(store),
       }}
@@ -102,7 +158,19 @@ function StoreMarker({ store, isSelected, onMarkerClick }) {
       <Popup className="custom-popup">
         <div className="flex flex-col gap-2 min-w-[180px] p-0.5">
           <div>
-            <h3 className="font-bold text-slate-800 text-sm mb-0.5">{store.namaToko}</h3>
+            <div className="flex items-center gap-1.5 mb-1">
+              <h3 className="font-bold text-slate-800 text-sm m-0 leading-none">{store.namaToko}</h3>
+              {store.jenisToko && (
+                <span className={`text-[8px] px-1.5 py-0.5 rounded font-black uppercase tracking-wider border leading-none shrink-0 ${
+                  store.jenisToko === 'WS' ? 'bg-purple-100 text-purple-700 border-purple-200' :
+                  store.jenisToko === 'KS' ? 'bg-teal-100 text-teal-700 border-teal-200' :
+                  store.jenisToko === 'TK' ? 'bg-emerald-100 text-emerald-700 border-emerald-200' :
+                  'bg-slate-100 text-slate-700 border-slate-200'
+                }`}>
+                  {store.jenisToko}
+                </span>
+              )}
+            </div>
             <p className="text-[11px] text-slate-600 mb-1 leading-tight">{store.alamat}</p>
             <div className="space-y-0.5">
               {store.pemilik && <p className="text-[10px] text-slate-500 font-medium flex items-center gap-1">👤 {store.pemilik}</p>}
@@ -166,7 +234,7 @@ export default function RetailMap({ stores, center, onMarkerClick, onMapClick, t
 
         {/* Temp Marker for adding new store */}
         {tempMarker && (
-          <Marker position={[tempMarker.lat, tempMarker.lng]}>
+          <Marker position={[tempMarker.lat, tempMarker.lng]} icon={tempStoreIcon}>
             <Popup>📍 Lokasi Toko Baru</Popup>
           </Marker>
         )}

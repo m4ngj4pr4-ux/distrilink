@@ -348,3 +348,9 @@ select.input-field option {
 
 /* Keep modal/popup readable */
 .sales-app .text-3xl { font-size: 2rem !important; }
+
+/* Custom Leaflet Map Pin Icons */
+.custom-store-pin {
+  background: transparent !important;
+  border: none !important;
+}
