@@ -80,7 +80,7 @@ const getStoreMarkerIcon = (jenisToko) => {
       colorClass = "bg-purple-600 border-purple-800 text-white";
       break;
     case "KS":
-      colorClass = "bg-teal-600 border-teal-800 text-white";
+      colorClass = "bg-orange-500 border-orange-700 text-white";
       break;
     case "TK":
       colorClass = "bg-emerald-600 border-emerald-800 text-white";
@@ -160,9 +160,9 @@ function StoreMarker({ store, isSelected, onMarkerClick }) {
               {store.jenisToko && (
                 <span className={`text-[8px] px-1.5 py-0.5 rounded font-black uppercase tracking-wider border leading-none shrink-0 ${
                   store.jenisToko === 'WS' ? 'bg-purple-100 text-purple-700 border-purple-200' :
-                  store.jenisToko === 'KS' ? 'bg-teal-100 text-teal-700 border-teal-200' :
+                  store.jenisToko === 'KS' ? 'bg-orange-100 text-orange-700 border-orange-200' :
                   store.jenisToko === 'TK' ? 'bg-emerald-100 text-emerald-700 border-emerald-200' :
-                  'bg-slate-100 text-slate-700 border-slate-200'
+                  'bg-blue-100 text-blue-700 border-blue-200'
                 }`}>
                   {store.jenisToko}
                 </span>
@@ -211,7 +211,7 @@ export default function RetailMap({ stores, center, onMarkerClick, onMapClick, t
   const fallbackCenter = [-3.3166, 114.5901]; // Banjarmasin fallback
 
   return (
-    <div className="w-full h-full rounded-2xl overflow-hidden shadow-2xl border border-slate-400/10">
+    <div className="w-full h-full rounded-2xl overflow-hidden shadow-2xl border border-slate-400/10 relative">
       <MapContainer
         center={center || fallbackCenter}
         zoom={13}
@@ -245,6 +245,29 @@ export default function RetailMap({ stores, center, onMarkerClick, onMapClick, t
           />
         ))}
       </MapContainer>
+
+      {/* Floating Legend */}
+      <div className="absolute bottom-4 left-4 z-[1000] bg-slate-900/90 backdrop-blur-md border border-slate-800 p-3 rounded-xl shadow-2xl max-w-[200px] pointer-events-auto">
+        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Kategori Toko</p>
+        <div className="space-y-2 text-xs text-white">
+          <div className="flex items-center gap-2">
+            <span className="w-3.5 h-3.5 rounded-full bg-purple-600 border border-white shadow-sm flex-shrink-0"></span>
+            <span className="font-bold text-slate-200">WS (Wholesaler / Grosir)</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="w-3.5 h-3.5 rounded-full bg-orange-500 border border-white shadow-sm flex-shrink-0"></span>
+            <span className="font-bold text-slate-200">KS (Kelontong Sedang)</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="w-3.5 h-3.5 rounded-full bg-emerald-600 border border-white shadow-sm flex-shrink-0"></span>
+            <span className="font-bold text-slate-200">TK (Toko Kecil)</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="w-3.5 h-3.5 rounded-full bg-blue-600 border border-white shadow-sm flex-shrink-0"></span>
+            <span className="font-bold text-slate-200">Lainnya</span>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
