@@ -379,8 +379,11 @@ export default function SalesLedger({ teams, products, purchases, allDistributio
     }
   }
 
-  const totalGoods = teams.reduce((sum, t) => sum + (t.goodsDropped || 0), 0);
-  const totalDeposited = teams.reduce((sum, t) => sum + (t.totalDeposited || 0), 0);
+  const sellingTeams = teams.filter(t => t.role !== 'admin_gudang');
+  const adminTeams = teams.filter(t => t.role === 'admin_gudang');
+
+  const totalGoods = sellingTeams.reduce((sum, t) => sum + (t.goodsDropped || 0), 0);
+  const totalDeposited = sellingTeams.reduce((sum, t) => sum + (t.totalDeposited || 0), 0);
   const totalBalance = totalGoods - totalDeposited;
 
   return (
@@ -393,7 +396,7 @@ export default function SalesLedger({ teams, products, purchases, allDistributio
           </div>
           <div>
             <h2 className="text-lg font-bold text-white">Buku Besar Penjualan</h2>
-            <p className="text-xs text-slate-400">Rekap per tim sales — {teams.length} tim aktif</p>
+            <p className="text-xs text-slate-400">Rekap per tim sales — {sellingTeams.length} tim aktif</p>
           </div>
         </div>
         <button onClick={() => setAddTeamModal(true)} className="btn-emerald text-xs">
@@ -417,7 +420,7 @@ export default function SalesLedger({ teams, products, purchases, allDistributio
             </tr>
           </thead>
           <tbody>
-            {teams.map((team, i) => {
+            {sellingTeams.map((team, i) => {
               const balance = (team.goodsDropped || 0) - (team.totalDeposited || 0);
               return (
                 <tr key={team.id}>
@@ -483,7 +486,7 @@ export default function SalesLedger({ teams, products, purchases, allDistributio
             })}
 
             {/* Grand Total Row */}
-            {teams.length > 0 && (
+            {sellingTeams.length > 0 && (
               <tr className="bg-dark-700/60 font-bold hover:bg-dark-700/60">
                 <td className="border-t-2 border-slate-700/80 text-slate-500 text-xs font-mono"></td>
                 <td className="border-t-2 border-slate-700/80 text-white text-sm font-bold">TOTAL KESELURUHAN</td>
@@ -500,6 +503,68 @@ export default function SalesLedger({ teams, products, purchases, allDistributio
           </tbody>
         </table>
       </div>
+
+      {/* Admin and Warehouse Staff Section */}
+      {adminTeams.length > 0 && (
+        <div className="mt-6 bg-slate-800/40 rounded-xl border border-slate-700/60 p-4">
+          <h3 className="text-xs font-bold text-slate-300 mb-3 flex items-center gap-2">
+            🛡️ Akun Admin Gudang (Non-Penjualan)
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {adminTeams.map(admin => {
+              const balance = (admin.goodsDropped || 0) - (admin.totalDeposited || 0);
+              return (
+                <div key={admin.id} className="bg-dark-800/95 border border-slate-700/40 p-3.5 rounded-xl flex justify-between items-center shadow-sm">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-8 h-8 rounded-lg bg-blue-500/10 text-blue-400 flex items-center justify-center font-black shrink-0 text-xs">
+                      {admin.name?.charAt(0) || "A"}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="font-bold text-white text-sm truncate">{admin.name}</p>
+                      <p className="text-[10px] text-slate-400 mt-0.5">
+                        PIN: <span className="font-mono text-slate-300 font-bold">{admin.pin || "------"}</span>
+                        {admin.phone && ` | Telp: ${admin.phone}`}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3 shrink-0">
+                    {balance !== 0 && (
+                      <div className="text-right pr-2 border-r border-slate-700/60">
+                        <p className="text-slate-500 font-bold uppercase text-[7px] tracking-wider">Piutang</p>
+                        <p className={`font-mono text-xs font-bold ${balance > 0 ? "text-amber-400" : "text-emerald-400"}`}>
+                          {formatRupiah(balance)}
+                        </p>
+                      </div>
+                    )}
+                    <div className="flex gap-2">
+                      <button 
+                        onClick={() => { 
+                          setEditTeamModal(admin); 
+                          setNewTeamName(admin.name); 
+                          setNewTeamPin(admin.pin || ""); 
+                          setNewTeamRole(admin.role || "admin_gudang");
+                          setNewTeamPhone(admin.phone || "");
+                        }} 
+                        className="p-2 bg-slate-700/50 hover:bg-slate-700 border border-slate-600 rounded-lg text-slate-300 hover:text-white transition-all text-xs"
+                        title="Edit Admin"
+                      >
+                        ✏️ Edit
+                      </button>
+                      <button 
+                        onClick={() => handleDeleteTeam(admin)} 
+                        className="p-2 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 hover:border-rose-500/30 rounded-lg text-rose-400 hover:text-rose-300 transition-all text-xs"
+                        title="Hapus Admin"
+                      >
+                        🗑️
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* ── MODAL DETAIL DISTRIBUSI ── */}
       {detailModal && (

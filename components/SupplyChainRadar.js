@@ -132,7 +132,8 @@ export default function SupplyChainRadar() {
 
   // ── WIDGET 2: RADAR KINERJA SALES (3-Tier: Admin → Captain → Sales → Toko) ──
   const salesPerformance = useMemo(() => {
-    return salesTeams.map(team => {
+    const activeSellingTeams = salesTeams.filter(team => team.role !== 'admin_gudang');
+    return activeSellingTeams.map(team => {
       const isCaptain = team.role === 'captain';
 
       if (isCaptain) {
