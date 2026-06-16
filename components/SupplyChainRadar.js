@@ -12,7 +12,8 @@ import {
   deleteStoreInventoryRecord,
   cleanupOrphanStoreInventory,
   updateSalesTeam,
-  editDropTransaction
+  editDropTransaction,
+  subscribeReturns
 } from "@/lib/firestore";
 import {
   HiOutlineDatabase, HiOutlineTruck, HiOutlineCube,
@@ -42,6 +43,7 @@ export default function SupplyChainRadar() {
   const [storeInventory, setStoreInventory] = useState([]);
   const [retailStores, setRetailStores] = useState([]);
   const [salesTeams, setSalesTeams] = useState([]);
+  const [returns, setReturns] = useState([]);
 
   useEffect(() => {
     const unsubs = [
@@ -51,7 +53,8 @@ export default function SupplyChainRadar() {
       subscribeAllSalesTransactions(setTransactions),
       subscribeAllStoreInventory(setStoreInventory),
       subscribeRetailStores(setRetailStores),
-      subscribeSalesTeams(setSalesTeams)
+      subscribeSalesTeams(setSalesTeams),
+      subscribeReturns(setReturns)
     ];
     return () => unsubs.forEach(u => u());
   }, []);
@@ -90,9 +93,12 @@ export default function SupplyChainRadar() {
         .filter(tx => tx.tipe === "drop" && tx.productId === pid)
         .reduce((sum, tx) => sum + (tx.jumlahDrop || 0), 0);
 
-      // DI PERJALANAN (SALES) = (Total Released to Field) - (Total Dropped to Retail)
+      // DI PERJALANAN (SALES) = (Total Released to Field) - (Total Dropped to Retail) - (Total Returned From Sales)
       // This represents the sum of all "Sisa" stock currently held by the Captain and Sales agents combined.
-      const diPerjalanan = Math.max(0, totalReleasedToField - totalDroppedToRetail);
+      const totalReturnedFromSales = returns
+        .filter(r => r.productId === pid)
+        .reduce((sum, r) => sum + (r.totalPacksReturned || 0), 0);
+      const diPerjalanan = Math.max(0, totalReleasedToField - totalDroppedToRetail - totalReturnedFromSales);
       const validShelves = storeInventory.filter(inv => inv.productName === product.name && retailStores.some(s => s.id === inv.storeId));
       const diEtalase = validShelves.reduce((s, inv) => s + (inv.currentStock || 0), 0);
       const ludes = Math.max(0, totalDropped - diEtalase);
@@ -139,8 +145,10 @@ export default function SupplyChainRadar() {
         const transferOut = transactions.filter(tx => tx.tipe === 'captain_distribute' && tx.teamId === team.id);
         const totalDioper = transferOut.reduce((s, tx) => s + (tx.jumlahDrop || 0), 0);
 
-        // Bawaan Jual Netto (Stok Tas Lapangan) = Gross - Dioper
-        const bawaanNetto = Math.max(0, grossReceived - totalDioper);
+        // Bawaan Jual Netto (Stok Tas Lapangan) = Gross - Dioper - Retur
+        const teamReturns = returns.filter(r => r.teamId === team.id);
+        const totalRetur = teamReturns.reduce((s, r) => s + (r.totalPacksReturned || 0), 0);
+        const bawaanNetto = Math.max(0, grossReceived - totalDioper - totalRetur);
 
         // Terjual = hanya drop ke toko retail (tipe: 'drop')
         const retailDrops = transactions.filter(tx => tx.tipe === 'drop' && tx.teamId === team.id);
@@ -165,9 +173,11 @@ export default function SupplyChainRadar() {
         };
       } else {
         // REGULAR SALES FORMULA:
-        // Bawaan Netto = semua stok yang didistribusikan ke tim sales ini
+        // Bawaan Netto = semua stok yang didistribusikan ke tim sales ini - Retur
         const teamDists = distributions.filter(d => d.teamId === team.id);
-        const bawaanNetto = teamDists.reduce((s, d) => s + (d.totalPacksDistributed || 0), 0);
+        const teamReturns = returns.filter(r => r.teamId === team.id);
+        const totalRetur = teamReturns.reduce((s, r) => s + (r.totalPacksReturned || 0), 0);
+        const bawaanNetto = Math.max(0, teamDists.reduce((s, d) => s + (d.totalPacksDistributed || 0), 0) - totalRetur);
 
         // Terjual = drop ke toko retail
         const retailDrops = transactions.filter(tx => tx.tipe === 'drop' && tx.teamId === team.id);
