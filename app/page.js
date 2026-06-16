@@ -178,7 +178,7 @@ export default function DashboardPage() {
                 </button>
               </div>
             )}
-            <SummaryCards summary={summary} products={products} purchases={purchases} />
+            <SummaryCards summary={summary} products={products} purchases={purchases} allAvailableBatches={allAvailableBatches} />
             <DashboardWidgets 
               products={products} 
               teams={teams} 

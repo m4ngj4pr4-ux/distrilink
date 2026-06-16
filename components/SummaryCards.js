@@ -8,20 +8,40 @@ import {
   HiOutlineUserGroup,
 } from "react-icons/hi";
 
-export default function SummaryCards({ summary, products, purchases }) {
-  // Hitung total Bal & Slop dari semua produk (mengabaikan double-deduction dari operan captain)
-  const totalSlops = (products || []).reduce((total, p) => {
-    const totalPurchased = (purchases || []).filter(po => po.productId === p.id && po.status !== "pengiriman").reduce((sum, po) => sum + (po.totalPack || 0), 0);
-    const actualPacks = Math.max(0, totalPurchased - (p.adminDistributedPacks || 0));
+export default function SummaryCards({ summary, products, purchases, allAvailableBatches }) {
+  // Hitung total Bal, Slop, & Pack secara dinamis dari sisa stok riil PO batches masing-masing produk
+  let totalBals = 0;
+  let totalSlops = 0;
+  let totalPacks = 0;
+
+  (products || []).forEach(p => {
+    const productBatches = (allAvailableBatches || []).filter(b => b.productId === p.id && b.realSisa > 0);
+    const prodTotalPacks = productBatches.reduce((sum, b) => sum + b.realSisa, 0);
 
     const packsPerSlop = p.packsPerSlop || 10;
-    const slops = Math.floor(actualPacks / packsPerSlop);
-    return total + slops;
-  }, 0);
+    const slopsPerBall = 10; // 1 Bal = 10 Slop
 
-  const globalBal = Math.floor(totalSlops / 10);
-  const globalSlop = totalSlops % 10;
-  const stockDisplay = `${formatNumber(globalBal)} Bal - ${globalSlop} Slop`;
+    const prodSlops = Math.floor(prodTotalPacks / packsPerSlop);
+    const remainingPacks = prodTotalPacks % packsPerSlop;
+
+    const fullBals = Math.floor(prodSlops / slopsPerBall);
+    const remainingSlops = prodSlops % slopsPerBall;
+
+    totalBals += fullBals;
+    totalSlops += remainingSlops;
+    totalPacks += remainingPacks;
+  });
+
+  // Normalisasi akumulasi: Pack -> Slop -> Bal
+  const extraSlops = Math.floor(totalPacks / 10);
+  totalSlops += extraSlops;
+  const finalPacks = totalPacks % 10;
+
+  const extraBals = Math.floor(totalSlops / 10);
+  totalBals += extraBals;
+  const finalSlops = totalSlops % 10;
+
+  const stockDisplay = `${formatNumber(totalBals)} Bal - ${finalSlops} Slop - ${finalPacks} Pk`;
 
   const cards = [
     {
