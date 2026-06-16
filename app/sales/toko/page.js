@@ -44,17 +44,17 @@ export default function SalesTokoPage() {
     getRetailStoresList().then(setStores);
   }, [router]);
 
-  const myStoresCount = stores.filter(s => s.teamId === user?.id).length;
+  const myStoresCount = stores.filter(s => s.teamId === user?.id || !s.teamId).length;
 
   const displayedStores = stores.filter(store => {
     const matchesSearch = 
       store.namaToko?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       store.alamat?.toLowerCase().includes(searchTerm.toLowerCase());
     
-    // Keamanan tambahan: Jika bukan captain, paksa hanya melihat toko miliknya sendiri ("saya")
+    // Keamanan tambahan: Jika bukan captain, paksa hanya melihat toko miliknya sendiri ("saya") + toko dummy admin
     const activeFilter = user?.role === 'captain' ? filterTab : 'saya';
     if (activeFilter === "saya") {
-      return matchesSearch && store.teamId === user?.id;
+      return matchesSearch && (store.teamId === user?.id || !store.teamId);
     }
     return matchesSearch;
   });
