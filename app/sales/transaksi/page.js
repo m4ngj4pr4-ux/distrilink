@@ -275,8 +275,8 @@ export default function TransaksiPage() {
     if (!selectedBrand) return toast.error("Pilih merek barang yang akan diretur!");
     if (qty <= 0) return toast.error("Masukkan jumlah retur yang valid!");
 
-    const storeProduct = returnStore.products && returnStore.products[selectedBrand];
-    const maxRetur = storeProduct ? storeProduct.totalDropped : 0;
+    const storeProduct = returnStore.products && returnStore.products.find(p => p.productName === selectedBrand);
+    const maxRetur = storeProduct ? Math.abs(storeProduct.totalDropped) : 0;
 
     const existingCartItem = cart.find(item => item.productName === selectedBrand);
     const inCartQty = existingCartItem ? existingCartItem.jumlahDrop : 0;
