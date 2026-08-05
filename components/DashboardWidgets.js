@@ -4,7 +4,7 @@ import { useState } from "react";
 import { HiOutlineStar, HiOutlineExclamationCircle, HiOutlineLightningBolt, HiOutlineCash, HiOutlineClock, HiOutlineTrendingUp, HiOutlineChevronLeft, HiOutlineChevronRight, HiOutlineTruck, HiOutlineClipboardList } from "react-icons/hi";
 import { formatRupiah } from "@/lib/utils";
 
-export default function DashboardWidgets({ products, teams, allDistributions, purchases, salesTransactions = [], storeInventory = [] }) {
+export default function DashboardWidgets({ products, teams, allDistributions, purchases, salesTransactions = [], storeInventory = [], allAvailableBatches = [] }) {
   const [dayOffset, setDayOffset] = useState(0);
 
   // ─── Widget 1: Top 10 Performa Tim ───
@@ -14,8 +14,10 @@ export default function DashboardWidgets({ products, teams, allDistributions, pu
   // ─── Widget 2: Monitor Stok Terkini ───
   const monitorProducts = [...(products || [])]
     .map(p => {
-      const totalPurchased = (purchases || []).filter(po => po.productId === p.id && po.status !== "pengiriman").reduce((sum, po) => sum + (po.totalPack || 0), 0);
-      const actualPacks = Math.max(0, totalPurchased - (p.adminDistributedPacks || 0));
+      // Hitung stok menggunakan allAvailableBatches (sudah memperhitungkan PO, Distribusi, Retur Sales & Pabrik)
+      const productBatches = (allAvailableBatches || []).filter(b => b.productId === p.id && b.realSisa > 0);
+      const actualPacks = productBatches.reduce((sum, b) => sum + (b.realSisa || 0), 0);
+      
       return { ...p, actualPacks };
     })
     .sort((a, b) => (a.actualPacks || 0) - (b.actualPacks || 0));

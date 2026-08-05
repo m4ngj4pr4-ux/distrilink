@@ -207,6 +207,7 @@ export default function DashboardPage() {
               purchases={purchases} 
               salesTransactions={salesTransactions}
               storeInventory={storeInventory}
+              allAvailableBatches={allAvailableBatches}
             />
           </div>
         );
