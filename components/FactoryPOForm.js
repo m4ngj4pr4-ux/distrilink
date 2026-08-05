@@ -37,6 +37,8 @@ export default function FactoryPOForm({ products }) {
 
   const [form, setForm] = useState({
     jumlahKarton: "",
+    jumlahBall: "",
+    jumlahSlop: "",
     hargaBeliPerPack: "",
     targetHargaJual: "",
     biayaPengiriman: "",
@@ -75,7 +77,7 @@ export default function FactoryPOForm({ products }) {
   function handleChange(e) {
     const { name, value } = e.target;
     // Terapkan parsing khusus untuk input angka
-    const numericFields = ["jumlahKarton", "hargaBeliPerPack", "biayaPengiriman", "uangMuka", "targetHargaJual"];
+    const numericFields = ["jumlahKarton", "jumlahBall", "jumlahSlop", "hargaBeliPerPack", "biayaPengiriman", "uangMuka", "targetHargaJual"];
     const valToSave = numericFields.includes(name) ? parseInputNumber(value) : value;
     setForm({ ...form, [name]: valToSave });
   }
@@ -87,15 +89,26 @@ export default function FactoryPOForm({ products }) {
     }
 
     const conv = getConversion(selectedProduct);
-    const jumlahKarton = parseFloat(form.jumlahKarton);
+    const jumlahKarton = parseFloat(form.jumlahKarton) || 0;
+    const jumlahBall = parseFloat(form.jumlahBall) || 0;
+    const jumlahSlop = parseFloat(form.jumlahSlop) || 0;
     const hargaBeliPerPack = parseFloat(form.hargaBeliPerPack);
     const targetHargaJual = parseFloat(form.targetHargaJual);
     const biayaPengiriman = parseFloat(form.biayaPengiriman);
     const uangMuka = parseFloat(form.uangMuka);
 
     // VALIDASI KETAT
-    if (!form.jumlahKarton || isNaN(jumlahKarton) || jumlahKarton <= 0) {
-      toast.error("Jumlah Karton harus berupa angka lebih dari 0");
+    if (jumlahKarton < 0 || jumlahBall < 0 || jumlahSlop < 0) {
+      toast.error("Jumlah Karton, Ball, dan Slop tidak boleh negatif");
+      return;
+    }
+
+    const totalPack = (jumlahKarton * conv.packsPerKarton) + 
+                      (jumlahBall * conv.packsPerBall) + 
+                      (jumlahSlop * conv.packsPerSlop);
+
+    if (totalPack <= 0) {
+      toast.error("Jumlah Karton, Ball, atau Slop harus diisi minimal 1");
       return;
     }
     if (!form.hargaBeliPerPack || isNaN(hargaBeliPerPack) || hargaBeliPerPack <= 0) {
@@ -115,9 +128,9 @@ export default function FactoryPOForm({ products }) {
       return;
     }
 
-    const totalBall = jumlahKarton * conv.ballsPerKarton;
-    const totalSlop = jumlahKarton * conv.slopsPerKarton;
-    const totalPack = jumlahKarton * conv.packsPerKarton;
+    const totalBall = totalPack / conv.packsPerBall;
+    const totalSlop = totalPack / conv.packsPerSlop;
+    const equivalentKarton = totalPack / conv.packsPerKarton;
     const totalPembelian = totalPack * hargaBeliPerPack;
     const ongkirPerPack = totalPack > 0 ? biayaPengiriman / totalPack : 0;
     const hpp = hargaBeliPerPack + ongkirPerPack; // HPP per pack
@@ -129,7 +142,10 @@ export default function FactoryPOForm({ products }) {
     setResult({
       productName: selectedProduct.name,
       conversion: conv,
-      jumlahKarton,
+      jumlahKartonInput: jumlahKarton,
+      jumlahBallInput: jumlahBall,
+      jumlahSlopInput: jumlahSlop,
+      jumlahKarton: equivalentKarton,
       totalBall,
       totalSlop,
       totalPack,
@@ -155,19 +171,17 @@ export default function FactoryPOForm({ products }) {
     }
     setSaving(true);
     try {
-      // 1. Simpan data pembelian (Atomik: update Stok, Product, Summary, dan Finance Ledger otomatis)
-      const packsPerSlop = selectedProduct?.packsPerSlop || 10;
-      const slopsPerKarton = ((selectedProduct?.slopsPerBall || 20) * (selectedProduct?.ballsPerKarton || 5)) + (selectedProduct?.ekstraSlopPerKarton || 0);
-      const totalPacksPurchased = result.jumlahKarton * slopsPerKarton * packsPerSlop;
-
       await addPurchaseAtomic({
         productId: selectedProductId,
         productName: result.productName,
         jumlahKarton: result.jumlahKarton,
+        jumlahKartonInput: result.jumlahKartonInput,
+        jumlahBallInput: result.jumlahBallInput,
+        jumlahSlopInput: result.jumlahSlopInput,
         totalBall: result.totalBall,
         totalSlop: result.totalSlop,
         totalPack: result.totalPack,
-        totalPackPurchased: totalPacksPurchased, // Required by addPurchaseAtomic
+        totalPackPurchased: result.totalPack, // Required by addPurchaseAtomic
         hargaBeliPerPack: result.hargaBeliPerPack,
         targetHargaJual: result.targetHargaJual,
         biayaPengiriman: result.biayaPengiriman,
@@ -184,6 +198,8 @@ export default function FactoryPOForm({ products }) {
       // Reset
       setForm({
         jumlahKarton: "",
+        jumlahBall: "",
+        jumlahSlop: "",
         hargaBeliPerPack: "",
         targetHargaJual: "",
         biayaPengiriman: "",
@@ -201,6 +217,8 @@ export default function FactoryPOForm({ products }) {
   function handleReset() {
     setForm({
       jumlahKarton: "",
+      jumlahBall: "",
+      jumlahSlop: "",
       hargaBeliPerPack: "",
       targetHargaJual: "",
       biayaPengiriman: "",
@@ -373,17 +391,44 @@ export default function FactoryPOForm({ products }) {
             value={formatInputNumber(form.jumlahKarton)}
             onChange={handleChange}
             placeholder="0"
-            className="input-field"
+            className="input-field animate-none"
           />
-          {conv && form.jumlahKarton > 0 && (
-            <p className="text-[11px] text-slate-500 mt-1">
-              = {formatNumber(parseInt(form.jumlahKarton) * conv.ballsPerKarton)}{" "}
-              Ball ={" "}
-              {formatNumber(parseInt(form.jumlahKarton) * conv.packsPerKarton)}{" "}
-              Pack
-            </p>
-          )}
         </div>
+        <div>
+          <label className="block text-xs font-medium text-slate-400 mb-1.5">
+            Jumlah Ball
+          </label>
+          <input
+            type="text"
+            name="jumlahBall"
+            value={formatInputNumber(form.jumlahBall)}
+            onChange={handleChange}
+            placeholder="0"
+            className="input-field animate-none"
+          />
+        </div>
+        <div>
+          <label className="block text-xs font-medium text-slate-400 mb-1.5">
+            Jumlah Slop
+          </label>
+          <input
+            type="text"
+            name="jumlahSlop"
+            value={formatInputNumber(form.jumlahSlop)}
+            onChange={handleChange}
+            placeholder="0"
+            className="input-field animate-none"
+          />
+        </div>
+        {conv && ((parseFloat(form.jumlahKarton) || 0) > 0 || (parseFloat(form.jumlahBall) || 0) > 0 || (parseFloat(form.jumlahSlop) || 0) > 0) && (
+          <div className="col-span-full bg-emerald-500/5 border border-emerald-500/10 rounded-xl p-3 text-xs text-emerald-400 font-bold">
+            Total Pembelian: {formatNumber(
+              ((parseFloat(form.jumlahKarton) || 0) * conv.packsPerKarton) +
+              ((parseFloat(form.jumlahBall) || 0) * conv.packsPerBall) +
+              ((parseFloat(form.jumlahSlop) || 0) * conv.packsPerSlop)
+            )} Pack
+          </div>
+        )}
         <div>
           <label className="block text-xs font-medium text-slate-400 mb-1.5">
             Harga Beli per Pack (Rp)
@@ -461,7 +506,11 @@ export default function FactoryPOForm({ products }) {
           </h3>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 mb-5">
             <ResultItem
-              label="Jumlah Karton"
+              label="Input Pembelian"
+              value={`${formatNumber(result.jumlahKartonInput)} Ct / ${formatNumber(result.jumlahBallInput)} Bal / ${formatNumber(result.jumlahSlopInput)} Slop`}
+            />
+            <ResultItem
+              label="Ekivalen Karton"
               value={formatNumber(result.jumlahKarton)}
               suffix="karton"
             />
@@ -479,6 +528,7 @@ export default function FactoryPOForm({ products }) {
               label="Total Pack"
               value={formatNumber(result.totalPack)}
               suffix="pack"
+              highlight
             />
             <ResultItem
               label="Total Pembelian"

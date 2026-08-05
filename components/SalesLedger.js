@@ -11,7 +11,9 @@ import {
   HiOutlineEye,
   HiOutlineEyeOff,
   HiOutlineCalendar,
+  HiOutlinePrinter,
 } from "react-icons/hi";
+import jsPDF from "jspdf";
 import { formatRupiah, formatNumber, formatInputNumber, parseInputNumber, parseRupiah } from "@/lib/utils";
 import {
   addDepositTransaction,
@@ -24,11 +26,13 @@ import {
   subscribeDistributions,
   deleteDistribution,
   verifikasiSetoranAdmin,
+  rejectSetoran,
   updateDistributionDate,
   updateSetoranDate,
   deleteSetoranTransaction,
   addGoodsDropTransactionBatch,
-  calculatePOBatchesWithRealSisa
+  calculatePOBatchesWithRealSisa,
+  subscribeInvoiceSettings
 } from "@/lib/firestore";
 import toast from "react-hot-toast";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -61,6 +65,25 @@ export default function SalesLedger({ teams, products, purchases, allDistributio
   const [editingSetorDate, setEditingSetorDate] = useState(null);
   const [newDistDateInput, setNewDistDateInput] = useState("");
   const [newSetorDateInput, setNewSetorDateInput] = useState("");
+
+  const [invoiceHeader, setInvoiceHeader] = useState({
+    companyName: "DISTRILINK CENTRAL",
+    tagline: "Sistem Manajemen Distribusi & Penjualan",
+    contactInfo: "Telepon: +62 811-XXXX-XXXX | Email: support@distrilink.id"
+  });
+
+  useEffect(() => {
+    const unsub = subscribeInvoiceSettings((data) => {
+      if (data) {
+        setInvoiceHeader({
+          companyName: data.companyName || "DISTRILINK CENTRAL",
+          tagline: data.tagline || "Sistem Manajemen Distribusi & Penjualan",
+          contactInfo: data.contactInfo || "Telepon: +62 811-XXXX-XXXX | Email: support@distrilink.id"
+        });
+      }
+    });
+    return () => unsub();
+  }, []);
 
   useEffect(() => {
     if (!detailModal) {
@@ -146,7 +169,7 @@ export default function SalesLedger({ teams, products, purchases, allDistributio
 
   async function handleVerifikasi(dep) {
     if (!checkWritePermission("verifikasi setoran")) return;
-    if (!confirm(`Sahkan setoran ${formatRupiah(dep.nominal)} dari ${dep.namaSales || 'Sales'}? Piutang akan dikurangi secara permanen.`)) return;
+    if (!confirm(`Sahkan setoran ${formatRupiah(dep.nominal)} dari ${dep.teamName || dep.namaSales || 'Sales'}? Piutang akan dikurangi secara permanen.`)) return;
     
     setProcessing(true);
     try {
@@ -158,6 +181,123 @@ export default function SalesLedger({ teams, products, purchases, allDistributio
       setProcessing(false);
     }
   }
+
+  async function handleTolak(dep) {
+    if (!checkWritePermission("verifikasi setoran")) return;
+    if (!confirm(`Tolak setoran ${formatRupiah(dep.nominal)} dari ${dep.teamName || dep.namaSales || 'Sales'}?`)) return;
+    
+    setProcessing(true);
+    try {
+      await rejectSetoran(dep.id);
+      toast.success("Setoran berhasil ditolak!");
+    } catch (err) {
+      toast.error("Gagal menolak setoran: " + err.message);
+    } finally {
+      setProcessing(false);
+    }
+  }
+
+  const handlePrintInvoice = (d, teamName) => {
+    toast.loading("Menyiapkan Invoice...", { id: 'invoice-print' });
+    try {
+      const doc = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a5'
+      });
+      
+      const dateStr = d.createdAt?.toDate ? d.createdAt.toDate().toLocaleString('id-ID') : new Date().toLocaleString('id-ID');
+      
+      // Header / Company Info
+      doc.setFont("Helvetica", "bold");
+      doc.setFontSize(14);
+      doc.text(invoiceHeader.companyName, 14, 15);
+      
+      doc.setFont("Helvetica", "normal");
+      doc.setFontSize(8);
+      doc.text(invoiceHeader.tagline, 14, 20);
+      doc.text(invoiceHeader.contactInfo, 14, 24);
+      
+      // Horizontal Line
+      doc.setDrawColor(200, 200, 200);
+      doc.line(14, 27, 134, 27);
+      
+      // Invoice Details Header
+      doc.setFont("Helvetica", "bold");
+      doc.setFontSize(10);
+      doc.text("FAKTUR / INVOICE DISTRIBUSI", 14, 34);
+      
+      doc.setFont("Helvetica", "normal");
+      doc.setFontSize(8.5);
+      
+      // Left Column Info
+      doc.text(`No. Transaksi : DIST-${d.id.substring(0, 8).toUpperCase()}`, 14, 40);
+      doc.text(`Tanggal       : ${dateStr}`, 14, 45);
+      
+      // Right Column Info (Sales recipient)
+      doc.text(`Penerima (Sales) : ${teamName || d.teamName || 'Sales Agent'}`, 75, 40);
+      doc.text(`Sumber PO        : PO-${(d.poId || '').substring(0, 8).toUpperCase()}`, 75, 45);
+      
+      // Divider
+      doc.line(14, 50, 134, 50);
+      
+      // Table Header
+      doc.setFont("Helvetica", "bold");
+      doc.text("Nama Produk", 14, 55);
+      doc.text("Qty / Satuan", 70, 55);
+      doc.text("Harga (Rp)", 95, 55);
+      doc.text("Subtotal (Rp)", 115, 55);
+      
+      doc.line(14, 58, 134, 58);
+      
+      // Table Content
+      doc.setFont("Helvetica", "normal");
+      
+      // Handle multi-line product name if too long
+      const productName = d.productName || "Unknown Product";
+      const productLines = doc.splitTextToSize(productName, 52);
+      doc.text(productLines, 14, 64);
+      
+      // For Qty, show e.g. "5 Ct" or "200 Pk"
+      const qtyStr = `${formatNumber(d.qtyOriginal || 0)} ${d.unit || 'Pk'}`;
+      doc.text(qtyStr, 70, 64);
+      
+      // For Price, show price per pack (or computed price)
+      const priceVal = d.pricePerPack || (d.amount / (d.totalPacksDistributed || 1));
+      doc.text(formatRupiah(priceVal), 95, 64);
+      
+      // Subtotal
+      doc.text(formatRupiah(d.amount), 115, 64);
+      
+      // Calculate height of product lines to draw line below it
+      const contentHeight = Math.max(8, productLines.length * 4.5 + 2);
+      const dividerY = 60 + contentHeight;
+      
+      // Divider
+      doc.line(14, dividerY, 134, dividerY);
+      
+      // Grand Total
+      doc.setFont("Helvetica", "bold");
+      doc.text("GRAND TOTAL :", 75, dividerY + 6);
+      doc.text(formatRupiah(d.amount), 115, dividerY + 6);
+      
+      // Divider
+      doc.line(14, dividerY + 10, 134, dividerY + 10);
+      
+      // Footer Note
+      doc.setFont("Helvetica", "italic");
+      doc.setFontSize(7.5);
+      doc.text("* Dokumen ini sah sebagai bukti tanda terima barang DistriLink.", 14, dividerY + 16);
+      
+      // Open print window
+      const string = doc.output('bloburl');
+      window.open(string, '_blank');
+      toast.success("Invoice siap dicetak!", { id: 'invoice-print' });
+    } catch (error) {
+      console.error("PDF Invoice Error:", error);
+      toast.error("Gagal cetak invoice: " + error.message, { id: 'invoice-print' });
+    }
+  };
 
   async function handleDeleteDist(dist) {
     if (!checkWritePermission("menghapus riwayat distribusi")) return;
@@ -172,7 +312,7 @@ export default function SalesLedger({ teams, products, purchases, allDistributio
 
   async function handleDeleteSetoran(dep) {
     if (!checkWritePermission("menghapus setoran sales")) return;
-    let warningMsg = `Hapus setoran senilai ${formatRupiah(dep.nominal || dep.amount)} dari ${dep.namaSales || 'Sales'}?`;
+    let warningMsg = `Hapus setoran senilai ${formatRupiah(dep.nominal || dep.amount)} dari ${dep.teamName || dep.namaSales || 'Sales'}?`;
     if (dep.status === "Diverifikasi Admin" || dep.status === "Selesai (Sistem Lama)") {
       warningMsg += "\n\nPERINGATAN: Setoran ini SUDAH diverifikasi. Menghapusnya akan memotong kas aktif dan menambahkan piutang sales kembali!";
     }
@@ -616,6 +756,13 @@ export default function SalesLedger({ teams, products, purchases, allDistributio
                         <td className="py-3 text-center">
                           <div className="flex items-center justify-center gap-1">
                             <button 
+                              onClick={() => handlePrintInvoice(d, detailModal.name)}
+                              className="p-1.5 rounded hover:bg-emerald-500/10 text-slate-500 hover:text-emerald-400 transition-colors"
+                              title="Cetak Invoice"
+                            >
+                              <HiOutlinePrinter size={14} />
+                            </button>
+                            <button 
                               onClick={() => {
                                 setEditingDistDate(d);
                                 if (d.createdAt) {
@@ -687,15 +834,27 @@ export default function SalesLedger({ teams, products, purchases, allDistributio
                          <td className="py-2 text-right">
                            <div className="flex items-center justify-end gap-1.5">
                              {(dep.status === "Menunggu Verifikasi" || dep.status === "Menunggu Verifikasi Admin") ? (
-                               <button 
-                                 onClick={() => handleVerifikasi(dep)}
-                                 className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[10px] px-2 py-1 rounded transition-colors shadow-sm"
-                               >
-                                 Sahkan
-                               </button>
+                                <div className="flex gap-1">
+                                  <button 
+                                    onClick={() => handleVerifikasi(dep)}
+                                    className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[10px] px-2 py-1 rounded transition-colors shadow-sm"
+                                  >
+                                    Sahkan
+                                  </button>
+                                  <button 
+                                    onClick={() => handleTolak(dep)}
+                                    className="bg-rose-600 hover:bg-rose-500 text-white font-bold text-[10px] px-2 py-1 rounded transition-colors shadow-sm"
+                                  >
+                                    Tolak
+                                  </button>
+                                </div>
                              ) : (
                                <span className={`text-[10px] px-2 py-0.5 rounded font-bold uppercase tracking-tighter ${
-                                 dep.status === "Diverifikasi Admin" || dep.status === "Selesai (Sistem Lama)" ? "bg-emerald-500/10 text-emerald-500" : "bg-slate-800 text-slate-500"
+                                 dep.status === "Diverifikasi Admin" || dep.status === "Selesai (Sistem Lama)" 
+                                   ? "bg-emerald-500/10 text-emerald-500" 
+                                   : dep.status === "Ditolak"
+                                     ? "bg-rose-500/10 text-rose-500"
+                                     : "bg-slate-800 text-slate-500"
                                }`}>
                                  {dep.status === "Diverifikasi Admin" ? "Selesai" : (dep.status === "Kas di Captain" ? "Di Captain" : dep.status)}
                                </span>

@@ -2,14 +2,14 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { 
   getGroupedStoreInventory, getSalesCarriedBrands, 
-  addDropTransactionBatch, updateStoreShelfStock, getSisaStokSales,
+  addDropTransactionBatch, addStoreReturnTransactionBatch, updateStoreShelfStock, getSisaStokSales,
   updateRetailStore
 } from '@/lib/firestore';
 import { getCurrentLocation } from '@/lib/geolocation';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { printer } from '@/lib/printer';
-import { HiOutlinePrinter, HiCheckCircle, HiX, HiOutlineLocationMarker, HiOutlineSearch } from 'react-icons/hi';
+import { HiOutlinePrinter, HiCheckCircle, HiX, HiOutlineLocationMarker, HiOutlineSearch, HiOutlinePlus } from 'react-icons/hi';
 
 export default function TransaksiPage() {
   const router = useRouter();
@@ -139,6 +139,23 @@ export default function TransaksiPage() {
     setIsLoading(false);
   };
 
+  // ── RETURN FROM STORE HANDLER ──
+  const [returnStore, setReturnStore] = useState(null);
+
+  const handleOpenReturn = async (store) => {
+    toast.loading("Menyiapkan data...", { id: "prep" });
+    try {
+      setCart([]);
+      setSelectedBrand("");
+      setJumlahDrop("");
+      setHargaDrop("");
+      setReturnStore(store);
+      toast.dismiss("prep");
+    } catch (e) {
+      toast.error("Gagal menyiapkan retur");
+    }
+  };
+
   // ── RESTOCK (DROP) HANDLER ──
   const handleOpenRestock = async (store) => {
     const hasCoords = store.latitude != null && store.longitude != null 
@@ -249,6 +266,89 @@ export default function TransaksiPage() {
   const handleRemoveFromCart = (brandName) => {
     setCart(cart.filter(item => item.productName !== brandName));
     toast.success(`${brandName} dihapus dari keranjang.`);
+  };
+
+  const handleReturnAddToCart = (e) => {
+    if (e) e.preventDefault();
+    const qty = parseInt(jumlahDrop) || 0;
+
+    if (!selectedBrand) return toast.error("Pilih merek barang yang akan diretur!");
+    if (qty <= 0) return toast.error("Masukkan jumlah retur yang valid!");
+
+    const storeProduct = returnStore.products && returnStore.products[selectedBrand];
+    const maxRetur = storeProduct ? storeProduct.totalDropped : 0;
+
+    const existingCartItem = cart.find(item => item.productName === selectedBrand);
+    const inCartQty = existingCartItem ? existingCartItem.jumlahDrop : 0;
+    const totalNewQty = inCartQty + qty;
+
+    if (totalNewQty > maxRetur) {
+      return toast.error(`Maksimal retur untuk ${selectedBrand} dari toko ini adalah ${maxRetur} Pk! Di keranjang: ${inCartQty} Pk.`);
+    }
+
+    if (existingCartItem) {
+      setCart(cart.map(item => 
+        item.productName === selectedBrand 
+          ? { ...item, jumlahDrop: totalNewQty, total: totalNewQty * item.hargaJual }
+          : item
+      ));
+      toast.success(`Keranjang retur diperbarui! ${selectedBrand} → ${totalNewQty} Pk.`);
+    } else {
+      // Find original price if possible, else 0
+      const brandData = carriedBrands[selectedBrand];
+      const price = brandData ? (brandData.sellingPrice || 0) : 0;
+      setCart([...cart, {
+        productId: storeProduct ? storeProduct.productId : (brandData?.productId || ""),
+        productName: selectedBrand,
+        jumlahDrop: qty,
+        hargaJual: price, // Original selling price
+        total: qty * price
+      }]);
+      toast.success(`${selectedBrand} ditambahkan ke keranjang retur.`);
+    }
+
+    setSelectedBrand("");
+    setJumlahDrop("");
+    setHargaDrop(""); // Not really used for retur input, but reset anyway
+  };
+
+  const handleReturnCheckout = async () => {
+    if (cart.length === 0) return toast.error("Keranjang retur kosong!");
+    
+    setIsSubmitting(true);
+    try {
+      const storeInfo = {
+        storeId: returnStore.storeId,
+        namaToko: returnStore.namaToko
+      };
+      const agentInfo = {
+        id: user.id,
+        name: user.name
+      };
+
+      const receiptId = await addStoreReturnTransactionBatch(cart, storeInfo, agentInfo);
+      
+      const checkoutSummary = {
+        receiptId: receiptId,
+        namaToko: returnStore.namaToko,
+        waktu: new Date(),
+        namaSales: user.name,
+        items: cart,
+        grandTotal: cart.reduce((sum, item) => sum + item.total, 0),
+        totalQty: cart.reduce((sum, item) => sum + item.jumlahDrop, 0),
+        isRetur: true // flag for receipt
+      };
+
+      setLastDropData(checkoutSummary); // Reuse print receipt modal
+      setReturnStore(null);
+      await loadData(user.id);
+      toast.success("Retur dari toko berhasil dicatat!");
+    } catch (error) {
+      toast.error("Gagal menyimpan data retur.");
+      console.error(error);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleCheckout = async () => {
@@ -445,12 +545,20 @@ export default function TransaksiPage() {
                     <p className="text-[9px] text-slate-500 mt-0.5">Total drop: {Math.abs(store.totalDropped)} Pk</p>
                   </div>
                 </div>
-                <button 
-                  onClick={() => handleOpenRestock(store)}
-                  className="bg-blue-600 hover:bg-blue-500 text-white text-[10px] font-bold px-3 py-2 rounded-lg active:scale-95 transition-all shadow-lg shadow-blue-900/20 flex items-center gap-1"
-                >
-                  📦 <span>Isi Ulang</span>
-                </button>
+                <div className="flex gap-2">
+                  <button 
+                    onClick={() => handleOpenReturn(store)}
+                    className="bg-amber-600 hover:bg-amber-500 text-white text-[10px] font-bold px-3 py-2 rounded-lg active:scale-95 transition-all shadow-lg shadow-amber-900/20 flex items-center gap-1"
+                  >
+                    🔄 <span>Tarik Retur</span>
+                  </button>
+                  <button 
+                    onClick={() => handleOpenRestock(store)}
+                    className="bg-blue-600 hover:bg-blue-500 text-white text-[10px] font-bold px-3 py-2 rounded-lg active:scale-95 transition-all shadow-lg shadow-blue-900/20 flex items-center gap-1"
+                  >
+                    📦 <span>Isi Ulang</span>
+                  </button>
+                </div>
               </div>
 
               {/* Product List */}
@@ -506,6 +614,131 @@ export default function TransaksiPage() {
               <p className="text-[10px] text-slate-600 mt-1">Mulai drop barang ke toko dari menu &quot;Daftar Toko&quot;.</p>
             </>
           )}
+        </div>
+      )}
+
+      {/* ── MODAL POS CART SYSTEM (MULTI-ITEM RETURN TOKO) ── */}
+      {returnStore && (
+        <div className="fixed inset-0 bg-black/90 flex items-end justify-center z-[100] pb-0">
+          <div className="bg-dark-900 w-full max-w-md rounded-t-2xl p-5 border-t border-amber-500 max-h-[85vh] flex flex-col shadow-2xl">
+            {/* Header */}
+            <div className="flex justify-between items-center mb-4 shrink-0">
+              <div>
+                <h2 className="text-lg font-bold text-white flex items-center gap-2">
+                  🔄 <span>Tarik Retur dari Toko</span>
+                </h2>
+                <p className="text-[10px] text-slate-400">Toko: <span className="text-emerald-400 font-bold">{returnStore.namaToko}</span></p>
+              </div>
+              <button 
+                onClick={() => { setReturnStore(null); setCart([]); }} 
+                className="text-slate-400 font-bold text-2xl px-2 hover:text-white transition-colors"
+              >
+                &times;
+              </button>
+            </div>
+
+            {/* Scrollable Modal Content */}
+            <div className="flex-1 overflow-y-auto custom-scrollbar pr-1 pb-4 flex flex-col gap-5">
+              
+              {/* SECTION 1: VISUAL CART LIST */}
+              <div className="bg-dark-800/60 rounded-2xl border border-slate-700/50 p-4">
+                <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-3">Daftar Barang Retur</h3>
+                
+                {cart.length === 0 ? (
+                  <div className="text-center py-6 text-slate-500 flex flex-col items-center justify-center gap-2">
+                    <span className="text-3xl">🛒</span>
+                    <p className="text-xs italic">Belum ada barang retur yang dipilih.</p>
+                  </div>
+                ) : (
+                  <div className="flex flex-col gap-3 max-h-48 overflow-y-auto pr-1 custom-scrollbar">
+                    {cart.map((item, idx) => (
+                      <div 
+                        key={idx} 
+                        className="flex justify-between items-center bg-dark-900/80 p-3 rounded-xl border border-slate-700/30"
+                      >
+                        <div className="flex-1 min-w-0 pr-2">
+                          <p className="text-xs font-bold text-white truncate">{item.productName}</p>
+                          <p className="text-[10px] text-slate-500 mt-0.5">
+                            {item.jumlahDrop} Pk ditarik
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-3 shrink-0">
+                          <button 
+                            type="button"
+                            onClick={() => handleRemoveFromCart(item.productName)}
+                            className="p-1.5 bg-rose-500/10 border border-rose-500/20 text-rose-400 rounded-lg hover:bg-rose-500/20 active:scale-90 transition-all flex items-center justify-center"
+                            title="Hapus"
+                          >
+                            <HiX size={14} />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* SECTION 2: ADD ITEM FORM */}
+              <div className="bg-dark-800/40 rounded-2xl border border-slate-700/30 p-4">
+                <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-3">➕ Pilih Barang Retur</h3>
+                
+                <div className="mb-3">
+                  <label className="block text-[9px] font-semibold text-slate-500 mb-1 tracking-wider uppercase">Merek Barang di Toko</label>
+                  <select 
+                    value={selectedBrand} 
+                    onChange={(e) => setSelectedBrand(e.target.value)}
+                    className="w-full bg-dark-900 border border-slate-700 rounded-xl px-3 py-2.5 text-xs text-white focus:border-amber-500 outline-none"
+                  >
+                    <option value="">-- Pilih Merek --</option>
+                    {Object.values(returnStore.products || {}).map(prod => (
+                      <option key={prod.productName} value={prod.productName}>
+                        {prod.productName} (Terkirim: {Math.abs(prod.totalDropped)} Pk)
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-3 mb-4">
+                  <div>
+                    <label className="block text-[9px] font-semibold text-slate-500 mb-1 tracking-wider uppercase">Jumlah Retur (Pack)</label>
+                    <input 
+                      type="number" 
+                      value={jumlahDrop} 
+                      onChange={(e) => setJumlahDrop(e.target.value)}
+                      placeholder="Mis: 10" 
+                      className="w-full bg-dark-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:border-amber-500 outline-none placeholder:text-slate-600"
+                    />
+                  </div>
+                </div>
+
+                <button 
+                  onClick={handleReturnAddToCart}
+                  className="w-full bg-dark-700 hover:bg-dark-600 text-amber-400 border border-amber-500/30 font-bold py-2.5 rounded-xl text-xs active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+                >
+                  <HiOutlinePlus size={14} />
+                  <span>Tambahkan ke Retur</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Sticky Checkout Button */}
+            <div className="pt-4 border-t border-slate-700/50 mt-auto shrink-0 bg-dark-900">
+              <button 
+                onClick={handleReturnCheckout}
+                disabled={isSubmitting || cart.length === 0}
+                className="w-full bg-amber-600 hover:bg-amber-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold py-3 rounded-xl text-sm active:scale-[0.98] transition-all flex items-center justify-center gap-2 shadow-lg shadow-amber-900/20"
+              >
+                {isSubmitting ? (
+                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                ) : (
+                  <>
+                    <HiCheckCircle size={18} />
+                    <span>Konfirmasi Retur</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
         </div>
       )}
 

@@ -33,6 +33,7 @@ import {
   addSetoranDana,
   getSalesLedgerBookData,
   acceptCashDeposit,
+  rejectSetoran,
   captainDepositToAdmin,
   subscribeAllDistributions,
   subscribeReturns,
@@ -521,6 +522,8 @@ function AdminGudangDashboard({ user, router }) {
         let formattedNilai = (isMinus ? '-' : '+') + ' Rp ' + Math.abs(item.nilai).toLocaleString('id-ID');
         if (item.tipe === 'setoran_pending') {
           formattedNilai += ' (Pending)';
+        } else if (item.tipe === 'setoran_rejected') {
+          formattedNilai += ' (Ditolak)';
         }
         
         return [
@@ -858,12 +861,22 @@ function AdminGudangDashboard({ user, router }) {
 
   // Cash acceptance
   const handleAcceptCash = async (item) => {
-    if (!confirm(`Terima uang tunai Rp ${item.nominal?.toLocaleString('id-ID')} dari ${item.namaSales}?`)) return;
+    if (!confirm(`Terima uang tunai Rp ${item.nominal?.toLocaleString('id-ID')} dari ${item.teamName || item.namaSales || "Sales"}?`)) return;
     try {
       await acceptCashDeposit(item.id);
       toast.success("Uang tunai diterima!");
     } catch (error) {
       toast.error("Gagal menerima uang.");
+    }
+  };
+
+  const handleRejectCash = async (item) => {
+    if (!confirm(`Tolak setoran tunai Rp ${item.nominal?.toLocaleString('id-ID')} dari ${item.teamName || item.namaSales || "Sales"}?`)) return;
+    try {
+      await rejectSetoran(item.id);
+      toast.success("Setoran berhasil ditolak!");
+    } catch (error) {
+      toast.error("Gagal menolak setoran.");
     }
   };
 
@@ -962,7 +975,7 @@ function AdminGudangDashboard({ user, router }) {
             {pendingSetorans.filter(s => s.status === 'Menunggu Diterima Captain').map(item => (
               <div key={item.id} className="flex justify-between items-center bg-dark-900/80 p-2.5 rounded-xl border border-slate-700/40 text-xs">
                 <div>
-                  <span className="font-bold text-white block">{item.namaSales}</span>
+                  <span className="font-bold text-white block">{item.teamName || item.namaSales || "Sales"}</span>
                   <span className="text-[8px] text-slate-500">{item.catatan || 'Titipan Tunai'}</span>
                 </div>
                 <div className="flex items-center gap-2">
@@ -972,6 +985,12 @@ function AdminGudangDashboard({ user, router }) {
                     className="bg-purple-600 hover:bg-purple-500 text-white text-[9px] font-black px-2.5 py-1.5 rounded-lg shadow-md active:scale-95 transition-all"
                   >
                     Terima
+                  </button>
+                  <button 
+                    onClick={() => handleRejectCash(item)}
+                    className="bg-rose-600 hover:bg-rose-500 text-white text-[9px] font-black px-2.5 py-1.5 rounded-lg shadow-md active:scale-95 transition-all"
+                  >
+                    Tolak
                   </button>
                 </div>
               </div>
@@ -1168,11 +1187,15 @@ function AdminGudangDashboard({ user, router }) {
                           </td>
                           <td className={`py-2.5 px-1 text-right font-bold font-mono whitespace-nowrap text-[10px] ${
                             item.tipe === 'setoran_pending' ? 'text-slate-500' :
+                            item.tipe === 'setoran_rejected' ? 'text-rose-500/60 line-through' :
                             isMinus ? (item.tipe === 'retur' ? 'text-amber-400/80' : 'text-rose-400') : 'text-emerald-400'
                           }`}>
                             {isMinus ? '-' : '+'}{Math.abs(item.nilai).toLocaleString('id-ID')}
                             {item.tipe === 'setoran_pending' && (
                               <span className="text-[7px] text-slate-500 font-bold block uppercase tracking-tighter">Pending</span>
+                            )}
+                            {item.tipe === 'setoran_rejected' && (
+                              <span className="text-[7px] text-rose-500 font-bold block uppercase tracking-tighter">Ditolak</span>
                             )}
                           </td>
                           <td className="py-2.5 px-1 text-right font-mono text-slate-300 font-semibold whitespace-nowrap text-[10px]">

@@ -30,6 +30,7 @@ import {
   recalculateSummary,
   getSemuaPendingSetoran, 
   verifikasiSetoranAdmin, 
+  rejectSetoran,
   subscribeAdminUsers,
   seedDefaultOwner,
   subscribeAllSalesTransactions,
@@ -139,7 +140,7 @@ export default function DashboardPage() {
 
   const handleGlobalVerify = async (item) => {
     if (!checkWritePermission("verifikasi setoran")) return;
-    if (confirm(`Sahkan setoran Rp ${item.nominal?.toLocaleString('id-ID')} dari ${item.namaSales}?`)) {
+    if (confirm(`Sahkan setoran Rp ${item.nominal?.toLocaleString('id-ID')} dari ${item.teamName || item.namaSales || "Sales"}?`)) {
       try {
         await verifikasiSetoranAdmin(item.id, item.teamId, item.nominal);
         toast.success("Berhasil disahkan!");
@@ -153,6 +154,26 @@ export default function DashboardPage() {
         setPendingCount(prev => prev - 1);
       } catch (error) {
         toast.error("Gagal memverifikasi: " + error.message);
+      }
+    }
+  };
+
+  const handleGlobalReject = async (item) => {
+    if (!checkWritePermission("verifikasi setoran")) return;
+    if (confirm(`Tolak setoran Rp ${item.nominal?.toLocaleString('id-ID')} dari ${item.teamName || item.namaSales || "Sales"}?`)) {
+      try {
+        await rejectSetoran(item.id);
+        toast.success("Setoran berhasil ditolak!");
+        
+        // Update local state without refetching immediately for snappier UI
+        setPendingList(prev => {
+          const newList = prev.filter(p => p.id !== item.id);
+          if (newList.length === 0) setIsVerificationQueueOpen(false);
+          return newList;
+        });
+        setPendingCount(prev => prev - 1);
+      } catch (error) {
+        toast.error("Gagal menolak setoran: " + error.message);
       }
     }
   };
@@ -438,7 +459,7 @@ export default function DashboardPage() {
           </div>
         );
       case "returns":
-        if (adminUser?.role === 'admin') return null;
+
         return (
           <div className="space-y-8 animate-fadeIn">
             <ReturnsForm products={products} teams={teams} returns={returns} factoryReturns={factoryReturns} />
@@ -526,12 +547,20 @@ export default function DashboardPage() {
                           <p className="text-[9px] uppercase tracking-widest text-slate-500 font-bold mb-0.5">Nominal Setor</p>
                           <p className="font-black text-white text-lg">Rp {item.nominal?.toLocaleString('id-ID')}</p>
                         </div>
-                        <button 
-                          onClick={() => handleGlobalVerify(item)}
-                          className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-4 py-2 rounded-lg transition-all shadow-lg shadow-emerald-900/30 whitespace-nowrap active:scale-95"
-                        >
-                          ✅ Sahkan
-                        </button>
+                        <div className="flex items-center gap-2">
+                          <button 
+                            onClick={() => handleGlobalVerify(item)}
+                            className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-4 py-2 rounded-lg transition-all shadow-lg shadow-emerald-900/30 whitespace-nowrap active:scale-95 text-xs"
+                          >
+                            ✅ Sahkan
+                          </button>
+                          <button 
+                            onClick={() => handleGlobalReject(item)}
+                            className="bg-rose-600 hover:bg-rose-500 text-white font-bold px-4 py-2 rounded-lg transition-all shadow-lg shadow-rose-900/30 whitespace-nowrap active:scale-95 text-xs"
+                          >
+                            ❌ Tolak
+                          </button>
+                        </div>
                       </div>
                     </div>
                   ))}

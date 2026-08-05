@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { HiOutlineShieldCheck, HiOutlineRefresh, HiDatabase, HiOutlineExclamation, HiOutlineX, HiOutlineUserAdd, HiOutlineTrash, HiOutlinePencilAlt, HiOutlineEye, HiOutlineEyeOff } from "react-icons/hi";
-import { factoryResetDatabase, resetSalesData, subscribeAdminUsers, addAdminUser, updateAdminUser, deleteAdminUser } from "@/lib/firestore";
+import { HiOutlineShieldCheck, HiOutlineRefresh, HiDatabase, HiOutlineExclamation, HiOutlineX, HiOutlineUserAdd, HiOutlineTrash, HiOutlinePencilAlt, HiOutlineEye, HiOutlineEyeOff, HiOutlineDocumentText } from "react-icons/hi";
+import { factoryResetDatabase, resetSalesData, subscribeAdminUsers, addAdminUser, updateAdminUser, deleteAdminUser, subscribeInvoiceSettings, updateInvoiceSettings } from "@/lib/firestore";
 import { useAdminAuth } from "@/lib/AdminAuthContext";
 import toast from "react-hot-toast";
 
@@ -36,12 +36,45 @@ export default function Settings({ onRecalculate, isRecalculating }) {
   const [isSavingUser, setIsSavingUser] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
+  const [invoiceSettings, setInvoiceSettings] = useState({
+    companyName: "",
+    tagline: "",
+    contactInfo: ""
+  });
+  const [isSavingSettings, setIsSavingSettings] = useState(false);
+
   useEffect(() => {
     if (adminUser?.role === "owner") {
       const unsub = subscribeAdminUsers(setUsers);
       return () => unsub();
     }
   }, [adminUser]);
+
+  useEffect(() => {
+    const unsub = subscribeInvoiceSettings((data) => {
+      if (data) {
+        setInvoiceSettings({
+          companyName: data.companyName || "",
+          tagline: data.tagline || "",
+          contactInfo: data.contactInfo || ""
+        });
+      }
+    });
+    return () => unsub();
+  }, []);
+
+  async function handleSaveInvoiceSettings(e) {
+    e.preventDefault();
+    setIsSavingSettings(true);
+    try {
+      await updateInvoiceSettings(invoiceSettings);
+      toast.success("Header invoice berhasil diperbarui!");
+    } catch (err) {
+      toast.error("Gagal menyimpan header: " + err.message);
+    } finally {
+      setIsSavingSettings(false);
+    }
+  }
 
   async function handleFactoryReset() {
     if (confirmText !== "HAPUS") return;
@@ -192,6 +225,66 @@ export default function Settings({ onRecalculate, isRecalculating }) {
             {isRecalculating ? "Memproses..." : "Sinkron Sekarang"}
           </button>
         </div>
+      </div>
+
+      {/* CARD 1.5: PENGATURAN HEADER INVOICE */}
+      <div className="glass-card p-6">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-400">
+            <HiOutlineDocumentText size={24} />
+          </div>
+          <div>
+            <h2 className="text-lg font-bold text-white">Pengaturan Header Invoice</h2>
+            <p className="text-xs text-slate-400">Sesuaikan nama usaha dan kontak pada struk / faktur distribusi</p>
+          </div>
+        </div>
+
+        <form onSubmit={handleSaveInvoiceSettings} className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-[10px] uppercase font-bold text-slate-500 mb-1">Nama Perusahaan / Distributor</label>
+              <input 
+                type="text" 
+                required 
+                value={invoiceSettings.companyName} 
+                onChange={(e) => setInvoiceSettings({...invoiceSettings, companyName: e.target.value})} 
+                className="input-field w-full text-xs animate-none" 
+                placeholder="Contoh: DISTRILINK CENTRAL" 
+              />
+            </div>
+            <div>
+              <label className="block text-[10px] uppercase font-bold text-slate-500 mb-1">Tagline / Deskripsi Usaha</label>
+              <input 
+                type="text" 
+                required 
+                value={invoiceSettings.tagline} 
+                onChange={(e) => setInvoiceSettings({...invoiceSettings, tagline: e.target.value})} 
+                className="input-field w-full text-xs animate-none" 
+                placeholder="Contoh: Sistem Manajemen Distribusi & Penjualan" 
+              />
+            </div>
+          </div>
+          <div>
+            <label className="block text-[10px] uppercase font-bold text-slate-500 mb-1">Informasi Kontak (Telepon & Email)</label>
+            <input 
+              type="text" 
+              required 
+              value={invoiceSettings.contactInfo} 
+              onChange={(e) => setInvoiceSettings({...invoiceSettings, contactInfo: e.target.value})} 
+              className="input-field w-full text-xs animate-none" 
+              placeholder="Contoh: Telepon: +62 811-XXXX-XXXX | Email: support@distrilink.id" 
+            />
+          </div>
+          <div className="flex justify-end pt-2">
+            <button 
+              type="submit" 
+              disabled={isSavingSettings}
+              className="px-5 py-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold transition-all shadow-lg shadow-blue-500/20 disabled:opacity-50"
+            >
+              {isSavingSettings ? "Menyimpan..." : "Simpan Pengaturan Header"}
+            </button>
+          </div>
+        </form>
       </div>
 
       {/* CARD 2: DANGER ZONE */}

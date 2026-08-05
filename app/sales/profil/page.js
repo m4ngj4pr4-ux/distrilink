@@ -218,7 +218,7 @@ export default function ProfilPage() {
     .reduce((sum, item) => sum + (item.nominal || 0), 0);
 
   const totalProses = riwayatSetoran
-    .filter(item => item.status !== "Diverifikasi Admin" && item.status !== "Selesai (Sistem Lama)")
+    .filter(item => item.status !== "Diverifikasi Admin" && item.status !== "Selesai (Sistem Lama)" && item.status !== "Ditolak")
     .reduce((sum, item) => sum + (item.nominal || 0), 0);
 
   const filteredDropping = riwayatDropping.filter(item => {
@@ -363,9 +363,17 @@ export default function ProfilPage() {
                   <div className="text-right">
                     <p className="text-sm font-black text-emerald-400">Rp {item.nominal?.toLocaleString('id-ID')}</p>
                     <span className={`text-[8px] px-1.5 py-0.5 rounded font-black uppercase tracking-tighter mt-1 inline-block ${
-                      item.status === "Diverifikasi Admin" || item.status === "Selesai (Sistem Lama)" ? "bg-emerald-500/10 text-emerald-500" : "bg-amber-500/10 text-amber-500"
+                      item.status === "Diverifikasi Admin" || item.status === "Selesai (Sistem Lama)" 
+                        ? "bg-emerald-500/10 text-emerald-500" 
+                        : item.status === "Ditolak"
+                          ? "bg-rose-500/10 text-rose-500"
+                          : "bg-amber-500/10 text-amber-500"
                     }`}>
-                      {item.status === "Diverifikasi Admin" || item.status === "Selesai (Sistem Lama)" ? "Selesai" : "Proses"}
+                      {item.status === "Diverifikasi Admin" || item.status === "Selesai (Sistem Lama)" 
+                        ? "Selesai" 
+                        : item.status === "Ditolak"
+                          ? "Ditolak"
+                          : "Proses"}
                     </span>
                   </div>
                 </div>

@@ -86,7 +86,9 @@ export default function POHistory({ purchases, distributions }) {
       tableData.push([
         p.createdAt?.toDate().toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "2-digit" }),
         p.productName,
-        `${p.jumlahKarton || 0} Ct / ${p.totalBall || 0} Bal / ${(p.totalPack || 0).toLocaleString("id-ID")} Pk`,
+        p.jumlahKartonInput != null || p.jumlahBallInput != null || p.jumlahSlopInput != null
+          ? `${p.jumlahKartonInput || 0} Ct / ${p.jumlahBallInput || 0} Bal / ${p.jumlahSlopInput || 0} Slop`
+          : `${p.jumlahKarton || 0} Ct / ${p.totalBall || 0} Bal / ${(p.totalPack || 0).toLocaleString("id-ID")} Pk`,
         formatRupiah(p.hargaBeliPerPack),
         formatRupiah(p.totalHarga || ((p.totalPack || 0) * (p.hargaBeliPerPack || 0))),
         formatRupiah(p.biayaPengiriman),
@@ -247,7 +249,11 @@ export default function POHistory({ purchases, distributions }) {
                      </td>
                     <td>
                       <div className="text-sm font-bold text-emerald-400">
-                        {p.jumlahKarton} Ct / {totalBalls} Bal
+                        {p.jumlahKartonInput != null || p.jumlahBallInput != null || p.jumlahSlopInput != null ? (
+                          `${p.jumlahKartonInput || 0} Ct / ${p.jumlahBallInput || 0} Bal / ${p.jumlahSlopInput || 0} Slop`
+                        ) : (
+                          `${p.jumlahKarton} Ct / ${totalBalls} Bal`
+                        )}
                       </div>
                       <div className="text-[10px] text-slate-500 mt-0.5">
                         {totalPacks.toLocaleString("id-ID")} Pack

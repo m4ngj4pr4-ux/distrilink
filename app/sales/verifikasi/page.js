@@ -35,7 +35,7 @@ export default function CaptainVerifikasiPage() {
   };
 
   const handleAcceptCash = async (item) => {
-    if (!confirm(`Terima uang tunai Rp ${item.nominal?.toLocaleString('id-ID')} dari ${item.namaSales}?`)) return;
+    if (!confirm(`Terima uang tunai Rp ${item.nominal?.toLocaleString('id-ID')} dari ${item.teamName || item.namaSales || "Sales"}?`)) return;
     setProcessingId(item.id);
     try {
       await acceptCashDeposit(item.id);

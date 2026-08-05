@@ -104,7 +104,7 @@ export default function StokGudangPage() {
     
     let receivedQty = receivingPO.jumlahKarton;
     if (!qtyMatches) {
-      const parsed = parseInt(actualCartonsInput);
+      const parsed = parseFloat(actualCartonsInput);
       if (isNaN(parsed) || parsed <= 0) {
         toast.error("Jumlah karton yang diterima harus berupa angka lebih dari 0");
         return;
@@ -164,7 +164,14 @@ export default function StokGudangPage() {
                 <div className="min-w-0 flex-1 pr-3">
                   <h4 className="font-bold text-white truncate">{po.productName}</h4>
                   <p className="text-[10px] text-slate-400 mt-0.5">
-                    Order: <span className="font-bold font-mono text-slate-300">{po.jumlahKarton} Ct</span>
+                    Order:{" "}
+                    <span className="font-bold font-mono text-slate-300">
+                      {po.jumlahKartonInput != null || po.jumlahBallInput != null || po.jumlahSlopInput != null ? (
+                        `${po.jumlahKartonInput || 0} Ct / ${po.jumlahBallInput || 0} Bal / ${po.jumlahSlopInput || 0} Slop`
+                      ) : (
+                        `${po.jumlahKarton} Ct`
+                      )}
+                    </span>
                   </p>
                   <p className="text-[9px] text-slate-500 mt-0.5">
                     Dibuat: {po.createdAt ? new Date(po.createdAt.toDate()).toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "2-digit" }) : "-"}
@@ -173,7 +180,7 @@ export default function StokGudangPage() {
                 <button
                   onClick={() => {
                     setReceivingPO(po);
-                    setActualCartonsInput(po.jumlahKarton.toString());
+                    setActualCartonsInput(Number(po.jumlahKarton.toFixed(4)).toString());
                     setQtyMatches(true);
                   }}
                   className="bg-amber-950 hover:bg-amber-900 border border-amber-800 text-amber-400 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider active:scale-95 transition-all shrink-0"
@@ -327,7 +334,13 @@ export default function StokGudangPage() {
               <div className="bg-dark-800 border border-slate-800 rounded-xl p-3 text-xs">
                 <div className="flex justify-between border-b border-slate-700/30 pb-1.5 mb-1.5 text-slate-400">
                   <span>Jumlah di PO:</span>
-                  <span className="font-bold text-white font-mono">{receivingPO.jumlahKarton} Karton</span>
+                  <span className="font-bold text-white font-mono text-right">
+                    {receivingPO.jumlahKartonInput != null || receivingPO.jumlahBallInput != null || receivingPO.jumlahSlopInput != null ? (
+                      `${receivingPO.jumlahKartonInput || 0} Ct / ${receivingPO.jumlahBallInput || 0} Bal / ${receivingPO.jumlahSlopInput || 0} Slop`
+                    ) : (
+                      `${Number(receivingPO.jumlahKarton.toFixed(4))} Karton`
+                    )}
+                  </span>
                 </div>
                 <div className="flex justify-between text-slate-400">
                   <span>HPP per Pack:</span>
@@ -344,7 +357,15 @@ export default function StokGudangPage() {
                     onChange={(e) => setQtyMatches(e.target.checked)}
                     className="w-4 h-4 rounded border-slate-700 bg-dark-800 text-blue-500 focus:ring-0 cursor-pointer"
                   />
-                  <span>Jumlah barang sesuai PO ({receivingPO.jumlahKarton} Ct)</span>
+                  <span>
+                    Jumlah barang sesuai PO (
+                    {receivingPO.jumlahKartonInput != null || receivingPO.jumlahBallInput != null || receivingPO.jumlahSlopInput != null ? (
+                      `${receivingPO.jumlahKartonInput || 0} Ct / ${receivingPO.jumlahBallInput || 0} Bal / ${receivingPO.jumlahSlopInput || 0} Slop`
+                    ) : (
+                      `${receivingPO.jumlahKarton} Ct`
+                    )}
+                    )
+                  </span>
                 </label>
               </div>
 
