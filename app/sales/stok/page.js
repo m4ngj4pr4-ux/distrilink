@@ -8,6 +8,7 @@ import {
   receivePurchaseAtomic,
   subscribeAllDistributions,
   subscribeReturns,
+  subscribeFactoryReturns,
   calculatePOBatchesWithRealSisa
 } from '@/lib/firestore';
 import toast from 'react-hot-toast';
@@ -19,6 +20,7 @@ export default function StokGudangPage() {
   const [purchases, setPurchases] = useState([]);
   const [allDistributions, setAllDistributions] = useState([]);
   const [returns, setReturns] = useState([]);
+  const [factoryReturns, setFactoryReturns] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [expandedProducts, setExpandedProducts] = useState({});
@@ -61,12 +63,14 @@ export default function StokGudangPage() {
 
     const unsubAllDist = subscribeAllDistributions(setAllDistributions);
     const unsubReturns = subscribeReturns(setReturns);
+    const unsubFactoryReturns = subscribeFactoryReturns(setFactoryReturns);
 
     return () => {
       unsubProducts();
       unsubPurchases();
       unsubAllDist();
       unsubReturns();
+      unsubFactoryReturns();
     };
   }, [user]);
 
@@ -76,7 +80,7 @@ export default function StokGudangPage() {
 
   const getProductStockData = (p) => {
     // 1. Ambil semua batch PO aktif untuk produk ini dengan sisa stok riil, urutkan dari yang TERBARU (Descending)
-    const batches = calculatePOBatchesWithRealSisa(purchases, allDistributions, returns)
+    const batches = calculatePOBatchesWithRealSisa(purchases, allDistributions, returns, factoryReturns)
       .filter(b => b.productId === p.id && b.realSisa > 0)
       .sort((a, b) => (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0));
       

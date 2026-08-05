@@ -37,6 +37,7 @@ import {
   captainDepositToAdmin,
   subscribeAllDistributions,
   subscribeReturns,
+  subscribeFactoryReturns,
   calculatePOBatchesWithRealSisa
 } from '@/lib/firestore';
 import { formatRupiah, formatNumber, formatInputNumber, parseInputNumber } from '@/lib/utils';
@@ -409,6 +410,8 @@ function AdminGudangDashboard({ user, router }) {
   const [pendingSetorans, setPendingSetorans] = useState([]);
   const [allDistributions, setAllDistributions] = useState([]);
   const [returns, setReturns] = useState([]);
+  const [factoryReturns, setFactoryReturns] = useState([]);
+  const [activeTab, setActiveTab] = useState("stok");
   const [isLoading, setIsLoading] = useState(true);
 
   // Modal states
@@ -572,6 +575,7 @@ function AdminGudangDashboard({ user, router }) {
     const unsubPendingSetorans = subscribePendingSetoran(setPendingSetorans);
     const unsubAllDist = subscribeAllDistributions(setAllDistributions);
     const unsubReturns = subscribeReturns(setReturns);
+    const unsubFactoryReturns = subscribeFactoryReturns(setFactoryReturns);
 
     return () => {
       unsubTeams();
@@ -580,6 +584,7 @@ function AdminGudangDashboard({ user, router }) {
       unsubPendingSetorans();
       unsubAllDist();
       unsubReturns();
+      unsubFactoryReturns();
     };
   }, []);
 
@@ -605,9 +610,9 @@ function AdminGudangDashboard({ user, router }) {
   // Centralized PO batches sisa calculation using the helper
   const availableBatches = useMemo(() => {
     if (!purchases || !products) return [];
-    return calculatePOBatchesWithRealSisa(purchases, allDistributions, returns)
+    return calculatePOBatchesWithRealSisa(purchases, allDistributions, returns, factoryReturns)
       .filter(b => b.realSisa > 0);
-  }, [purchases, allDistributions, returns, products]);
+  }, [purchases, allDistributions, returns, factoryReturns, products]);
 
   // Drop amount auto-fill when selection/qty changes
   const computedDropAmount = useMemo(() => {

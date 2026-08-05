@@ -37,7 +37,7 @@ import {
 import toast from "react-hot-toast";
 import { usePermissions } from "@/hooks/usePermissions";
 
-export default function SalesLedger({ teams, products, purchases, allDistributions, returns }) {
+export default function SalesLedger({ teams, products, purchases, allDistributions, returns, factoryReturns }) {
   const { checkWritePermission } = usePermissions();
   const [depositModal, setDepositModal] = useState(null);
   const [dropModal, setDropModal] = useState(null);
@@ -105,8 +105,8 @@ export default function SalesLedger({ teams, products, purchases, allDistributio
 
   // HITUNG SISA STOK PO REAL-TIME (SINKRONISASI DENGAN TRANSAKSI DISTRIBUSI & RETUR)
   const availableBatches = useMemo(() => {
-    return calculatePOBatchesWithRealSisa(purchases, allDistributions || [], returns || []);
-  }, [purchases, allDistributions, returns]);
+    return calculatePOBatchesWithRealSisa(purchases, allDistributions || [], returns || [], factoryReturns || []);
+  }, [purchases, allDistributions, returns, factoryReturns]);
 
   // AUTO-RECALCULATE TOTAL NILAI DISTRIBUSI
   useEffect(() => {

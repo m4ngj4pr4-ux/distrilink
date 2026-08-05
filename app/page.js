@@ -72,8 +72,8 @@ export default function DashboardPage() {
   const [isVerificationQueueOpen, setIsVerificationQueueOpen] = useState(false);
 
   const allAvailableBatches = useMemo(() => {
-    return calculatePOBatchesWithRealSisa(purchases, allDistributions, returns);
-  }, [purchases, allDistributions, returns]);
+    return calculatePOBatchesWithRealSisa(purchases, allDistributions, returns, factoryReturns);
+  }, [purchases, allDistributions, returns, factoryReturns]);
 
   useEffect(() => {
     if (adminUser?.role === 'investor' && activeSection === 'settings') {
@@ -449,7 +449,7 @@ export default function DashboardPage() {
       case "sales":
         return (
           <div className="space-y-8 animate-fadeIn">
-            <SalesLedger teams={teams} products={products} purchases={purchases} allDistributions={allDistributions} returns={returns} />
+            <SalesLedger teams={teams} products={products} purchases={purchases} allDistributions={allDistributions} returns={returns} factoryReturns={factoryReturns} />
           </div>
         );
       case "retail":
