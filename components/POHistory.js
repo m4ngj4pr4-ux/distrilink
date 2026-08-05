@@ -18,6 +18,7 @@ export default function POHistory({ purchases, distributions }) {
   const [payModal, setPayModal] = useState(null);
   const [detailModal, setDetailModal] = useState(null);
   const [payAmount, setPayAmount] = useState("");
+  const [payNotes, setPayNotes] = useState("");
   const [paymentHistory, setPaymentHistory] = useState([]);
   const [editingPO, setEditingPO] = useState(null);
   const [processing, setProcessing] = useState(false);
@@ -53,12 +54,12 @@ export default function POHistory({ purchases, distributions }) {
     if (amount > payModal.sisaHutang) {
       return toast.error(`Gagal: Pembayaran melebihi sisa hutang (Maks: ${formatRupiah(payModal.sisaHutang)})`);
     }
-    setProcessing(true);
     try {
-      await payFactoryDebt(payModal.id, amount);
+      await payFactoryDebt(payModal.id, amount, payNotes);
       toast.success(`Pembayaran ${formatRupiah(amount)} berhasil!`);
       setPayModal(null);
       setPayAmount("");
+      setPayNotes("");
     } catch (err) {
       toast.error("Gagal: " + err.message);
     } finally {
@@ -323,7 +324,14 @@ export default function POHistory({ purchases, distributions }) {
               value={formatInputNumber(payAmount)} 
               onChange={(e) => setPayAmount(parseInputNumber(e.target.value))} 
               placeholder="Nominal Cicilan (Rp)" 
-              className="input-field mb-5" 
+              className="input-field mb-3" 
+            />
+            <input 
+              type="text" 
+              value={payNotes} 
+              onChange={(e) => setPayNotes(e.target.value)} 
+              placeholder="Keterangan (Opsional, cth: TF BCA, Retur)" 
+              className="input-field mb-5 text-sm" 
             />
             <div className="flex items-center gap-3">
               <button onClick={() => setPayModal(null)} className="btn-ghost flex-1">Batal</button>
@@ -373,6 +381,11 @@ export default function POHistory({ purchases, distributions }) {
                             hour: "2-digit", 
                             minute: "2-digit" 
                           })}
+                          {pay.keterangan && (
+                            <div className="text-[10px] text-slate-500 mt-1 italic leading-tight">
+                              {pay.keterangan}
+                            </div>
+                          )}
                         </td>
                         <td className="py-3 text-right font-bold text-emerald-400">{formatRupiah(pay.amount)}</td>
                       </tr>
