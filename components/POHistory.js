@@ -19,6 +19,7 @@ export default function POHistory({ purchases, distributions }) {
   const [detailModal, setDetailModal] = useState(null);
   const [payAmount, setPayAmount] = useState("");
   const [payNotes, setPayNotes] = useState("");
+  const [potongKas, setPotongKas] = useState(true);
   const [paymentHistory, setPaymentHistory] = useState([]);
   const [editingPO, setEditingPO] = useState(null);
   const [processing, setProcessing] = useState(false);
@@ -55,11 +56,12 @@ export default function POHistory({ purchases, distributions }) {
       return toast.error(`Gagal: Pembayaran melebihi sisa hutang (Maks: ${formatRupiah(payModal.sisaHutang)})`);
     }
     try {
-      await payFactoryDebt(payModal.id, amount, payNotes);
+      await payFactoryDebt(payModal.id, amount, payNotes, potongKas);
       toast.success(`Pembayaran ${formatRupiah(amount)} berhasil!`);
       setPayModal(null);
       setPayAmount("");
       setPayNotes("");
+      setPotongKas(true);
     } catch (err) {
       toast.error("Gagal: " + err.message);
     } finally {
@@ -331,8 +333,17 @@ export default function POHistory({ purchases, distributions }) {
               value={payNotes} 
               onChange={(e) => setPayNotes(e.target.value)} 
               placeholder="Keterangan (Opsional, cth: TF BCA, Retur)" 
-              className="input-field mb-5 text-sm" 
+              className="input-field mb-4 text-sm" 
             />
+            <div className="flex items-start gap-2 mb-5 bg-dark-800 p-3 rounded-lg border border-slate-700/50 cursor-pointer hover:border-emerald-500/30 transition-colors" onClick={() => setPotongKas(!potongKas)}>
+              <div className={`mt-0.5 w-4 h-4 rounded border flex items-center justify-center shrink-0 ${potongKas ? 'bg-emerald-500 border-emerald-500' : 'bg-transparent border-slate-500'}`}>
+                {potongKas && <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
+              </div>
+              <div className="flex-1">
+                <span className="text-[11px] font-bold text-slate-300 block mb-0.5">Potong Kas / Modal Aktif</span>
+                <span className="text-[9px] text-slate-500 leading-tight block">Hapus centang jika ini hanya penyesuaian (contoh: karena retur barang) sehingga uang kas riil Anda tidak berkurang.</span>
+              </div>
+            </div>
             <div className="flex items-center gap-3">
               <button onClick={() => setPayModal(null)} className="btn-ghost flex-1">Batal</button>
               <button onClick={handlePayment} disabled={processing} className="btn-primary flex-1">Simpan</button>
@@ -385,6 +396,9 @@ export default function POHistory({ purchases, distributions }) {
                             <div className="text-[10px] text-slate-500 mt-1 italic leading-tight">
                               {pay.keterangan}
                             </div>
+                          )}
+                          {!pay.potongKas && pay.potongKas !== undefined && (
+                            <span className="inline-block mt-1 bg-amber-500/10 text-amber-500 text-[8px] px-1.5 py-0.5 rounded font-bold uppercase">Non-Kas</span>
                           )}
                         </td>
                         <td className="py-3 text-right font-bold text-emerald-400">{formatRupiah(pay.amount)}</td>
