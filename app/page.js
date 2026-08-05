@@ -462,7 +462,7 @@ export default function DashboardPage() {
 
         return (
           <div className="space-y-8 animate-fadeIn">
-            <ReturnsForm products={products} teams={teams} returns={returns} factoryReturns={factoryReturns} />
+            <ReturnsForm products={products} teams={teams} returns={returns} factoryReturns={factoryReturns} purchases={purchases} />
           </div>
         );
       case "kalkulator":

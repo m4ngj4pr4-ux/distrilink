@@ -7,12 +7,13 @@ import { addReturnTransaction, addFactoryReturnTransaction } from "@/lib/firesto
 import toast from "react-hot-toast";
 import { usePermissions } from "@/hooks/usePermissions";
 
-export default function ReturnsForm({ products, teams, returns, factoryReturns }) {
+export default function ReturnsForm({ products, teams, returns, factoryReturns, purchases = [] }) {
   const { checkWritePermission } = usePermissions();
   const [activeTab, setActiveTab] = useState("sales"); // "sales" or "factory"
   
   const [selectedTeamId, setSelectedTeamId] = useState("");
   const [selectedProductId, setSelectedProductId] = useState("");
+  const [selectedPurchaseId, setSelectedPurchaseId] = useState("");
   const [returnQty, setReturnQty] = useState("");
   const [returnUnit, setReturnUnit] = useState("Ct");
   const [returnReason, setReturnReason] = useState("");
@@ -72,7 +73,8 @@ export default function ReturnsForm({ products, teams, returns, factoryReturns }
     try {
       await addFactoryReturnTransaction({
         productId: product.id, productName: product.name,
-        qtyOriginal: qty, unit: returnUnit, totalPacksReturned, returnAmount, reason: returnReason || "Barang Cacat / Rusak"
+        qtyOriginal: qty, unit: returnUnit, totalPacksReturned, returnAmount, reason: returnReason || "Barang Cacat / Rusak",
+        purchaseId: selectedPurchaseId || null
       });
       toast.success(`Retur ${product.name} ke Pabrik berhasil! Hutang pabrik berkurang.`);
       resetForm();
@@ -80,7 +82,7 @@ export default function ReturnsForm({ products, teams, returns, factoryReturns }
   }
 
   function resetForm() {
-    setSelectedProductId(""); setReturnQty(""); setReturnReason("");
+    setSelectedProductId(""); setSelectedPurchaseId(""); setReturnQty(""); setReturnReason("");
   }
 
   return (
@@ -126,6 +128,29 @@ export default function ReturnsForm({ products, teams, returns, factoryReturns }
               </select>
             </div>
           </div>
+
+          {/* Jika Retur ke Pabrik, Tampilkan Pilihan PO yang belum lunas */}
+          {activeTab === "factory" && selectedProductId && (
+            <div className="mb-6">
+              <label className="block text-[11px] font-bold text-slate-400 mb-1.5 uppercase tracking-wider">Potong Hutang dari PO (Opsional)</label>
+              <select 
+                value={selectedPurchaseId}
+                onChange={(e) => setSelectedPurchaseId(e.target.value)}
+                className="input-field w-full appearance-none"
+              >
+                <option value="">-- Tidak Dipotong dari PO Tertentu --</option>
+                {purchases
+                  .filter(po => po.productId === selectedProductId && po.sisaHutang > 0)
+                  .map(po => (
+                    <option key={po.id} value={po.id}>
+                      PO: {po.createdAt?.toDate().toLocaleDateString("id-ID")} - Sisa: {formatRupiah(po.sisaHutang)}
+                    </option>
+                  ))
+                }
+              </select>
+              <p className="text-[10px] text-slate-500 mt-1">Jika dipilih, sisa hutang PO ini akan berkurang sesuai nilai barang yang diretur.</p>
+            </div>
+          )}
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="md:col-span-2 flex gap-2">
