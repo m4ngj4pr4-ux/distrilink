@@ -1,9 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { HiOutlineReply, HiOutlineClipboardCheck, HiOutlineTruck } from "react-icons/hi";
+import { HiOutlineReply, HiOutlineClipboardCheck, HiOutlineTruck, HiOutlineTrash } from "react-icons/hi";
 import { formatRupiah, parseInputNumber, formatInputNumber } from "@/lib/utils";
-import { addReturnTransaction, addFactoryReturnTransaction } from "@/lib/firestore";
+import { addReturnTransaction, addFactoryReturnTransaction, deleteReturnTransaction, deleteFactoryReturnTransaction } from "@/lib/firestore";
 import toast from "react-hot-toast";
 import { usePermissions } from "@/hooks/usePermissions";
 
@@ -97,7 +97,26 @@ export default function ReturnsForm({ products, teams, returns = [], factoryRetu
       });
       toast.success(`Retur ${product.name} ke Pabrik berhasil! Hutang pabrik berkurang.`);
       resetForm();
-    } catch (err) { toast.error("Gagal retur pabrik: " + err.message); } finally { setProcessing(false); }
+    } catch (err) { toast.error("Gagal retur pabrik: " + err.message); } finally { setProcessing(false);    }
+  }
+
+  async function handleDeleteReturn(r) {
+    if (!checkWritePermission("menghapus retur")) return;
+    if (confirm(`Hapus retur ${r.productName} dari ${r.teamName || "Pabrik"}? Stok dan nominal akan dikembalikan ke posisi semula.`)) {
+      setProcessing(true);
+      try {
+        if (activeTab === "sales") {
+          await deleteReturnTransaction(r.id, r);
+        } else {
+          await deleteFactoryReturnTransaction(r.id, r);
+        }
+        toast.success("Data retur berhasil dihapus!");
+      } catch (err) {
+        toast.error("Gagal menghapus: " + err.message);
+      } finally {
+        setProcessing(false);
+      }
+    }
   }
 
   function resetForm() {
@@ -234,11 +253,12 @@ export default function ReturnsForm({ products, teams, returns = [], factoryRetu
                 <th className="py-2 px-3 text-center">Jumlah</th>
                 <th className="py-2 px-3">Keterangan</th>
                 <th className="py-2 px-3 text-right">Potongan {activeTab === "sales" ? "Piutang" : "Hutang"}</th>
+                <th className="py-2 px-3 text-center w-12">Aksi</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-400/5">
               {(activeTab === "sales" ? returns : factoryReturns)?.length === 0 ? (
-                <tr><td colSpan={activeTab === "sales" ? 6 : 5} className="text-center py-6 text-slate-500 italic text-sm">Belum ada riwayat retur.</td></tr>
+                <tr><td colSpan={activeTab === "sales" ? 7 : 6} className="text-center py-6 text-slate-500 italic text-sm">Belum ada riwayat retur.</td></tr>
               ) : (
                 (activeTab === "sales" ? returns : factoryReturns)?.map(r => (
                   <tr key={r.id} className="text-xs hover:bg-white/5 transition-colors">
@@ -248,6 +268,11 @@ export default function ReturnsForm({ products, teams, returns = [], factoryRetu
                     <td className="py-2 px-3 text-center font-bold">{r.qtyOriginal} <span className="text-[10px] text-slate-500">{r.unit}</span></td>
                     <td className="py-2 px-3 text-slate-400">{r.reason}</td>
                     <td className={`py-2 px-3 text-right font-bold ${activeTab === "sales" ? "text-amber-400" : "text-blue-400"}`}>{formatRupiah(r.returnAmount)}</td>
+                    <td className="py-2 px-3 text-center">
+                      <button onClick={() => handleDeleteReturn(r)} disabled={processing} className="p-1 text-slate-400 hover:text-rose-500 hover:bg-rose-500/10 rounded transition-colors" title="Hapus Retur">
+                        <HiOutlineTrash size={16} />
+                      </button>
+                    </td>
                   </tr>
                 ))
               )}
