@@ -7,7 +7,7 @@ import { addReturnTransaction, addFactoryReturnTransaction } from "@/lib/firesto
 import toast from "react-hot-toast";
 import { usePermissions } from "@/hooks/usePermissions";
 
-export default function ReturnsForm({ products, teams, returns, factoryReturns, purchases = [] }) {
+export default function ReturnsForm({ products, teams, returns = [], factoryReturns = [], purchases = [], allDistributions = [], salesTransactions = [] }) {
   const { checkWritePermission } = usePermissions();
   const [activeTab, setActiveTab] = useState("sales"); // "sales" or "factory"
   
@@ -18,6 +18,19 @@ export default function ReturnsForm({ products, teams, returns, factoryReturns, 
   const [returnUnit, setReturnUnit] = useState("Ct");
   const [returnReason, setReturnReason] = useState("");
   const [processing, setProcessing] = useState(false);
+
+  // Hitung stok bawaan sales saat ini
+  const getTeamStock = (productId, teamId) => {
+    if (!teamId || !productId) return 0;
+    const dist = allDistributions.filter(d => d.teamId === teamId && d.productId === productId).reduce((sum, d) => sum + (d.totalPacksDistributed || 0), 0);
+    const ret = returns.filter(r => r.teamId === teamId && r.productId === productId).reduce((sum, r) => sum + (r.totalPacksReturned || 0), 0);
+    const sales = salesTransactions.filter(s => s.teamId === teamId && s.productId === productId).reduce((sum, s) => sum + (s.totalPacksSold || 0), 0);
+    // Include the case where it's a direct sales drop from app/sales/transaksi/page.js
+    const drops = salesTransactions.filter(s => s.tipe === "drop" && s.teamId === teamId && s.productId === productId).reduce((sum, s) => sum + (s.jumlahDrop || 0), 0);
+    // salesTransactions usually stores totalPacksSold or jumlahDrop depending on the type.
+    // In our audit script, we just used `jumlahDrop` for `tipe === 'drop'`.
+    return dist - ret - drops;
+  };
 
   // Handle Retur dari Sales
   async function handleSalesSubmit(e) {
@@ -35,6 +48,12 @@ export default function ReturnsForm({ products, teams, returns, factoryReturns, 
 
     let totalPacksReturned = returnUnit === "Ct" ? qty * slopsPerKarton * packsPerSlop : returnUnit === "Bal" ? qty * 10 * packsPerSlop : qty * packsPerSlop;
     const returnAmount = totalPacksReturned * (product.currentSellingPrice || 0);
+
+    // VALIDASI STOK TIM
+    const currentStock = getTeamStock(product.id, team.id);
+    if (totalPacksReturned > currentStock) {
+      return toast.error(`Stok tim tidak cukup! Maksimal retur: ${currentStock.toLocaleString("id-ID")} Pk.`);
+    }
 
     setProcessing(true);
     try {
@@ -124,7 +143,11 @@ export default function ReturnsForm({ products, teams, returns, factoryReturns, 
               <label className="block text-xs font-medium text-slate-400 mb-1.5">Pilih Produk</label>
               <select value={selectedProductId} onChange={(e) => setSelectedProductId(e.target.value)} className="input-field w-full">
                 <option value="">— Pilih Produk —</option>
-                {products?.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                {products?.filter(p => activeTab === "factory" || !selectedTeamId || getTeamStock(p.id, selectedTeamId) > 0).map(p => (
+                  <option key={p.id} value={p.id}>
+                    {p.name} {activeTab === "sales" && selectedTeamId ? `(Stok Bawaan: ${getTeamStock(p.id, selectedTeamId).toLocaleString("id-ID")} Pk)` : ""}
+                  </option>
+                ))}
               </select>
             </div>
           </div>
