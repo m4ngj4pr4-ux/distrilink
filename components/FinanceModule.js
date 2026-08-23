@@ -8,6 +8,7 @@ import {
   HiOutlinePencilAlt,
   HiOutlineUserGroup,
   HiOutlineDocumentText,
+  HiOutlineDownload,
 } from "react-icons/hi";
 import {
   subscribeInvestors, addInvestor, updateInvestor, deleteInvestor,
@@ -18,6 +19,7 @@ import {
 import { formatRupiah } from "@/lib/utils";
 import toast from "react-hot-toast";
 import { usePermissions } from "@/hooks/usePermissions";
+import * as XLSX from "xlsx";
 
 const ALL_TYPES = [
   { value: "modal_masuk", label: "Modal Masuk (Investment)", color: "text-emerald-400", sign: "+" },
@@ -336,6 +338,44 @@ export default function FinanceModule({ products = [], purchases = [] }) {
     return map;
   }, [ledger]);
 
+  const handleExportExcel = () => {
+    if (filteredBukuBesar.length === 0) {
+      toast.error("Tidak ada data untuk diexport");
+      return;
+    }
+
+    const dataToExport = filteredBukuBesar.map(entry => {
+      const meta = TIPE_MAP[entry.tipeBuku] || { label: entry.tipeBuku, sign: "" };
+      const date = entry.createdAt ? new Date(entry.createdAt.toDate()).toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "numeric" }) : "-";
+      return {
+        "Tanggal": date,
+        "Jenis": meta.label,
+        "Keterangan": entry.keterangan || "-",
+        "Pemasukan": meta.sign === "+" ? (entry.nominal || 0) : 0,
+        "Pengeluaran": meta.sign === "-" ? (entry.nominal || 0) : 0,
+        "Nominal Tampil": (meta.sign === "-" ? -1 : 1) * (entry.nominal || 0)
+      };
+    });
+
+    const ws = XLSX.utils.json_to_sheet(dataToExport);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Buku Besar");
+    
+    // Add total row
+    XLSX.utils.sheet_add_json(ws, [{
+      "Tanggal": "TOTAL",
+      "Jenis": "",
+      "Keterangan": "",
+      "Pemasukan": filteredSummary.totalIn,
+      "Pengeluaran": filteredSummary.totalOut,
+      "Nominal Tampil": filteredSummary.netChange
+    }], { skipHeader: true, origin: -1 });
+
+    const fileName = `Buku_Besar_Keuangan_${filterDate || filterMonth || 'Semua'}.xlsx`;
+    XLSX.writeFile(wb, fileName);
+    toast.success("Berhasil export ke Excel!");
+  };
+
   return (
     <div className="space-y-6">
       {/* ── Header Cards ── */}
@@ -454,6 +494,9 @@ export default function FinanceModule({ products = [], purchases = [] }) {
             </div>
           </div>
           <div className="flex items-center gap-2">
+            <button onClick={handleExportExcel} className="btn-ghost text-sm flex items-center gap-1.5 px-4 py-2 border border-slate-700 hover:bg-dark-700">
+              <HiOutlineDownload size={16} /> Export Excel
+            </button>
             <button onClick={openTxModal} className="btn-primary text-sm flex items-center gap-1.5 px-4 py-2">
               <HiOutlinePlus size={16} /> Catat Transaksi
             </button>
